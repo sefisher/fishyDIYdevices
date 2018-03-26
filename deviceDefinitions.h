@@ -35,7 +35,7 @@ configuration data. */
 
 //Test switches for Serial output text (set to false to disable debug messages) and WiFi Functions
 #define DEBUG_MESSAGES true
-#define UDP_PARSE_MESSAGES false
+#define UDP_PARSE_MESSAGES true
 #define DEBUG_HEAP_MESSAGE false
 #define DEBUG_WiFiOFF false //turn to true to test without wifi
 //-----------------------------------------------------------------------------------

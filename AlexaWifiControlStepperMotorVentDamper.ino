@@ -1201,10 +1201,8 @@ void handleJSON(){
 String getJSON(){
 	String temp;
 	temp = "{\"fishyDevices\":[";
-	if(DEBUG_MESSAGES){Serial.println("[getJSON] building..." + temp);}
 	for(int i=0;i<MAX_DEVICE;i++){
 		if(!deviceArray[i].dead){
-			if(DEBUG_MESSAGES){Serial.println("[getJSON] building..." + temp);}
 			if(i>0){temp+=",";}
 			temp += "{\"deviceID\":\"" + String(i) + "\",\"IP\":\"" + deviceArray[i].ip.toString() + "\",\"dead\":\"" + String(deviceArray[i].dead) + 
 			 "\",\"isCalibrated\":\"" + String(deviceArray[i].isCalibrated ? "true" : "false") + 
@@ -1216,7 +1214,7 @@ String getJSON(){
 		}
 	}
 	temp+="]}";
-	if(DEBUG_MESSAGES){Serial.println("[getJSON] built: " + temp);}
+	//if(DEBUG_MESSAGES){Serial.println("[getJSON] built: " + temp);}
 	return temp;
 }
 
@@ -1227,7 +1225,7 @@ void handleGenericArgs() { //Handler
 	String message = "Number of args received:";
 	message += httpServer.args();            //Get number of parameters
 	message += "\n";                            //Add a new line
-
+	if(DEBUG_MESSAGES){Serial.println("[handleGenericArgs] :"+ message);}
 	for (int i = 0; i < httpServer.args(); i++) {
 		message += "Arg #" + String(i) + " -> ";   //Include the current iteration value
 		message += httpServer.argName(i) + ": ";   //Get the name of the parameter

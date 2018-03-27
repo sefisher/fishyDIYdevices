@@ -131,6 +131,17 @@ typedef struct fishyDevice
 } 
 fishyDevice;
 
+//100 byte struct for storing personailty data in EEPROM
+//remember a byte is needed for the string terminations
+struct {
+	char initstr[13] = "";
+	char namestr[41] = "";
+	bool master = 0;
+	char groupstr[41] = "";
+	char openIsCCW[4] = "";
+} EEPROMdata;
+	
+	
 fishyDevice deviceArray[MAX_DEVICE];
 IPAddress masterIP = {0,0,0,0};
 
@@ -197,6 +208,54 @@ void setup() {
 		Serial.begin(SERIAL_BAUDRATE);
 		Serial.println(); Serial.println();
 	}
+	
+	//Setup EEPROM data as needed
+	/*
+		struct {
+		char initstr[13] = "";
+		char namestr[41] = "";
+		bool master = 0;
+		char groupstr[41] = "";
+		char openIsCCW[4] = "";
+		} EEPROMdata;
+	
+	*/
+	uint addr = 0;
+
+	if(DEBUG_MESSAGES) {Serial.println("[SETUP] The personality data needs "+ String(sizeof(EEPROMdata))+" Bytes");}
+
+	EEPROM.begin(100);
+
+	// load EEPROM data into RAM, see it
+	EEPROM.get(addr,EEPROMdata);
+	if(DEBUG_MESSAGES) {
+		Serial.println("[SETUP] Found: Init string: "+String(EEPROMdata.initstr)+", Name string: "+String(EEPROMdata.namestr)+", Master: " + String(EEPROMdata.master?"True":"False")+", Group name string: "+String(EEPROMdata.groupstr)+", OpenIsCCW: "+String(EEPROMdata.openIsCCW));
+
+		Serial.println("[SETUP] New init string: " + String(INITIALIZE) + ". Stored init string: " + String(EEPROMdata.initstr));
+	}
+	
+	// change EEPROMdata in RAM 
+	if(String(INITIALIZE) != String(EEPROMdata.initstr)) {
+		if(DEBUG_MESSAGES) {Serial.println("[SETUP] Updating.");}
+		strncpy(EEPROMdata.initstr,INITIALIZE,13);	
+		strncpy(EEPROMdata.namestr,CUSTOM_DEVICE_NAME,43);
+		strncpy(EEPROMdata.groupstr,CUSTOM_GROUP_NAME,43);
+		strncpy(EEPROMdata.openIsCCW,OPEN_IS_CCW_OR_CW,4);
+		if(String(MASTER_NODE)==String("true")){
+			EEPROMdata.master=true;
+		}else{
+			EEPROMdata.master=false;
+		}			
+		// replace values in EEPROM
+		EEPROM.put(addr,EEPROMdata);
+		EEPROM.commit();
+		// reload EEPROMdata for EEPROM, see the change
+		EEPROM.get(addr,EEPROMdata);
+	}else{
+		if(DEBUG_MESSAGES) {Serial.println("[SETUP] Nothing to update.");}
+	}
+	
+	if(DEBUG_MESSAGES) {Serial.println("Personality values are: Init string: "+String(EEPROMdata.initstr)+", Name string: "+String(EEPROMdata.namestr)+", Master: " + String(EEPROMdata.master?"True":"False")+", Group name string: "+String(EEPROMdata.groupstr)+", OpenIsCCW: "+String(EEPROMdata.openIsCCW));}
 
 	//stepper motor setup
 	stepper1.setMaxSpeed(MAX_SPEED);

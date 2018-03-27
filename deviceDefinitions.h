@@ -12,18 +12,18 @@ configuration data. */
 
 //PICK A UNIQUE NAME FOR EACH DEVICE USING ONLY LETTERS AND NUMBERS
 // #define CUSTOM_DEVICE_NAME "Vent Damper 1"
-#define CUSTOM_DEVICE_NAME "Vent Damper 2"
-// #define CUSTOM_DEVICE_NAME "Vent Damper 3"
+// #define CUSTOM_DEVICE_NAME "Vent Damper 2"
+#define CUSTOM_DEVICE_NAME "Vent Damper 3"
 
 //PICK ONLY ONE DEVICE ON THE NETWORK AS MASTER (and set this to true when you compile its code).  
 //IT WILL BE THE WEBSERVER AND CONTROLLER FOR ALL OTHER NODES.  Set false for all the others.
-#define MASTER_NODE true
-// #define MASTER_NODE false
+// #define MASTER_NODE true
+#define MASTER_NODE false
 
 //FIGURE OUT WHAT DIRECTION YOU WANT TO PICK AS OPEN or CLOSE FOR YOUR DEVICE.  
 //TODO - use this parameter
-#define OPEN_IS_CCW_OR_CW "CCW"
-//#define OPEN_IS_CCW_OR_CW "CW"
+// #define OPEN_IS_CCW_OR_CW "CCW"
+#define OPEN_IS_CCW_OR_CW "CW"
 
 //----------------------------------------------------------------------------------
 //Board communication rate
@@ -35,7 +35,7 @@ configuration data. */
 
 //Test switches for Serial output text (set to false to disable debug messages) and WiFi Functions
 #define DEBUG_MESSAGES true
-#define UDP_PARSE_MESSAGES true
+#define UDP_PARSE_MESSAGES false
 #define DEBUG_HEAP_MESSAGE false
 #define DEBUG_WiFiOFF false //turn to true to test without wifi
 //-----------------------------------------------------------------------------------

@@ -280,32 +280,31 @@ var fishyNetJSON = '{"fishyDevices":[{"deviceID":"0","IP":"10.203.1.197","dead":
 function toggleCfg(num){
 var btn = document.getElementById('cfgBtn-'+num);
 var pnl = document.getElementById('cfgPnl-'+num);
-if(pnl.style.display=='block') {
-pnl.style.display = 'none';
-btn.value = '[+] Show Config Panel';
-}else{
-pnl.style.display = 'block';
-btn.value = '[-] Hide Config Panel';
-}
+	if(pnl.style.display=='block') {
+		pnl.style.display = 'none';
+		btn.value = '[+] Show Config Panel';
+	}else{
+		pnl.style.display = 'block';
+		btn.value = '[-] Hide Config Panel';
+	}
 }
 function sync(num, name, what) {
-  var sliderID = name + 'Sld-' + num;
-  var valID = name + 'Val-' + num;
-  var slider = document.getElementById(sliderID);
-  var val = document.getElementById(valID);
-  if (what == 1) {
-    val.value = slider.value;
-  } else {
-slider.value = val.value;
-  }
+	var sliderID = name + 'Sld-' + num;
+	var valID = name + 'Val-' + num;
+	var slider = document.getElementById(sliderID);
+	var val = document.getElementById(valID);
+	if (what == 1) {
+		val.value = slider.value;
+	} else {
+		slider.value = val.value;
+	}
 }
 function openIsCCWUpd(num){
-var label = document.getElementById('swLab-'+num);
-var sw = document.getElementById('swChck-'+num);
-if(sw.checked == true) {label.innerHTML = 'Open is CCW';} else {label.innerHTML = 'Open is CW';}
+	var label = document.getElementById('swLab-'+num);
+	var sw = document.getElementById('swChck-'+num);
+	if(sw.checked == true) {label.innerHTML = 'Open is CCW';} else {label.innerHTML = 'Open is CW';}
 }
 function sendCmd(num,command){
-var mstrIP=window.location.hostname;
 var remIP=document.getElementById('targetIP-'+num).value;
 var cmd='';
 var pos;
@@ -321,7 +320,7 @@ pos=document.getElementById('pctOpenVal-'+num).value;
 while(pos.length<3) pos = '0' + pos;
 cmd+=pos;
 }
-var query=mstrIP+'/genericArgs?IPCommand='+remIP+';'+cmd;
+var query='/genericArgs?IPCommand='+remIP+';'+cmd;
 alert(query);
 var jqxhr = $.get(query, function() {
 alert( 'success' );
@@ -333,7 +332,6 @@ alert('not yet implemented.');
 function pollJSON(){
 	$.getJSON('./device.JSON', function(data) {
 	var DA = data.fishyDevices;
-	var mstrIP = window.location.hostname;
 	var addDiv = '';
 	var mstrTxt='';
 	var calTxt='';
@@ -374,7 +372,6 @@ function buildPage() {
   var data = JSON.parse(fishyNetJSON); 
   var DA = data.fishyDevices;
   var items = [];
-  var mstrIP = window.location.hostname;
   var addDiv = '';
   var mstrTxt='';
   var calTxt='';
@@ -386,7 +383,7 @@ if(d.isCalibrated=='false'){calTxt='LIMITS ARE UNCALIBRATED<br>';}else{calTxt=''
 if(d.openIsCCW=='true'){chckTxt='checked';}else{chckTxt='';}
 if(d.dead=='0'){
 ii=d.deviceID;
-addDiv = '<div class="CP"><input type=hidden id="targetIP-'+ii+'" value="'+d.IP+'"><div class="CPhd">"'+d.deviceName+'"</div><div class="CPhd2">('+mstrTxt+d.IP+')</div><div class="sldRow"><div class="sldLab">% Open</div><input class="sld" id="pctOpenSld-'+ii+'" type=range value='+posPct(d.motorPos,d.motorPosAtCCW,d.motorPosAtCW)+' max=100 min=0 oninput="sync('+ii+',"pctOpen",1)"> <input class="sldVal" id="pctOpenVal-'+ii+'" type=number value='+posPct(d.motorPos,d.motorPosAtCCW,d.motorPosAtCW)+' max=100 min=0 onchange="sync('+ii+',"pctOpen",2)"></div><div class="btnRow"><input class="lftBtn" id="fobtn-'+ii+'" type=button value="Full Open" onclick="sendCmd('+ii+',"O")"><input class="midBtn" id="pobtn-'+ii+'" type=button value="Go % Open" onclick="sendCmd('+ii+',"G")"><input class="rgtBtn" id="fcbtn-'+ii+'" type=button value="Full Close" onclick="sendCmd('+ii+',"C")"></div><div class="cfgPnl" id="cfgPnl-'+ii+'"><hr><span class="calTxt" id="calTxt-'+ii+'">'+calTxt+'</span><div class="sldRow"><div class="sldLab">CCW Lim</div><input class="sld" id="ccwLimSld-'+ii+'" type=range value='+d.motorPosAtCCW+' max='+d.motorPosAtFullCW+' min='+d.motorPosAtFullCCW+' oninput="sync('+ii+',"ccwLim",1)"> <input class="sldVal" id="ccwLimVal-'+ii+'" type=number value='+d.motorPosAtCCW+' max='+d.motorPosAtFullCW+' min='+d.motorPosAtFullCCW+' onchange="sync('+ii+',"ccwLim",2)"></div><div class="sldRow"><div class="sldLab">CW Lim</div><input class="sld" id="cwLimSld-'+ii+'" type=range value='+d.motorPosAtCW+' max='+d.motorPosAtFullCW+' min='+d.motorPosAtFullCCW+' oninput="sync('+ii+',"cwLim",1)"> <input class="sldVal" id="cwLimVal-'+ii+'" type=number value='+d.motorPosAtCW+' max='+d.motorPosAtFullCW+' min='+d.motorPosAtFullCCW+' onchange="sync('+ii+',"cwLim",2)"></div><div></div><div class="swRow"><label class="sw" id="sw-'+ii+'"><input type=checkbox id="swChck-'+ii+'" '+chckTxt+' onchange="openIsCCWUpd('+ii+')" ><span class="sldSw"></span></label><span class="swLab" id="swLab-'+ii+'">Open is CCW</span></div><label class="cfgInpLab" for="devName-'+ii+'">Device Name:</label> <input class="cfgInp" id="devName-'+ii+'" value="'+d.deviceName+'"> <div class="btnRow"><input class="cfgBtn" id="updCfgBtn-'+ii+'" type=button value="UPDATE CONFIG"onclick="updateCfg('+ii+')"><input class="cfgBtn" id="updCfgBtn-'+ii+'" type=button value="CALIBRATE" onclick="sendCmd('+ii+',"cal")"><br></div><hr></div><div class="btnRow"><input class="tglBtn" id="cfgBtn-'+ii+'" type=button value="[+] Show Config Panel" onclick="toggleCfg('+ii+')"></div></div>';
+addDiv = '<div class="CP"><input type=hidden id="targetIP-'+ii+'" value="'+d.IP+'"><div class="CPhd">"'+d.deviceName+'"</div><div class="CPhd2">('+mstrTxt+d.IP+')</div><div class="sldRow"><div class="sldLab">% Open</div><input class="sld" id="pctOpenSld-'+ii+'" type=range value='+posPct(d.motorPos,d.motorPosAtCCW,d.motorPosAtCW)+' max=100 min=0 oninput=sync('+ii+',"pctOpen",1)> <input class="sldVal" id="pctOpenVal-'+ii+'" type=number value='+posPct(d.motorPos,d.motorPosAtCCW,d.motorPosAtCW)+' max=100 min=0 onchange=sync('+ii+',"pctOpen",2)></div><div class="btnRow"><input class="lftBtn" id="fobtn-'+ii+'" type=button value="Full Open" onclick=sendCmd('+ii+',"O")><input class="midBtn" id="pobtn-'+ii+'" type=button value="Go % Open" onclick=sendCmd('+ii+',"G")><input class="rgtBtn" id="fcbtn-'+ii+'" type=button value="Full Close" onclick=sendCmd('+ii+',"C")></div><div class="cfgPnl" id="cfgPnl-'+ii+'"><hr><span class="calTxt" id="calTxt-'+ii+'">'+calTxt+'</span><div class="sldRow"><div class="sldLab">CCW Lim</div><input class="sld" id="ccwLimSld-'+ii+'" type=range value='+d.motorPosAtCCW+' max='+d.motorPosAtFullCW+' min='+d.motorPosAtFullCCW+' oninput=sync('+ii+',"ccwLim",1)> <input class="sldVal" id="ccwLimVal-'+ii+'" type=number value='+d.motorPosAtCCW+' max='+d.motorPosAtFullCW+' min='+d.motorPosAtFullCCW+' onchange=sync('+ii+',"ccwLim",2)></div><div class="sldRow"><div class="sldLab">CW Lim</div><input class="sld" id="cwLimSld-'+ii+'" type=range value='+d.motorPosAtCW+' max='+d.motorPosAtFullCW+' min='+d.motorPosAtFullCCW+' oninput=sync('+ii+',"cwLim",1)> <input class="sldVal" id="cwLimVal-'+ii+'" type=number value='+d.motorPosAtCW+' max='+d.motorPosAtFullCW+' min='+d.motorPosAtFullCCW+' onchange=sync('+ii+',"cwLim",2)></div><div></div><div class="swRow"><label class="sw" id="sw-'+ii+'"><input type=checkbox id="swChck-'+ii+'" '+chckTxt+' onchange=openIsCCWUpd('+ii+') ><span class="sldSw"></span></label><span class="swLab" id="swLab-'+ii+'">Open is CCW</span></div><label class="cfgInpLab" for="devName-'+ii+'">Device Name:</label> <input class="cfgInp" id="devName-'+ii+'" value="'+d.deviceName+'"> <div class="btnRow"><input class="cfgBtn" id="updCfgBtn-'+ii+'" type=button value="UPDATE CONFIG onclick=updateCfg('+ii+')><input class="cfgBtn" id="updCfgBtn-'+ii+'" type=button value="CALIBRATE" onclick=sendCmd('+ii+',"cal")><br></div><hr></div><div class="btnRow"><input class="tglBtn" id="cfgBtn-'+ii+'" type=button value="[+] Show Config Panel" onclick=toggleCfg('+ii+')></div></div>';
 items.push(addDiv);
 }
   });

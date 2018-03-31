@@ -1,0 +1,226 @@
+<!DOCTYPE html>
+<html>
+<head>
+<!-- <meta http-equiv='refresh' content='5'/> -->
+<title>fishyDIY.local Network Devices</title>
+	<meta name='viewport' content='width=device-width, initial-scale=1'>
+	<link rel='stylesheet' href='https://ajax.googleapis.com/ajax/libs/jquerymobile/1.4.5/jquery.mobile.min.css'>
+	<script src='https://ajax.googleapis.com/ajax/libs/jquerymobile/1.4.5/jquery.mobile.min.js'></script>
+	<script src='https://ajax.googleapis.com/ajax/libs/jquery/1.12.4/jquery.min.js'></script>
+	<script src='https://ajax.googleapis.com/ajax/libs/jquerymobile/1.4.5/jquery.mobile.min.js'></script>
+<script type='text/javascript'>
+$( document ).bind( 'mobileinit', function(){
+  $.mobile.loader.prototype.options.text = "loading";
+  $.mobile.loader.prototype.options.textVisible = false;
+  $.mobile.loader.prototype.options.theme = "b";
+  $.mobile.loader.prototype.options.html = "";
+});
+</script>
+<style>
+/* Stack all blocks to start */
+.my-breakpoint .ui-block-a,
+.my-breakpoint .ui-block-b,
+.my-breakpoint .ui-block-c {
+    width: 100%;
+    float: none;
+}
+@media all and (min-width: 42em) {
+    .my-breakpoint .ui-block-a,
+	.my-breakpoint .ui-block-b,
+    .my-breakpoint .ui-block-c {
+      float: left;
+      width: 50%;
+    }
+}
+/* 2nd breakpoint - Float all, 50/25/25 */
+@media all and (min-width: 55em) {
+    .my-breakpoint .ui-block-a,
+	.my-breakpoint .ui-block-b,
+    .my-breakpoint .ui-block-c {
+      float: left;
+      width: 33%;
+    }
+}
+</style>  
+</head>
+<body>
+<div data-role="header" data-theme="a"><h1>fishyDIY Devices</h1></div> 
+<script type="text/javascript">
+(function() {
+  var fishyJSON = 'http://10.203.1.197/device.JSON';
+  var divContent="";
+  var masterText="";
+  var mod3 = 0;
+  $.getJSON(fishyJSON)
+    .done(function( data ) {
+      $.each( data.fishyDevices, function( i, device ) {
+		console.log( "JSON Data: " + i );
+		mod3 = i%3;
+		if(mod3 == 1){
+			divContent = "<div class='ui-block-a'>";
+		} else if(mod3 == 2) {
+			divContent = "<div class='ui-block-b'>";
+		}else {
+			divContent = "<div class='ui-block-c'>";
+		}
+		divContent += "<textarea><div class='ui-body ui-body-d'><div data-role='collapsible' data-theme='b' data-content-theme='d' data-collapsed='false'>";
+		divContent += "<h3>" + device.deviceName + "</h3><br>" + device.IP;
+		masterText;
+		if(device.isMaster=="true")masterText = "(MASTER)";
+		else masterText = "";
+		divContent += "<hr><form><label for='pos-slider-" + device.deviceID + "'>Set % Open:</label>";
+		divContent += "<input type='range' name='pos-slider-" + device.deviceID + "' data-popup-enabled='true' id='slider-" + device.deviceID + "' min='0' max='100' value='";
+		var motPosPertcentValue = 100*(device.motorPos-device.motorPosAtCCW)/(device.motorPosAtCW-device.motorPosAtCCW);
+		divContent += motPosPertcentValue + "'><div data-role='controlgroup' data-type='horizontal' data-mini='true'><legend>Move:</legend><button>Full Open</button><button>Full Shut</button><button>Go to % Open</button></form></div>";
+		divContent += "<div data-role='collapsible' data-theme='b' data-content-theme='d' data-collapsed='true'><h3>Configure Device</h3><form><label for='name-" + device.deviceID + "'>Device Unique Name:</label>";
+		divContent += "<input type='text' name='name-" + device.deviceID + "' id='name-" + device.deviceID + "' value=''>";
+		divContent += "<label for='group-" + device.deviceID + "'>Group Name:</label><input type='text' name='group-" + device.deviceID + "' id='group-" + device.deviceID + "' value=''>";
+		divContent += "<label for='openCCWorCW-" + device.deviceID + "'>Open is:</label>";
+		divContent += "<input type='checkbox' data-role='flipswitch' name='openCCWorCW-" + device.deviceID + "' id='openCCWorCW-" + device.deviceID + "' data-on-text='CCW' data-off-text='CW' data-wrapper-class='custom-label-flipswitch'>";
+		divContent += "<div data-role='rangeslider' data-track-theme='b'  data-mini='true' >";
+		divContent += "<label for='range-3a'><p>Hard/Soft Motor Limits:<a href='#popupInfo-"+i+"' data-rel='popup' data-transition='pop' class='my-tooltip-btn ui-btn ui-alt-icon ui-nodisc-icon ui-btn-inline ui-icon-info ui-btn-icon-notext' title='Learn more'>Learn more</a></p></label>";
+		divContent += "<div data-role='popup' id='popupInfo-"+i+"' class='ui-content' data-theme='a' style='max-width:350px;'><p><center>";
+		if(device.isCalibrated=="true") masterText = "UNCALIBRATED";
+		else masterText = "CALIBRATED";
+		divContent += masterText + " RANGE: " + device.motorPosAtFullCCW + " to " + device.motorPosAtFullCW + "</center><br>This shows and allows adjusting hard and soft motor position limits. Hard limits are either preset (assumed range of motion) or calibrated (tested limit switch positions). Soft limits are user defined and set the 0% to 100% range of motion.</p></div>";
+		divContent += "<input type='range' name='range-3a' id='range-3a' min='" + device.motorPosAtFullCCW + "' max='" + device.motorPosAtFullCW + "' value='" + device.motorPosAtCCW + "' >";
+		divContent += "<input type='range' name='range-3b' id='range-3b' min='" + device.motorPosAtFullCCW + "' max='" + device.motorPosAtFullCW + "' value='" + device.motorPosAtCW + "' ></div>";
+		divContent += "<button class='ui-btn ui-btn-a'>Update Configuration</button><button class='ui-btn ui-btn-b'>Recalibrate</button></form></div></div></div></textarea><br>";
+
+		if(i==1) alert("wow: " + device.deviceName);
+		if (device.dead == "0"){
+			$("#placeToPaste").append( divContent );
+		}else{
+			
+		}
+  
+      });
+    });
+})();
+
+</script>
+  <div role="main" class="ui-content" id="mainDiv">
+    <div class="ui-grid-b my-breakpoint">
+      <div class="ui-block-a">
+	  
+	  <div class="ui-body ui-body-d">
+
+	  <div data-role='collapsible' data-theme='b' data-content-theme='d' data-collapsed='false'>
+<h3>Vent Damper 1</h3>
+IP Address: (MASTER)
+<hr>
+<form>
+<label for='pos-slider-1' >Set % Open:</label>
+<input type='range' name='pos-slider-1' data-popup-enabled='true' id='slider-12' min='0' max='100' value='50'>
+<div data-role='controlgroup' data-type='horizontal' data-mini='true'>
+<legend>Move:</legend>
+<button>Full Open</button>
+<button>Full Shut</button>
+<button>Go to % Open</button></form>
+</div>	
+<div data-role='collapsible' data-theme='b' data-content-theme='d' data-collapsed='true'>
+<h3>Configure Device</h3>
+<form><label for='name-1'>Device Unique Name:</label>
+<input type='text' name='name-1' id='name-1' value=''>
+<label for='group-1'>Group Name:</label>
+<input type='text' name='group-1' id='group-1' value=''>
+<label for='openCCWorCW-1'>Open is:</label>
+    <input type='checkbox' data-role='flipswitch' name='openCCWorCW-1' id='openCCWorCW-1' data-on-text='CCW' data-off-text='CW' data-wrapper-class='custom-label-flipswitch'>
+<div data-role='rangeslider' data-track-theme='b'  data-mini='true' >
+<label for='range-3a'><p>Hard/Soft Motor Limits:<a href='#popupInfo' data-rel='popup' data-transition='pop' class='my-tooltip-btn ui-btn ui-alt-icon ui-nodisc-icon ui-btn-inline ui-icon-info ui-btn-icon-notext' title='Learn more'>Learn more</a></p></label>
+<div data-role='popup' id='popupInfo' class='ui-content' data-theme='a' style='max-width:350px;'>
+  <p><center>UNCALIBRATED RANGE: -3500 to 3500</center><br>This shows and allows adjusting hard and soft motor position limits. Hard limits are either preset (assumed range of motion) or calibrated (tested limit switch positions). Soft limits are user defined and set the 0% to 100% range of motion.</p>
+</div>
+<input type='range' name='range-3a' id='range-3a' min='-3500' max='3500' value='-2000' >
+<input type='range' name='range-3b' id='range-3b' min='-3500' max='3500' value='2000' >
+</div>
+<button class='ui-btn ui-btn-a'>Update Configuration</button>
+<button class='ui-btn ui-btn-b'>Recalibrate</button>
+</form>
+</div>
+</div></div> 
+</div>
+ 
+ <div class="ui-block-b">
+ 
+ <div class="ui-body ui-body-d">
+	<div data-role='collapsible' data-theme='b' data-content-theme='d' data-collapsed='false'>
+<h3>Vent Damper 1</h3>
+IP Address: (MASTER)
+<hr>
+<form>
+<label for='pos-slider-1' >Set % Open:</label>
+<input type='range' name='pos-slider-1' data-popup-enabled='true' id='slider-12' min='0' max='100' value='50'>
+<div data-role='controlgroup' data-type='horizontal' data-mini='true'>
+<legend>Move:</legend>
+<button>Full Open</button>
+<button>Full Shut</button>
+<button>Go to % Open</button></form>
+</div>	
+<div data-role='collapsible' data-theme='b' data-content-theme='d' data-collapsed='true'>
+<h3>Configure Device</h3>
+<form><label for='name-1'>Device Unique Name:</label>
+<input type='text' name='name-1' id='name-1' value=''>
+<label for='group-1'>Group Name:</label>
+<input type='text' name='group-1' id='group-1' value=''>
+<label for='openCCWorCW-1'>Open is:</label>
+    <input type='checkbox' data-role='flipswitch' name='openCCWorCW-1' id='openCCWorCW-1' data-on-text='CCW' data-off-text='CW' data-wrapper-class='custom-label-flipswitch'>
+<div data-role='rangeslider' data-track-theme='b'  data-mini='true' >
+<label for='range-3a'><p>Hard/Soft Motor Limits:<a href='#popupInfo' data-rel='popup' data-transition='pop' class='my-tooltip-btn ui-btn ui-alt-icon ui-nodisc-icon ui-btn-inline ui-icon-info ui-btn-icon-notext' title='Learn more'>Learn more</a></p></label>
+<div data-role='popup' id='popupInfo' class='ui-content' data-theme='a' style='max-width:350px;'>
+  <p><center>UNCALIBRATED RANGE: -3500 to 3500</center><br>This shows and allows adjusting hard and soft motor position limits. Hard limits are either preset (assumed range of motion) or calibrated (tested limit switch positions). Soft limits are user defined and set the 0% to 100% range of motion.</p>
+</div>
+<input type='range' name='range-3a' id='range-3a' min='-3500' max='3500' value='-2000' >
+<input type='range' name='range-3b' id='range-3b' min='-3500' max='3500' value='2000' >
+</div>
+<button class='ui-btn ui-btn-a'>Update Configuration</button>
+<button class='ui-btn ui-btn-b'>Recalibrate</button>
+</form>
+</div>
+</div> </div>
+	 
+	 </div>
+      <div class="ui-block-c"><div class="ui-body ui-body-d">
+<div data-role='collapsible' data-theme='b' data-content-theme='d' data-collapsed='false'>
+<h3>Vent Damper 1</h3>
+IP Address: (MASTER)
+<hr>
+<form>
+<label for='pos-slider-1' >Set % Open:</label>
+<input type='range' name='pos-slider-1' data-popup-enabled='true' id='slider-12' min='0' max='100' value='50'>
+<div data-role='controlgroup' data-type='horizontal' data-mini='true'>
+<legend>Move:</legend>
+<button>Full Open</button>
+<button>Full Shut</button>
+<button>Go to % Open</button></form>
+</div>	
+<div data-role='collapsible' data-theme='b' data-content-theme='d' data-collapsed='true'>
+<h3>Configure Device</h3>
+<form><label for='name-1'>Device Unique Name:</label>
+<input type='text' name='name-1' id='name-1' value=''>
+<label for='group-1'>Group Name:</label>
+<input type='text' name='group-1' id='group-1' value=''>
+<label for='openCCWorCW-1'>Open is:</label>
+    <input type='checkbox' data-role='flipswitch' name='openCCWorCW-1' id='openCCWorCW-1' data-on-text='CCW' data-off-text='CW' data-wrapper-class='custom-label-flipswitch'>
+<div data-role='rangeslider' data-track-theme='b'  data-mini='true' >
+<label for='range-3a'><p>Hard/Soft Motor Limits:<a href='#popupInfo' data-rel='popup' data-transition='pop' class='my-tooltip-btn ui-btn ui-alt-icon ui-nodisc-icon ui-btn-inline ui-icon-info ui-btn-icon-notext' title='Learn more'>Learn more</a></p></label>
+<div data-role='popup' id='popupInfo' class='ui-content' data-theme='a' style='max-width:350px;'>
+  <p><center>UNCALIBRATED RANGE: -3500 to 3500</center><br>This shows and allows adjusting hard and soft motor position limits. Hard limits are either preset (assumed range of motion) or calibrated (tested limit switch positions). Soft limits are user defined and set the 0% to 100% range of motion.</p>
+</div>
+<input type='range' name='range-3a' id='range-3a' min='-3500' max='3500' value='-2000' >
+<input type='range' name='range-3b' id='range-3b' min='-3500' max='3500' value='2000' >
+</div>
+<button class='ui-btn ui-btn-a'>Update Configuration</button>
+<button class='ui-btn ui-btn-b'>Recalibrate</button>
+</form>
+</div>
+</div>	  
+	  </div>
+    </div>
+</div>
+</div>
+
+
+<div name="placeToPaste" id="placeToPaste">this was here</div>
+</body>
+</html>

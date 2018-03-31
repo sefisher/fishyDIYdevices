@@ -1,0 +1,372 @@
+<!-- This is the template for developing the control panel device div --> 
+<!DOCTYPE html>
+<html>
+<head>
+<title>fishDIY Device Network</title>
+  <meta name='viewport' content='width=device-width, initial-scale=1'>
+  <script src='https://ajax.googleapis.com/ajax/libs/jquery/1.12.4/jquery.min.js'></script>
+<style>
+:root {
+    --big-fnt: 25px;
+    --mid-fnt: 20px;
+    --sml-fnt: 15px;
+    --drk-col: #3366cc;
+    --lght-col: #ffffff;
+    --gry-col: #edf3ff;
+    --cp-sz: 300px;
+    --lab-sz: 90px;
+    --val-sz: 65px;
+    --sld-sz: 125px;
+    --rad-sz: 25px;
+    --hdr-ht: 100px;
+    --smrad-sz: 7px;
+    --thm-sz: 25px;
+    --sld-ht: 10px;
+    --sld-mar: 5px;
+    --sldRow-mar: 4px;
+    --sldRow-ht: 30px;
+    --btnRow-mar: 2px;
+    --btnRow-ht: 30px;
+    --btn-ht: 28px;
+    --cfg-lab: 120;
+    --cfg-inp: 160;
+}
+
+body {
+    background-color: var(--gry-col);
+    font-family: "Lucida Sans Unicode", "Lucida Grande", sans-serif;
+}
+
+.flex-container {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    background-color: var(--gry-col);
+}
+
+.flex-container > div {
+    border-radius: var(--rad-sz);
+    background-color: var(--lght-col);
+    width: calc(var(--cp-sz)+10);
+    margin: 5px;
+    vertical-align: middle;
+    text-align: center;
+    line-height: calc(var(--mid-fnt) + 2);
+    font-size: var(--mid-fnt);
+}
+
+.fishyHdr,.hdrIcon {
+    border-radius: var(--rad-sz);
+    font-size: calc(var(--hdr-ht)/3);
+    font-weight: bold;
+    color: white;
+    background: var(--drk-col);
+    height: var(--hdr-ht);
+    vertical-align: middle;
+}
+
+.CP {
+    width: var(--cp-sz);
+    flex: 0 1 var(--cp-sz);
+}
+
+.CPhd, .CPhd2 {
+    width: var(--cp-sz);
+    color: white;
+    background-color: var(--drk-col);
+}
+
+.CPhd {
+    border-radius: var(--rad-sz) var(--rad-sz) 0px 0px;
+    font-size: var(--big-fnt);
+}
+
+.sld {
+    position: absolute;
+    top: var(--sld-mar);
+    left: var(--lab-sz);
+    -webkit-appearance: none;
+    width: var(--sld-sz);
+    height: var(--sld-ht);
+    background: var(--gry-col);
+    outline: none;
+    opacity: 0.7;
+    -webkit-transition: .2s;
+    transition: opacity .2s;
+}
+
+.sld:hover {
+    opacity: 1;
+}
+
+.sld::-webkit-slider-thumb {
+    border-radius: var(--smrad-sz);
+    -webkit-appearance: none;
+    width: var(--thm-sz);
+    height: var(--thm-sz);
+    background: var(--drk-col);
+    cursor: pointer;
+}
+
+.sld::-moz-range-thumb {
+    border-radius: var(--smrad-sz);
+    width: var(--thm-sz);
+    height: var(--thm-sz);
+    background: var(--drk-col);
+    cursor: pointer;
+}
+
+.sldRow {
+    position: relative;
+    top: var(--sldRow-mar);
+    width: var(--cp-sz);
+    height: var(--sldRow-ht);
+}
+
+.sldLab {
+    position: absolute;
+    top: 0px;
+    left: 0px;
+    width: var(--lab-sz);
+    font-size: var(--mid-fnt);
+}
+
+.sldVal {
+    position: absolute;
+    top: 0px;
+    left: calc(var(--cp-sz) - var(--val-sz));
+    background-color: white;
+    border: none;
+    font-size: var(--mid-fnt);
+    width: var(--val-sz);
+}
+
+.btnRow {
+    position: relative;
+    top: var(--btnRow-mar);
+    width: var(--cp-sz);
+    height: var(--btnRow-ht);
+}
+
+.lftBtn,.rgtBtn,.midBtn,.cfgBtn,.tglBtn {
+    background-color: var(--drk-col);
+    height: var(--btn-ht);
+    width: calc(var(--cp-sz)/3);
+    border: 1px solid white;
+    color: white;
+    text-align: center;
+    text-decoration: none;
+    display: inline-block;
+    cursor: pointer;
+}
+
+.lftBtn {
+    border-radius: var(--smrad-sz) 0px 0px var(--smrad-sz);
+}
+
+.rgtBtn {
+    border-radius: 0px var(--smrad-sz) var(--smrad-sz) 0px;
+}
+
+.cfgPnl {
+    display: none;
+}
+
+.cfgInpLab {
+    width: var(--cfg-lab);
+    font-size: var(--sml-fnt);
+}
+
+.cfgInp {
+    width: var(--cfg-inp);
+    background-color: white;
+    border: 1;
+    font-size: var(--sml-fnt);
+}
+
+.cfgBtn {
+    border-radius: var(--smrad-sz);
+    width: 48%;
+    font-weight: bold;
+    background-color: red;
+}
+
+.calTxt {
+	font-size: var(--sml-fnt);
+	color: var(--drk-col);
+}
+
+.tglBtn {
+    border-radius: var(--smrad-sz) var(--smrad-sz) var(--rad-sz) var(--rad-sz);
+    width: 100%;
+}
+
+.sw {
+    position: relative;
+    display: inline-block;
+    width: 60px;
+    height: 34px;
+}
+
+.sw input {
+    display: none;
+}
+
+.swLab {
+    position: relative;
+    top: -10px;
+}
+
+.sldSw {
+    position: absolute;
+    cursor: pointer;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: #ccc;
+    -webkit-transition: .4s;
+    transition: .4s;
+    border-radius: 34px;
+}
+
+.sldSw:before {
+    position: absolute;
+    content: '';
+    height: 26px;
+    width: 26px;
+    left: 4px;
+    bottom: 4px;
+    background-color: white;
+    -webkit-transition: .4s;
+    transition: .4s;
+    border-radius: 50%;
+}
+
+input:checked + .sldSw {
+    background-color: var(--drk-col);
+}
+
+input:focus + .sldSw {
+    box-shadow: 0 0 1px var(--drk-col);
+}
+
+input:checked + .sldSw:before {
+    -webkit-transform: translateX(26px);
+    -ms-transform: translateX(26px);
+    transform: translateX(26px);
+}
+</style>
+</head>
+<body>
+<script>
+function toggleCfg(num){
+var btn = document.getElementById('cfgBtn-'+num);
+var pnl = document.getElementById('cfgPnl-'+num);
+	if(pnl.style.display=='block') {
+		pnl.style.display = 'none';
+		btn.value = '[+] Show Config Panel';
+	}else{
+		pnl.style.display = 'block';
+		btn.value = '[-] Hide Config Panel';
+	}
+}
+function sync(num, name, what) {
+	var sliderID = name + 'Sld-' + num;
+	var valID = name + 'Val-' + num;
+	var slider = document.getElementById(sliderID);
+	var val = document.getElementById(valID);
+	if (what == 1) {
+		val.value = slider.value;
+	} else {
+		slider.value = val.value;
+	}
+}
+function openIsCCWUpd(num){
+	var label = document.getElementById('swLab-'+num);
+	var sw = document.getElementById('swChck-'+num);
+	if(sw.checked == true) {label.innerHTML = 'Open is CCW';} else {label.innerHTML = 'Open is CW';}
+}
+function swMstrUpd(num){
+	var label = document.getElementById('swMstrLab-'+num);
+	var sw = document.getElementById('swMstrChck-'+num);
+	if(sw.checked == true) {label.innerHTML = 'Master Node';} else {label.innerHTML = 'Slave Node';}
+}
+function sendCmd(num,command){
+var remIP=document.getElementById('targetIP-'+num).value;
+var cmd='';
+if(command=='O'){
+cmd='open';
+}else if(command=='C'){
+cmd='close';
+}else if(command=='cal'){
+cmd='calibrate';
+}else if(command=='G'){
+var pos;
+cmd='goto';
+pos=document.getElementById('pctOpenVal-'+num).value;
+while(pos.length<3) pos = '0' + pos;
+cmd+=pos;
+}else if(command=='config'){
+var isMstr='false'
+var ccwIsOpen='false';
+if(document.getElementById('swMstrChck-'+num).checked) isMstr='true';
+if(document.getElementById('swChck-'+num).checked) ccwIsOpen='true';
+cmd='config';
+cmd+=';ccwLim='+document.getElementById('ccwLimVal-'+num).value;
+cmd+=';cwLim='+document.getElementById('cwLimVal-'+num).value;
+cmd+=';openIsCCW='+ccwIsOpen;
+cmd+=';isMaster='+isMstr;
+cmd+=';devName='+document.getElementById('devName-'+num).value;
+cmd+=';devGroup='+document.getElementById('groupName-'+num).value;
+cmd+=';devType='+document.getElementById('devType-'+num).value;
+}
+
+var query='/genericArgs?IPCommand='+remIP+';'+cmd;
+alert(query);
+var jqxhr = $.get(query, function() {
+alert( 'success' );
+});
+}
+function updateCfg(i){
+alert('not yet implemented.');
+}
+</script>
+<div class="flex-container">
+
+<div class="CP">
+<input type="hidden" id="targetIP-0" value="10.203.1.197">
+<div class="CPhd">"Vent Damper 2"</div>
+<div class="CPhd2">(MASTER 10.203.1.197)</div>
+<div class="sldRow">
+	<div class="sldLab">% Open</div><input class="sld" id="pctOpenSld-0" type="range" value="50" max="100" min="0" oninput="sync(0,'pctOpen',1)"> <input class="sldVal" id="pctOpenVal-0" type="number" value="50" max="100" min="0" onchange="sync(0,'pctOpen',2)">
+</div>
+<div class="btnRow"><input class="lftBtn" id="fobtn-0" type="button" value="Full Open" onclick="sendCmd(0,'O')"><input class="midBtn" id="pobtn-0" type="button" value="Go % Open" onclick="sendCmd(0,'G')"><input class="rgtBtn" id="fcbtn-0" type="button" value="Full Close" onclick="sendCmd(0,'C')"></div>
+<div class="cfgPnl" id="cfgPnl-0" style="display: block;"><hr><label class="cfgInpLab" for="devNote-0">Note:<input class="cfgInp" id="note-0" value="NONE"></label><div class="calTxt" id="calTxt-0">LIMITS ARE UNCALIBRATED<br></div>
+	<div class="sldRow">
+		<div class="sldLab">CCW Lim</div><input class="sld" id="ccwLimSld-0" type="range" value="-3500" max="3500" min="-3500" oninput="sync(0,'ccwLim',1)"> <input class="sldVal" id="ccwLimVal-0" type="number" value="-3500" max="3500" min="-3500" onchange="sync(0,'ccwLim',2)">
+	</div>
+	<div class="sldRow">
+		<div class="sldLab">CW Lim</div><input class="sld" id="cwLimSld-0" type="range" value="3500" max="3500" min="-3500" oninput="sync(0,'cwLim',1)"> <input class="sldVal" id="cwLimVal-0" type="number" value="3500" max="3500" min="-3500" onchange="sync(0,'cwLim',2)">
+	</div>
+	<div class="swRow">
+		<label class="sw" id="sw-0"><input type="checkbox" id="swChck-0"  onchange="openIsCCWUpd(0)"><span class="sldSw"></span></label><span class="swLab" id="swLab-0">Open is CCW</span>
+	</div>
+	<div class="swRow">
+		<label class="sw" id="swMstr-0"><input type="checkbox" id="swMstrChck-0" checked onchange="swMstrUpd(0)"><span class="sldSw"></span></label><span class="swLab" id="swMstrLab-0">Master Node</span>
+	</div>
+	<label class="cfgInpLab" for="devName-0">Device Name:<input class="cfgInp" id="devName-0" value="Vent Damper 2"></label>
+	<label class="cfgInpLab" for="devGroup-0">Group Name:<input class="cfgInp" id="groupName-0" value="NONE"></label>
+	<label class="cfgInpLab" for="devType-0">Device Type:<input class="cfgInp" id="devType-0" value="NONE"></label>
+	<label class="cfgInpLab" >SW Version:<span class="cfgInp" id="devSW-0">1232131-1</span></label>
+	<div class="btnRow">
+	<input class="cfgBtn" id="updCfgBtn-0" type="button" value="UPDATE CONFIG" onclick="sendCmd(0,'config')"><input class="cfgBtn" id="updCfgBtn-0" type="button" value="CALIBRATE" onclick="sendCmd(0,'cal')">
+	</div>
+	<hr>
+</div>
+<div class="btnRow"><input class="tglBtn" id="cfgBtn-0" type="button" value="[-] Hide Config Panel" onclick="toggleCfg(0)"></div>
+</div>
+
+</div>
+</body>
+</html>

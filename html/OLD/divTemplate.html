@@ -1,0 +1,17 @@
+var divContent = "<div class='ui-body ui-body-d'><div data-role='collapsible' data-theme='b' data-content-theme='d' data-collapsed='false'>";
+ divContent += "<h3>" + data.fishyDevices.name + "</h3><br>" + data.fishyDevices.IP + data.fishyDevices.isMaster?"(MASTER)":"" + "<hr>";
+ divContent += "<form><label for='pos-slider-" + data.fishyDevices.deviceID + "'>Set % Open:</label>";
+ divContent += "<input type='range' name='pos-slider-" + data.fishyDevices.deviceID + "' data-popup-enabled='true' id='slider-" + data.fishyDevices.deviceID + "' min='0' max='100' value='50'>";
+ divContent += "<div data-role='controlgroup' data-type='horizontal' data-mini='true'><legend>Move:</legend><button>Full Open</button><button>Full Shut</button><button>Go to % Open</button></form></div>";
+ divContent += "<div data-role='collapsible' data-theme='b' data-content-theme='d' data-collapsed='true'><h3>Configure Device</h3><form><label for='name-" + data.fishyDevices.deviceID + "'>Device Unique Name:</label>";
+ divContent += "<input type='text' name='name-" + data.fishyDevices.deviceID + "' id='name-" + data.fishyDevices.deviceID + "' value=''>";
+ divContent += "<label for='group-" + data.fishyDevices.deviceID + "'>Group Name:</label><input type='text' name='group-" + data.fishyDevices.deviceID + "' id='group-" + data.fishyDevices.deviceID + "' value=''>";
+ divContent += "<label for='openCCWorCW-" + data.fishyDevices.deviceID + "'>Open is:</label>";
+ divContent += "<input type='checkbox' data-role='flipswitch' name='openCCWorCW-" + data.fishyDevices.deviceID + "' id='openCCWorCW-" + data.fishyDevices.deviceID + "' data-on-text='CCW' data-off-text='CW' data-wrapper-class='custom-label-flipswitch'>";
+divContent += "<div data-role='rangeslider' data-track-theme='b'  data-mini='true' >";
+divContent += "<label for='range-3a'><p>Hard/Soft Motor Limits:<a href='#popupInfo' data-rel='popup' data-transition='pop' class='my-tooltip-btn ui-btn ui-alt-icon ui-nodisc-icon ui-btn-inline ui-icon-info ui-btn-icon-notext' title='Learn more'>Learn more</a></p></label>";
+divContent += "<div data-role='popup' id='popupInfo' class='ui-content' data-theme='a' style='max-width:350px;'>";
+divContent += "<p><center>UNCALIBRATED RANGE: -3500 to 3500</center><br>This shows and allows adjusting hard and soft motor position limits. Hard limits are either preset (assumed range of motion) or calibrated (tested limit switch positions). Soft limits are user defined and set the 0% to 100% range of motion.</p></div>";
+divContent += "<input type='range' name='range-3a' id='range-3a' min='-3500' max='3500' value='-2000' >";
+divContent += "<input type='range' name='range-3b' id='range-3b' min='-3500' max='3500' value='2000' ></div>";
+divContent += "<button class='ui-btn ui-btn-a'>Update Configuration</button><button class='ui-btn ui-btn-b'>Recalibrate</button></form></div></div></div>  ";

@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<title>Random AJAX Welcome</title>
+	
+	<script>
+		function getWelcome(){
+				
+			var ajaxRequest = new XMLHttpRequest();
+			ajaxRequest.onreadystatechange = function(){
+			
+				if(ajaxRequest.readyState == 4){
+					//the request is completed, now check its status
+					if(ajaxRequest.status == 200){
+						//turn JSON into object
+						var jsonObj = JSON.parse(ajaxRequest.responseText);
+						
+						//get random object from array
+						var fishyDeviceArray = jsonObj.fishyDevices;
+						var randomIndex = Math.floor(Math.random()*fishyDeviceArray.length);
+						var messageObj = fishyDeviceArray[randomIndex];
+						
+						//use that object to set content and color
+						document.getElementById("welcome").innerHTML = messageObj.IP;
+						document.getElementById("welcome").style.color = messageObj.motorPos;
+						
+					}
+					else{
+						console.log("Status error: " + ajaxRequest.status);
+					}
+				}
+				else{
+					console.log("Ignored readyState: " + ajaxRequest.readyState);
+				}
+			
+			
+			}
+			ajaxRequest.open('GET', 'http://fishyDIY.local/device.JSON');
+			ajaxRequest.send();
+		}
+	
+	</script>	
+</head>
+<body onload="getWelcome()">
+	<div id="welcome"></div>
+	<p>This is an example website.</p>
+</body>
+</html>

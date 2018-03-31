@@ -1,0 +1,35 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>jQuery.getJSON demo</title>
+  <style>
+  img {
+    height: 100px;
+    float: left;
+  }
+  </style>
+  <script src="https://code.jquery.com/jquery-1.10.2.js"></script>
+</head>
+<body>
+ 
+<div id="images"></div>
+ 
+<script>
+(function() {
+  var fishyJSON = 'http://www.fishydiy.com/wp-content/uploads/2018/03/device.JSON_-1.txt';
+  $.getJSON(fishyJSON)
+    .done(function( data ) {
+      $.each( data.fishyDevices, function( i, device ) {
+		console.log( "JSON Data: " + i )
+        $( "<div>" ).attr( "innerHTML", device.IP ).appendTo( "#images" );
+        if ( i === 3 ) {
+          return false;
+        }
+      });
+    });
+})();
+</script>
+ 
+</body>
+</html>

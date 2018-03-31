@@ -1,0 +1,325 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>fishDIY Device Network</title>
+  <meta name='viewport' content='width=device-width, initial-scale=1'>
+  <script src='https://ajax.googleapis.com/ajax/libs/jquery/1.12.4/jquery.min.js'></script>
+<style>
+:root{
+--big-fnt: 25px;
+--mid-fnt: 20px;
+--sml-fnt: 15px;
+--drk-col: #3366cc;
+--lght-col: #ffffff;
+--gry-col: #d3d3d3;
+--cp-sz: 300px;
+--lab-sz: 90px;
+--val-sz: 70px;
+--sld-sz: 130px;
+--rad-sz: 25px;
+--smrad-sz: 7px;
+--thm-sz: 25px;
+--sld-ht: 10px;
+--sld-mar: 5px;
+--sldRow-mar: 4px;
+--sldRow-ht: 30px;
+--btnRow-mar: 2px;
+--btnRow-ht: 30px;
+--btn-ht: 28px;
+--cfg-lab: 120;
+--cfg-inp: 180;
+}
+.flex-container {
+  display: flex;
+  flex-wrap: wrap;
+  background-color: var(--gry-col);
+}
+.flex-container > div {
+  border-radius: var(--rad-sz);
+  background-color: var(--lght-col);
+  width: var(--cp-sz);
+  margin: 5px;
+  vertical-align: middle;
+  text-align: center;
+  line-height: calc(var(--mid-fnt) + 2);
+  font-size: var(--mid-fnt);
+}
+.CP {
+    width: var(--cp-sz);
+}
+.sld {
+position: absolute;
+top: var(--sld-mar); left: var(--lab-sz);
+    -webkit-appearance: none;
+    width: var(--sld-sz); 
+height: var(--sld-ht);
+    background: var(--gry-col);
+    outline: none;
+    opacity: 0.7;
+    -webkit-transition: .2s;
+    transition: opacity .2s;
+}
+.sld:hover {
+    opacity: 1;
+}
+.sld::-webkit-slider-thumb {
+    border-radius: var(--smrad-sz);
+-webkit-appearance: none;
+    appearance: none;
+    width: var(--thm-sz);
+    height: var(--thm-sz);
+    background: var(--drk-col);
+    cursor: pointer;
+}
+.sld::-moz-range-thumb {
+    border-radius: var(--smrad-sz);
+width: var(--thm-sz);
+    height: var(--thm-sz);
+    background: var(--drk-col);
+    cursor: pointer;
+}
+.CPhd, .CPhd2{
+width: var(--cp-sz);
+color: white;
+background: var(--drk-col);
+}
+.CPhd{
+border-radius: var(--rad-sz) var(--rad-sz) 0px 0px;
+font-size:var(--big-fnt);
+}
+.sldRow{
+position: relative;
+top:var(--sldRow-mar);
+width: var(--cp-sz);
+height: var(--sldRow-ht);
+}
+.sldLab{
+position: absolute;
+width:var(--lab-sz);
+font-size: var(--mid-fnt);
+top: 0px; left: 0px;
+}
+.sldVal{
+position: absolute;
+background-color: white;
+border: none;
+font-size: var(--mid-fnt);
+width: var(--val-sz);
+top: 0px; left: calc(var(--cp-sz) - var(--val-sz));
+}
+.btnRow{
+position: relative;
+top:var(--btnRow-mar);
+width: var(--cp-sz);
+height: var(--btnRow-ht);
+}
+.lftBtn,.rgtBtn,.midBtn,.cfgBtn,.tglBtn{
+background-color: var(--drk-col);
+height: var(--btn-ht);
+width: calc(var(--cp-sz)/3);
+    border: 1px solid white; 
+    color: white;
+    text-align: center;
+    text-decoration: none;
+    display: inline-block;
+    cursor: pointer;
+}
+.lftBtn{
+border-radius: var(--smrad-sz) 0px 0px var(--smrad-sz);
+}
+.rgtBtn{
+border-radius: 0px var(--smrad-sz) var(--smrad-sz) 0px;
+}
+.cfgPnl{
+display: none;
+}
+.cfgInpLab{
+width: var(--cfg-lab);
+}
+.cfgInp{
+width: var(--cfg-inp);
+}
+.cfgBtn{
+border-radius: var(--smrad-sz);
+width: 48%;
+font-weight:bold;
+background-color:red;
+}
+.tglBtn{
+border-radius: var(--smrad-sz) var(--smrad-sz) var(--rad-sz) var(--rad-sz);
+width: 100%;
+}
+.sw {
+  position: relative;
+  display: inline-block;
+  width: 60px;
+  height: 34px;
+}
+.sw input {display:none;}
+.swLab{
+position:relative;
+top:-10px;
+}
+.sldSw {
+  position: absolute;
+  cursor: pointer;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: #ccc;
+  -webkit-transition: .4s;
+  transition: .4s;
+  border-radius: 34px;
+}
+.sldSw:before {
+  position: absolute;
+  content: '';
+  height: 26px;
+  width: 26px;
+  left: 4px;
+  bottom: 4px;
+  background-color: white;
+  -webkit-transition: .4s;
+  transition: .4s;
+  border-radius: 50%;}
+input:checked + .sldSw {
+  background-color: #2196F3;
+}
+input:focus + .sldSw {
+  box-shadow: 0 0 1px #2196F3;
+}
+input:checked + .sldSw:before {
+  -webkit-transform: translateX(26px);
+  -ms-transform: translateX(26px);
+  transform: translateX(26px);
+}
+</style>
+<script>
+var fishyNetJSON = '{"fishyDevices":[{"deviceID":"0","IP":"10.203.1.197","dead":"0","isCalibrated":"false","isMaster":"true","motorPos":"0","motorPosAtCCW":"-3500","motorPosAtCW":"3500","motorPosAtFullCCW":"-3500","motorPosAtFullCW":"3500","deviceName":"Vent Damper 2","openIsCCW":"true","port":"8266"} ,{"deviceID":"1","IP":"10.203.1.23","dead":"0","isCalibrated":"true","isMaster":"false","motorPos":"3","motorPosAtCCW":"3","motorPosAtCW":"3270","motorPosAtFullCCW":"0","motorPosAtFullCW":"3273","deviceName":"Vent Damper 1","openIsCCW":"true","port":"8266"} ,{"deviceID":"2","IP":"10.203.1.145","dead":"0","isCalibrated":"false","isMaster":"false","motorPos":"0","motorPosAtCCW":"-3500","motorPosAtCW":"3500","motorPosAtFullCCW":"-3500","motorPosAtFullCW":"3500","deviceName":"Vent Damper 3","openIsCCW":"false","port":"8266"} ,{"deviceID":"3","IP":"0.0.0.0","dead":"1","isCalibrated":"false","isMaster":"false","motorPos":"0","motorPosAtCCW":"-3497","motorPosAtCW":"3497","motorPosAtFullCCW":"-3500","motorPosAtFullCW":"3500","deviceName":"Default","openIsCCW":"true","port":"8266"} ,{"deviceID":"4","IP":"0.0.0.0","dead":"1","isCalibrated":"false","isMaster":"false","motorPos":"0","motorPosAtCCW":"-3497","motorPosAtCW":"3497","motorPosAtFullCCW":"-3500","motorPosAtFullCW":"3500","deviceName":"Default","openIsCCW":"true","port":"8266"} ,{"deviceID":"5","IP":"0.0.0.0","dead":"1","isCalibrated":"false","isMaster":"false","motorPos":"0","motorPosAtCCW":"-3497","motorPosAtCW":"3497","motorPosAtFullCCW":"-3500","motorPosAtFullCW":"3500","deviceName":"Default","openIsCCW":"true","port":"8266"} ,{"deviceID":"6","IP":"0.0.0.0","dead":"1","isCalibrated":"false","isMaster":"false","motorPos":"0","motorPosAtCCW":"-3497","motorPosAtCW":"3497","motorPosAtFullCCW":"-3500","motorPosAtFullCW":"3500","deviceName":"Default","openIsCCW":"true","port":"8266"} ,{"deviceID":"7","IP":"0.0.0.0","dead":"1","isCalibrated":"false","isMaster":"false","motorPos":"0","motorPosAtCCW":"-3497","motorPosAtCW":"3497","motorPosAtFullCCW":"-3500","motorPosAtFullCW":"3500","deviceName":"Default","openIsCCW":"true","port":"8266"} ,{"deviceID":"8","IP":"0.0.0.0","dead":"1","isCalibrated":"false","isMaster":"false","motorPos":"0","motorPosAtCCW":"-3497","motorPosAtCW":"3497","motorPosAtFullCCW":"-3500","motorPosAtFullCW":"3500","deviceName":"Default","openIsCCW":"true","port":"8266"} ,{"deviceID":"9","IP":"0.0.0.0","dead":"1","isCalibrated":"false","isMaster":"false","motorPos":"0","motorPosAtCCW":"-3497","motorPosAtCW":"3497","motorPosAtFullCCW":"-3500","motorPosAtFullCW":"3500","deviceName":"Default","openIsCCW":"true","port":"8266"} ,{"deviceID":"10","IP":"0.0.0.0","dead":"1","isCalibrated":"false","isMaster":"false","motorPos":"0","motorPosAtCCW":"-3497","motorPosAtCW":"3497","motorPosAtFullCCW":"-3500","motorPosAtFullCW":"3500","deviceName":"Default","openIsCCW":"true","port":"8266"} ,{"deviceID":"11","IP":"0.0.0.0","dead":"1","isCalibrated":"false","isMaster":"false","motorPos":"0","motorPosAtCCW":"-3497","motorPosAtCW":"3497","motorPosAtFullCCW":"-3500","motorPosAtFullCW":"3500","deviceName":"Default","openIsCCW":"true","port":"8266"} ]}';
+</script>
+</head>
+<body>
+<h1>fishyDevice Control Panel</h1>
+<div class='flex-container' id='divToAdd'>
+</div>
+<script>
+function toggleCfg(num){
+var btn = document.getElementById('cfgBtn-'+num);
+var pnl = document.getElementById('cfgPnl-'+num);
+console.log(btn.value);
+if(pnl.style.display=='block') {
+pnl.style.display = 'none';
+btn.value = '[+] Show Config Panel';
+}else{
+pnl.style.display = 'block';
+btn.value = '[-] Hide Config Panel';
+}
+}
+function sync(num, name, what) {
+  var sliderID = name + 'Sld-' + num;
+  var valID = name + 'Val-' + num;
+  var slider = document.getElementById(sliderID);
+  var val = document.getElementById(valID);
+  if (what == 1) {
+    val.value = slider.value;
+  } else {
+slider.value = val.value;
+  }
+}
+function openIsCCWUpd(num){
+var label = document.getElementById('swLab-'+num);
+var sw = document.getElementById('swChck-'+num);
+if(sw.checked == true) {label.innerHTML = 'Open is CCW';} else {label.innerHTML = 'Open is CW';}
+}
+function sendCmd(num,command){
+var mstrIP=window.location.hostname;
+var remIP=document.getElementById('targetIP-'+num).value;
+var cmd='';
+var pos;
+if(command=='O'){
+cmd='open';
+}else if(command=='C'){
+cmd='close';
+}else if(command=='cal'){
+cmd='calibrate';
+}else if(command=='G'){
+cmd='goto';
+pos=document.getElementById('pctOpenVal-'+num).value;
+while(pos.length<3) pos = '0' + pos;
+cmd+=pos;
+}
+var query=mstrIP+'/genericArgs?IPCommand='+remIP+';'+cmd;
+alert(query);
+var jqxhr = $.get(query, function() {
+alert( 'success' );
+});
+}
+function updateCfg(i){
+alert('not yet implemented.');
+}
+function pollJSON(){
+$.post('/device.JSON') .done(function(data) {
+var DA = data.fishyDevices;
+var mstrIP = window.location.hostname;
+var addDiv = '';
+var mstrTxt='';
+var calTxt='';
+var chckTxt='';
+$.each( DA, function( i, d ) {
+if(d.dead=='0'){
+if(d.isMaster=='true'){mstrTxt='MASTER ';}else{mstrTxt='';}
+if(d.isCalibrated=='false'){calTxt='LIMITS ARE UNCALIBRATED<br>';}else{calTxt='';}
+if(d.openIsCCW=='true'){chckTxt='checked';}else{chckTxt='';}
+document.getElementById('pctOpenVal-'+num).value = posPct(d.motorPos,d.motorPosAtCCW,d.motorPosAtCW);
+document.getElementById('pctOpenSld-'+num).value = posPct(d.motorPos,d.motorPosAtCCW,d.motorPosAtCW);
+document.getElementById('ccwLimVal-'+num).value = d.motorPosAtCCW;
+document.getElementById('ccwLimVal-'+num).min = d.motorPosAtFullCCW;
+document.getElementById('ccwLimVal-'+num).max = d.motorPosAtFullCW;
+document.getElementById('ccwLimSld-'+num).value = d.motorPosAtCCW;
+document.getElementById('ccwLimSld-'+num).min = d.motorPosAtFullCCW;
+document.getElementById('ccwLimSld-'+num).max = d.motorPosAtFullCW;
+document.getElementById('cwLimVal-'+num).value = d.motorPosAtCW;
+document.getElementById('cwLimVal-'+num).min = d.motorPosAtFullCCW;
+document.getElementById('cwLimVal-'+num).max = d.motorPosAtFullCW;
+document.getElementById('cwLimSld-'+num).value = d.motorPosAtCW;
+document.getElementById('cwLimSld-'+num).min = d.motorPosAtFullCCW;
+document.getElementById('cwLimSld-'+num).max = d.motorPosAtFullCW;
+document.getElementById('calTxt-'+num).innerHTML = calTxt;
+}
+});
+}) .always(function() { setTimeout(pollJSON, 15000); });
+}
+function posPct(motPos,motPosCCW,motPosCW){
+return Math.round(100*((motPos-motPosCCW)/(motPosCW-motPosCCW)));
+}
+function buildPage() {
+ // $.getJSON( '/device.JSON', function( data ) {
+  var data = JSON.parse(fishyNetJSON); 
+  var DA = data.fishyDevices;
+  var items = [];
+  var mstrIP = window.location.hostname;
+  var addDiv = '';
+  var mstrTxt='';
+  var calTxt='';
+  var chckTxt='';
+  $.each( DA, function( i, d ) {
+if(d.isMaster=='true'){mstrTxt='MASTER ';}else{mstrTxt='';}
+if(d.isCalibrated=='false'){calTxt='LIMITS ARE UNCALIBRATED<br>';}else{calTxt='';}
+if(d.openIsCCW=='true'){chckTxt='checked';}else{chckTxt='';}
+if(d.dead=='0'){
+addDiv = '<div class=CP><input type=hidden id=targetIP-'+i+' value='+d.IP+'><div class=CPhd>'+d.deviceName+'</div><div class=CPhd2>('+mstrTxt+d.IP+')</div><div class=sldRow><div class=sldLab>% Open</div><input class=sld id=pctOpenSld-'+i+' type=range value='+posPct(d.motorPos,d.motorPosAtCCW,d.motorPosAtCW)+' max=100 min=0 oninput=sync('+i+',\'pctOpen\',1)> <input class=sldVal id=pctOpenVal-'+i+' type=number value='+posPct(d.motorPos,d.motorPosAtCCW,d.motorPosAtCW)+' max=100 min=0 onchange=sync('+i+',\'pctOpen\',2)></div><div class=btnRow><input class=lftBtn id=fobtn-'+i+' type=button value=\'Full Open\' onclick=sendCmd('+i+',\'O\')><input class=midBtn id=pobtn-'+i+' type=button value=\'Go % Open\'onclick=sendCmd('+i+',\'G\')><input class=rgtBtn id=fcbtn-'+i+' type=button value=\'Full Close\'onclick=sendCmd('+i+',\'C\')></div><div class=cfgPnl id=cfgPnl-'+i+'><hr><span id=calTxt-'+i+'>'+calTxt+'</span><div class=sldRow><div class=sldLab>CCW Lim</div><input class=sld id=ccwLimSld-'+i+' type=range value='+d.motorPosAtCCW+' max='+d.motorPosAtFullCW+' min='+d.motorPosAtFullCCW+' oninput=sync('+i+',\'ccwLim\',1)> <input class=sldVal id=ccwLimVal-'+i+' type=number value='+d.motorPosAtCCW+' max='+d.motorPosAtFullCW+' min='+d.motorPosAtFullCCW+' onchange=sync('+i+',\'ccwLim\',2)></div><div class=sldRow><div class=sldLab>CW Lim</div><input class=sld id=cwLimSld-'+i+' type=range value='+d.motorPosAtCW+' max='+d.motorPosAtFullCW+' min='+d.motorPosAtFullCCW+' oninput=sync('+i+',\'cwLim\',1)> <input class=sldVal id=cwLimVal-'+i+' type=number value='+d.motorPosAtCW+' max='+d.motorPosAtFullCW+' min='+d.motorPosAtFullCCW+' onchange=sync('+i+',\'cwLim\',2)></div><div></div><div class=swRow><label class=sw id=sw-'+i+'><input type=checkbox id=swChck-'+i+' '+chckTxt+' onchange=\'openIsCCWUpd('+i+')\' checked><span class=sldSw></span></label><span class=swLab id=swLab-'+i+'>Open is CCW</span></div><label class=cfgInpLab for=devName-'+i+'>Device Name:</label> <input class=cfgInp id=devName-'+i+' value='+d.deviceName+'> <div class=btnRow><input class=cfgBtn id=updCfgBtn-'+i+' type=button value=\'UPDATE CONFIG\'onclick=updateCfg('+i+')><input class=cfgBtn id=updCfgBtn-'+i+' type=button value=CALIBRATE onclick=sendCmd('+i+',\'cal\')><br></div><hr></div><div class=btnRow><input class=tglBtn id=cfgBtn-'+i+' type=button value=\'[+] Show Config Panel\'onclick=toggleCfg('+i+')></div></div>';
+items.push(addDiv);
+}
+  });
+  $( '<div/>', {
+    'class': 'flex-container',
+    html: items.join('')
+  }).appendTo( 'body');
+  pollJSON();
+ // });
+}
+window.onload = buildPage();
+</script>
+</body>
+</html>

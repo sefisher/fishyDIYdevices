@@ -299,7 +299,7 @@ the code do the following:
     ------------------------END OF PART 3, START OF PART 4 (SCRIPTS)--------------------------------
     --------------------------------------------------------------------------------------------- -->
 
-    <span>Control Panel</span>
+    <span >Control Panel</span>
     </div>
     <script>
         function toggleCfg(num) {
@@ -407,6 +407,7 @@ the code do the following:
             });
         }
         function posPct(motPos, motPosCCW, motPosCW) {
+            if(motPosCW-motPosCCW==0) return 0;
             return Math.round(100 * ((motPos - motPosCCW) / (motPosCW - motPosCCW)));
         }
         function buildPage() {
@@ -434,7 +435,7 @@ the code do the following:
                         "</div>" +
                         "<div class='btnRow'><input class='lftBtn' id='fobtn-" + ii + "' type='button' value='Full Open' onclick=sendCmd(" + ii + ",'O')><input class='midBtn' id='pobtn-" + ii + "' type='button' value='Go % Open' onclick=sendCmd(" + ii + ",'G')><input class='rgtBtn' id='fcbtn-" + ii + "' type='button' value='Full Close' onclick=sendCmd(" + ii + ",'C')></div>" +
                         "<div class='cfgPnl' id='cfgPnl-" + ii + "' style='display: hidden;'><hr>" +
-                        "<label class='cfgInpLab' for='devNote-" + ii + "'>Note:<input class='cfgInp' id='note-" + ii + "' value='" + d.note + "'></label><div class='calTxt' id='calTxt-" + ii + "'>" + calTxt + "</div>" +
+                        "<label class='cfgInpLab' for='devNote-" + ii + "'>Note:<input class='cfgInp' id='note-" + ii + "' value='" + d.note + "' maxlength='55'></label><div class='calTxt' id='calTxt-" + ii + "'>" + calTxt + "</div>" +
                         "	<div class='sldRow'>" +
                         "		<div class='sldLab'>CCW Lim</div><input class='sld' id='ccwLimSld-" + ii + "' type='range' value='" + d.motorPosAtCCW + "' max='" + d.motorPosAtFullCW + "' min='" + d.motorPosAtFullCCW + "' oninput=sync(" + ii + ",'ccwLim',1)> <input class='sldVal' id='ccwLimVal-" + ii + "' type='number' value='" + d.motorPosAtCCW + "' max='" + d.motorPosAtFullCW + "' min='" + d.motorPosAtFullCCW + "' onchange=sync(" + ii + ",'ccwLim',2)>" +
                         "	</div>" +
@@ -447,9 +448,9 @@ the code do the following:
                         "	<div class='swRow'>" +
                         "		<label class='sw' id='swMstr-" + ii + "'><input type='checkbox' id='swMstrChck-" + ii + "' " + mstrChckTxt + " onchange=swMstrUpd(" + ii + ")><span class='sldSw'></span></label><span class='swLab' id='swMstrLab-" + ii + "'>Master Node</span>" +
                         "	</div>" +
-                        "	<label class='cfgInpLab' for='devName-" + ii + "'>Device Name:<input class='cfgInp' id='devName-" + ii + "' value='" + d.deviceName + "'></label>" +
-                        "	<label class='cfgInpLab' for='devGroup-" + ii + "'>Group Name:<input class='cfgInp' id='groupName-" + ii + "' value='" + d.group + "'></label>" +
-                        "	<label class='cfgInpLab' for='devType-" + ii + "'>Device Type:<input class='cfgInp' id='devType-" + ii + "' value='" + d.devType + "'></label>" +
+                        "	<label class='cfgInpLab' for='devName-" + ii + "'>Device Name:<input class='cfgInp' id='devName-" + ii + "' value='" + d.deviceName + "' maxlength='40'></label>" +
+                        "	<label class='cfgInpLab' for='devGroup-" + ii + "'>Group Name:<input class='cfgInp' id='groupName-" + ii + "' value='" + d.group + "' maxlength='40'></label>" +
+                        "	<label class='cfgInpLab' for='devType-" + ii + "'>Device Type:<input class='cfgInp' id='devType-" + ii + "' value='" + d.devType + "' maxlength='20'></label>" +
                         "	<label class='cfgInpLab' >SW Version:<span class='cfgInp' id='devSWver-" + ii + "'>" + d.swVer + "</span></label>" +
                         "	<div class='btnRow'>" +
                         "	<input class='cfgBtn' id='updCfgBtn-" + ii + "' type='button' value='UPDATE CONFIG' onclick=sendCmd(" + ii + ",'config')><input class='cfgBtn' id='updCfgBtn-" + ii + "' type='button' value='CALIBRATE' onclick=sendCmd(" + ii + ",'cal')>" +

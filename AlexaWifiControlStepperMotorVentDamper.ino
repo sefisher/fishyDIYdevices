@@ -76,6 +76,7 @@ WiFiManager -  //https://github.com/tzapu/WiFiManager
 
 //------------------------------------------------------------------
 
+#define MAXCMDSZ 300  
 
 // Initialize with pin sequence IN1-IN3-IN2-IN4 for using the AccelStepper with 28BYJ-48
 #define HALFSTEP 8
@@ -154,6 +155,7 @@ typedef struct fishyDevice
 
 //188 byte struct for storing personailty data in EEPROM
 //remember a byte is needed for the string terminations
+#define EEPROMsz 188
 struct EEPROMdata
 {
 	char initstr[13] = "";
@@ -252,16 +254,22 @@ void setup()
 		Serial.println("[SETUP] The personality data needs " + String(sizeof(EEPROMdata)) + " Bytes in EEPROM.");
 	}
 
-	EEPROM.begin(188);
+	EEPROM.begin(EEPROMsz);
 
 	// load EEPROM data into RAM, see it
 	EEPROM.get(addr, EEPROMdata);
+	
+
 	if (DEBUG_MESSAGES)
 	{
 		Serial.println("[SETUP] Found: Init string: "+String(EEPROMdata.initstr)+", Name string: "+String(EEPROMdata.namestr)+", Master: " + String(EEPROMdata.master?"True":"False")+", Group name string: "+String(EEPROMdata.groupstr)+",Type string: "+String(EEPROMdata.typestr)+",Note string: "+String(EEPROMdata.note)+", OpenIsCCW: "+String(EEPROMdata.openIsCCW)+", SW Version string: "+String(EEPROMdata.swVer));
 
 		Serial.println("[SETUP] New init string: " + String(INITIALIZE) + ". Stored init string: " + String(EEPROMdata.initstr));
 	}
+	//always show the latest SW_VER
+	strncpy(EEPROMdata.swVer, SW_VER, 11);
+	if (DEBUG_MESSAGES)
+	{		Serial.println("[SETUP] Actual swVER: " + String(EEPROMdata.swVer));}
 
 	// change EEPROMdata in RAM
 	if (String(INITIALIZE) != String(EEPROMdata.initstr))
@@ -276,7 +284,7 @@ void setup()
 		strncpy(EEPROMdata.typestr, CUSTOM_DEVICE_TYPE, 21);
 		strncpy(EEPROMdata.note, CUSTOM_NOTE, 56);
 		strncpy(EEPROMdata.openIsCCW, OPEN_IS_CCW_OR_CW, 4);
-		strncpy(EEPROMdata.swVer, SW_VER, 11);
+		
 		if (MASTER_NODE)
 		{
 			if (DEBUG_MESSAGES)
@@ -368,7 +376,7 @@ void setup()
 void UDPprocessPacket()
 {
 	//USED FOR UDP COMMS
-	char packetBuffer[255]; //buffer to hold incoming packet
+	char packetBuffer[MAXCMDSZ]; //buffer to hold incoming packet
 
 	// if there's data available, read a packet
 	int packetSize = Udp.parsePacket();
@@ -385,7 +393,7 @@ void UDPprocessPacket()
 			Serial.println(Udp.remotePort());
 		}
 		// read the packet into packetBufffer
-		int len = Udp.read(packetBuffer, 255);
+		int len = Udp.read(packetBuffer, MAXCMDSZ);
 		if (len > 0)
 		{
 			packetBuffer[len] = 0;
@@ -534,7 +542,6 @@ fishyDevice makeMyFishyDevice()
 	return holder;
 }
 //broadcast on subnet to see who will respond
-//TODO - make the "ANYONE_THERE" a unique command to avoid collisions with non fishDIY devices
 void UDPbroadcast()
 {
 	IPAddress broadcast = WiFi.localIP();
@@ -569,11 +576,27 @@ void UDPpollReply(IPAddress remote)
 
 	Udp.beginPacket(remote, UDP_LOCAL_PORT);
 
-	//send fishyDevice data as {ip,isCalibrated,isMaster, motorPos,motorPosAtCCW,motorPosAtCW,motorPosAtFullCCW,motorPosAtFullCW,port,name}
-
-	response += "{" + holder.ip.toString() + "," + String(holder.isCalibrated ? "true" : "false") + "," + String(holder.isMaster ? "true" : "false") + "," + String(holder.motorPos) + "," +
-				String(holder.motorPosAtCCW) + "," + String(holder.motorPosAtCW) + "," + String(holder.motorPosAtFullCCW) + "," +
-				String(holder.motorPosAtFullCW) + "," + String(holder.name) + "," + String(holder.openIsCCW ? "true" : "false") + "," + String(holder.port) + "}";
+/* 
+send fishyDevice data.
+Note - this is parsed by UDPparsePollResponse and paralleled by getJSON; 
+if adding elements all three need updating.
+{ip,isCalibrated,isMaster,motorPos,motorPosAtCCW,motorPosAtCW,motorPosAtFullCCW,motorPosAtFullCW,name,openIsCCW,port,group,note,swVer,devType}
+*/
+	response += "{" + holder.ip.toString() + "," + 
+			String(holder.isCalibrated ? "true" : "false") + "," +
+			String(holder.isMaster ? "true" : "false") + "," + 
+			String(holder.motorPos) + "," +
+			String(holder.motorPosAtCCW) + "," + 
+			String(holder.motorPosAtCW) + "," + 
+			String(holder.motorPosAtFullCCW) + "," +
+			String(holder.motorPosAtFullCW) + "," + 
+			String(holder.name) + ","  +  
+			String(holder.openIsCCW ? "true" : "false") + "," + 
+			String(holder.port) + "," + 
+			String(holder.group) + "," +
+			String(holder.note) + "," + 
+			String(holder.swVer) + "," + 
+			String(holder.devType) + "}";
 
 	Udp.write(response.c_str());
 	Udp.endPacket();
@@ -590,7 +613,12 @@ void UDPparsePollResponse(String responseIn, IPAddress remote)
 {
 	if (EEPROMdata.master)
 	{
-
+/* 
+parse fishyDevice data.
+Note - this data set is sent by UDPparsePollResponse and getJSON; 
+it is also parsed by scripts in webresources.h if adding elements all three need updating:
+{ip,isCalibrated,isMaster,motorPos,motorPosAtCCW,motorPosAtCW,motorPosAtFullCCW,motorPosAtFullCW,name,openIsCCW,port,group,note,swVer,devType}
+*/
 		String response = responseIn.substring(14); //strip off "POLL RESPONSE"
 		fishyDevice holder;
 		holder.dead = false;
@@ -704,15 +732,160 @@ void UDPparsePollResponse(String responseIn, IPAddress remote)
 			Serial.println("[UDPparsePollResponse] strPort: " + String(holder.port));
 		}
 
+		//group
+		strStrt = strStop + 1;
+		strStop = response.indexOf(",", strStrt);
+		holder.group = response.substring(strStrt, strStop - 1).toInt(); //drop "}"
+		if (DEBUG_MESSAGES && UDP_PARSE_MESSAGES)
+		{
+			Serial.println("[UDPparsePollResponse] strGroup: " + String(holder.group));
+		}
+
+		//note
+		strStrt = strStop + 1;
+		strStop = response.indexOf(",", strStrt);
+		holder.note = response.substring(strStrt, strStop - 1).toInt(); //drop "}"
+		if (DEBUG_MESSAGES && UDP_PARSE_MESSAGES)
+		{
+			Serial.println("[UDPparsePollResponse] strnote: " + String(holder.note));
+		}
+
+		//swVer
+		strStrt = strStop + 1;
+		strStop = response.indexOf(",", strStrt);
+		holder.swVer = response.substring(strStrt, strStop - 1).toInt(); //drop "}"
+		if (DEBUG_MESSAGES && UDP_PARSE_MESSAGES)
+		{
+			Serial.println("[UDPparsePollResponse] strswVer: " + String(holder.swVer));
+		}
+
+		//devType
+		strStrt = strStop + 1;
+		strStop = response.indexOf(",", strStrt);
+		holder.devType = response.substring(strStrt, strStop - 1).toInt(); //drop "}"
+		if (DEBUG_MESSAGES && UDP_PARSE_MESSAGES)
+		{
+			Serial.println("[UDPparsePollResponse] strdevType: " + String(holder.devType));
+		}
+
 		dealWithThisNode(holder);
 	}
+}
+
+void UDPparseConfigResponse(String responseIn, IPAddress remote){
+	String response = responseIn.substring(7); //strip off "CONFIG"
+	int strStrt, strStop;
+
+/*
+		parseString in this order: {ccwLim, cwLim, openIsCCW, isMaster, devName, groupName, devType, note}
+		strncpy(EEPROMdata.initstr, INITIALIZE, 13);
+		strncpy(EEPROMdata.namestr, CUSTOM_DEVICE_NAME, 41);
+		strncpy(EEPROMdata.groupstr, CUSTOM_GROUP_NAME, 41);
+		strncpy(EEPROMdata.typestr, CUSTOM_DEVICE_TYPE, 21);
+		strncpy(EEPROMdata.note, CUSTOM_NOTE, 56);
+		strncpy(EEPROMdata.openIsCCW, OPEN_IS_CCW_OR_CW, 4);
+*/
+
+	if (DEBUG_MESSAGES && UDP_PARSE_MESSAGES)
+	{
+		Serial.println("[UDPparseConfigResponse] Got this: " + responseIn);
+	}	
+	//ccwLim
+	strStrt = response.indexOf("=", 1)+1;
+	strStop = response.indexOf(";", strStrt);
+	if (DEBUG_MESSAGES && UDP_PARSE_MESSAGES)
+	{
+		Serial.print("[UDPparseConfigResponse] ccwLim: ");
+		Serial.println(response.substring(strStrt, strStop));
+	}
+	//cwLim
+	strStrt = response.indexOf("=", strStop)+1;
+	strStop = response.indexOf(";", strStrt);
+	if (DEBUG_MESSAGES && UDP_PARSE_MESSAGES)
+	{
+		Serial.print("[UDPparseConfigResponse] cwLim: ");
+		Serial.println(response.substring(strStrt, strStop));
+	}
+	//openIsCCW
+	strStrt = response.indexOf("=", strStop)+1;
+	strStop = response.indexOf(";", strStrt);
+	if (DEBUG_MESSAGES && UDP_PARSE_MESSAGES)
+	{
+		Serial.print("[UDPparseConfigResponse] openIsCCW: ");
+		Serial.println(response.substring(strStrt, strStop));
+	}
+	strncpy(EEPROMdata.openIsCCW, (response.substring(strStrt, strStop) == "false") ? "CW" : "CCW", 4);
+	if (DEBUG_MESSAGES && UDP_PARSE_MESSAGES)
+	{
+		Serial.print("[UDPparseConfigResponse] openIsCCW: ");
+		Serial.println(EEPROMdata.openIsCCW ? "true" : "false");
+	}
+	//isMaster
+	strStrt = response.indexOf("=", strStop)+1;
+	strStop = response.indexOf(";", strStrt);
+		if (DEBUG_MESSAGES && UDP_PARSE_MESSAGES)
+	{
+		Serial.print("[UDPparseConfigResponse] isMaster: ");
+		Serial.println(response.substring(strStrt, strStop));
+	}
+	EEPROMdata.master = (response.substring(strStrt, strStop) == "false") ? false : true;
+	if (DEBUG_MESSAGES && UDP_PARSE_MESSAGES)
+	{
+		Serial.print("[UDPparseConfigResponse] isMaster: ");
+		Serial.println(EEPROMdata.master ? "true" : "false");
+	}
+	//devName
+	strStrt = response.indexOf("=", strStop)+1;
+	strStop = response.indexOf(";", strStrt);
+	strncpy(EEPROMdata.namestr, response.substring(strStrt, strStop).c_str(), 41);
+	//EEPROMdata.namestr = response.substring(strStrt, strStop);
+	if (DEBUG_MESSAGES && UDP_PARSE_MESSAGES)
+	{
+		Serial.println("[UDPparseConfigResponse] strName: " + String(EEPROMdata.namestr));
+	}
+	//groupName
+	strStrt = response.indexOf("=", strStop)+1;
+	strStop = response.indexOf(";", strStrt);
+	strncpy(EEPROMdata.groupstr, response.substring(strStrt, strStop).c_str(), 41);
+	//EEPROMdata.groupstr = response.substring(strStrt, strStop);
+	if (DEBUG_MESSAGES && UDP_PARSE_MESSAGES)
+	{
+		Serial.println("[UDPparseConfigResponse] strName: " + String(EEPROMdata.groupstr));
+	}
+	//devType
+	strStrt = response.indexOf("=", strStop)+1;
+	strStop = response.indexOf(";", strStrt);
+	strncpy(EEPROMdata.typestr, response.substring(strStrt, strStop).c_str(), 21);
+	//EEPROMdata.typestr = response.substring(strStrt, strStop);
+	if (DEBUG_MESSAGES && UDP_PARSE_MESSAGES)
+	{
+		Serial.println("[UDPparseConfigResponse] strName: " + String(EEPROMdata.typestr));
+	}
+	//note
+	strStrt = response.indexOf("=", strStop)+1;
+	strStop = response.indexOf(";", strStrt);
+	strncpy(EEPROMdata.note, response.substring(strStrt, strStop).c_str(), 56);
+	//EEPROMdata.note = response.substring(strStrt, strStop);
+	if (DEBUG_MESSAGES && UDP_PARSE_MESSAGES)
+	{
+		Serial.println("[UDPparseConfigResponse] strName: " + String(EEPROMdata.note));
+	}
+
+	//TODO - I'm HERE - need to test the EEPROM storage
+	// - need to test masterStr == 0.0.0.0 allowing serving
+
+	uint addr = 0;
+	EEPROM.begin(EEPROMsz);
+	// replace values in EEPROM
+	EEPROM.put(addr, EEPROMdata);
+	EEPROM.commit();
 }
 
 //Parses string command and then executes the move.
 //cmd will be of form goto### (e.g., goto034)
 void executeGoto(String cmd)
 {
-	int newPercentOpen = cmd.substring(4).toInt(); //STRIP OFF GOTO
+	int newPercentOpen = whichWayGoto(cmd.substring(4).toInt()); //STRIP OFF GOTO
 	if (DEBUG_MESSAGES)
 	{
 		Serial.printf("[executeGoto] Going to percent open: %d\n", newPercentOpen);
@@ -722,13 +895,14 @@ void executeGoto(String cmd)
 //execute a WiFi received state change
 void executeState(bool state)
 {
+	bool correctedState =whichWay(state);
 	if (DEBUG_MESSAGES)
 	{
 		Serial.printf("[executeState] Going to state: %s\n", state ? "ON" : "OFF");
 	}
 	deviceState = state;
 
-	if (state)
+	if (correctedState)
 	{
 		deviceTrueState = openActuator();
 	}
@@ -1202,7 +1376,7 @@ void loop()
 		//take serial commands in
 		if (Serial.available() > 0)
 		{
-			char inputMsg[20];
+			char inputMsg[MAXCMDSZ];
 			int sizeRead;
 			sizeRead = Serial.readBytesUntil('\r', inputMsg, sizeof(inputMsg));
 			if (sizeRead)
@@ -1226,8 +1400,26 @@ void loop()
 		}
 	}
 }
-
-void executeCommands(char inputMsg[20], IPAddress remote)
+//this function replaces open with close if 
+//CW is defined as open by openIsCCW
+bool whichWay(String in){
+	bool ret = (in=="open")?true:false;
+	if(EEPROM.openIsCCW=="CCW"){
+		ret = !ret;
+	}
+	return ret;
+}
+//this function changes goto commmand values to their
+//complement (100-original value) if CW is defined as 
+//open by openIsCCW
+int whichWayGoto(int in){
+	String ret=in;
+	if(EEPROM.openIsCCW=="CCW"){
+		ret = 100-ret;
+	}
+	return ret;
+}
+void executeCommands(char inputMsg[MAXCMDSZ], IPAddress remote)
 {
 	String cmd = String(inputMsg);
 	cmd.toLowerCase();
@@ -1312,9 +1504,13 @@ void executeCommands(char inputMsg[20], IPAddress remote)
 		}
 		masterIP = remote; //update the master IP
 	}
-	else if (cmd.startsWith("initialize"))
+	else if (cmd.startsWith("config"))
 	{
-		//TODO - make the device look for an EEPROM variable defining the CUSTOM_DEVICE_NAME and MASTER_NODE
+		if (DEBUG_MESSAGES)
+		{
+			Serial.println("[executeCommands] Commanded CONFIG");
+		}
+		UDPparseConfigResponse(String(inputMsg), remote); //want the original case for this
 	}
 	else
 	{
@@ -1513,6 +1709,13 @@ String getJSON()
 			{
 				temp += ",";
 			}
+/* 
+put fishyDevice data in a string.
+Note - this is parsed by scripts in webresources.h 
+and paralleled by UDPpollReply; 
+if adding elements all these need updating.
+{ip,isCalibrated,isMaster,motorPos,motorPosAtCCW,motorPosAtCW,motorPosAtFullCCW,motorPosAtFullCW,name,openIsCCW,port,group,note,swVer,devType}
+*/
 			temp += "{\"deviceID\":\"" + String(i) + "\",\"IP\":\"" + deviceArray[i].ip.toString() + "\",\"dead\":\"" + String(deviceArray[i].dead) +
 					"\",\"isCalibrated\":\"" + String(deviceArray[i].isCalibrated ? "true" : "false") +
 					"\",\"isMaster\":\"" + String(deviceArray[i].isMaster ? "true" : "false") + "\",\"motorPos\":\"" + String(deviceArray[i].motorPos) +
@@ -1533,7 +1736,7 @@ void handleGenericArgs()
 	{
 		IPAddress IPtoSend;
 		String IPforCommand = "";
-		char command[20] = "";
+		char command[MAXCMDSZ] = "";
 		String message = "Number of args received:";
 		message += httpServer.args(); //Get number of parameters
 		message += "\n";			  //Add a new line
@@ -1547,8 +1750,6 @@ void handleGenericArgs()
 			message += httpServer.argName(i) + ": "; //Get the name of the parameter
 			message += httpServer.arg(i) + "\n";	 //Get the value of the parameter
 
-			//IM HERE - Troubleshooting - command not executing
-			//this argument should have an IPaddress followed by a ';' followed by a command for that address
 			if (httpServer.argName(i) == "IPCommand")
 			{
 				String response = httpServer.arg(i);
@@ -1570,7 +1771,8 @@ void handleGenericArgs()
 					Serial.println("[handleGenericArgs] strIP:response " + IPtoSend.toString() + ":" + response);
 				}
 				message += "[handleGenericArgs] strIP:response " + IPtoSend.toString() + ":" + response;
-				httpServer.arg(i).toCharArray(command, 20);
+				
+				response.toCharArray(command, MAXCMDSZ);
 				if (IPtoSend == WiFi.localIP())
 				{
 					executeCommands(command, WiFi.localIP());
@@ -1592,7 +1794,8 @@ void handleGenericArgs()
 }
 void handleRoot()
 {
-	if (EEPROMdata.master)
+	//only process the webrequest if you are the master or if there is no master
+	if (EEPROMdata.master || masterIP.toString()=="0.0.0.0")
 	{
 		if (DEBUG_MESSAGES)
 		{

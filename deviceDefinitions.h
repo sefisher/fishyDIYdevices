@@ -47,7 +47,6 @@
 //IF DESIRED, ADD A NOTE ABOUT THIS DEVICE
 //LIMITED to 55 alpanumeric characters 
 //The note is displayed on the control panel for the device.
-//TODO - use this option
 #define CUSTOM_NOTE ""
 
 //----------------------------OTHER DEVICES SETTINGS-------------------------------//

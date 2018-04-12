@@ -29,11 +29,12 @@ Thanks for all the coders posting online to make this possible; these are a few 
 fauxmoESP - https://bitbucket.org/xoseperez/fauxmoesp
 AccelStepper - http://www.airspayce.com/mikem/arduino/AccelStepper/index.html
 WiFiManager -  //https://github.com/tzapu/WiFiManager
+
+Notes:
+- Use ESPfauxmo board version 2.3.0; newer versions don't seem to be discoverable via updated Alexa devices
 */
 
 #include <Arduino.h>
-#include "deviceDefinitions.h"
-#include "webresources.h"
 #include <ESP8266WiFi.h>
 #include <ESP8266mDNS.h>
 #include <ESP8266WebServer.h>
@@ -45,197 +46,13 @@ WiFiManager -  //https://github.com/tzapu/WiFiManager
 #include <AccelStepper.h>
 #include <EEPROM.h>
 
-//Stepper Motor Full Swing Settings----------------------------------------------
-// This sets the full stroke first "guess" for the range of motion between physical
-// limit switches.  For the 90degree swing of the vent damper the 28BYJ-48 took about
-// 3250 steps.  Setting it a little larger to ensure the limit switch is reached on
-// boot up when it calibrates.  Future motion will be software limited.  This is defined
-// to prevent a broken switch from running the motor continuously and causing damage.
-#define FULL_SWING 3500
-#define MAX_SPEED 1000
-#define START_SPEED 200
-#define ACCELERATION 200
+#include "deviceDefinitions.h"
+#include "motorDefinitions.h"
+#include "globals.h"
+#include "webresources.h"
 
-//Define manual step increment and speed
-#define MANSTEP 16
-#define MANSPEED 500
 
-//Pin and Comm Rate Definitions - These are for nodeMCU-------------------------
-// Motor pin definitions
-#define motorPin1 5 // D1=GPIO5 for IN1 on the ULN2003 driver 1
-#define motorPin2 4 // D2=GPIO4 for IN2 on the ULN2003 driver 1
-#define motorPin3 0 // D3=GPIO0 for IN3 on the ULN2003 driver 1
-#define motorPin4 2 // D4=GPIO2 for IN4 on the ULN2003 driver 1
-
-// Switch pin definitions
-#define SWpinLimitCW 14  // D5=GPIO14 for full close (CW) limit switch
-#define SWpinLimitCCW 12 // D6=GPIO12 for full open (CCW) limit switch
-#define SWpinManCW 9	 // SDD2=GPIO13 for close (CW) manual switch
-#define SWpinManCCW 10   // SDD3=GPIO15 for open (CCW) manual switch
-#define SWpinManSel 16   // D0=GPIO16 for select manual switch
-
-//------------------------------------------------------------------
-
-#define MAXCMDSZ 300  
-
-// Initialize with pin sequence IN1-IN3-IN2-IN4 for using the AccelStepper with 28BYJ-48
-#define HALFSTEP 8
-AccelStepper stepper1(HALFSTEP, motorPin1, motorPin3, motorPin2, motorPin4);
-
-//make the webserver and web updater
-ESP8266WebServer httpServer(80);	 //for master node web server
-ESP8266HTTPUpdateServer httpUpdater; //for processing software updates
-WiFiUDP Udp;						 //for UDP traffic between nodes
-WiFiManager WiFiManager;			 //for managing Wifi
-
-//Some global variables to store device state
-bool deviceState = LOW; //used for WiFi comms
-enum trueState
-{
-	opening,
-	opened,
-	closing,
-	closed,
-	man_idle,
-	man_CCW,
-	man_CW,
-	unknown
-}; //used for internal state tracking
-static const char *trueState_String[] = {"opening", "opened", "closing", "closed", "man_idle", "man_CCW", "man_CW", "unknown"};
-enum calStages
-{
-	doneCal,
-	openingCal,
-	closingCal
-};
-static const char *calStages_String[] = {"doneCal", "openingCal", "closingCal"};
-calStages deviceCalStage = doneCal;
-trueState deviceTrueState = unknown; //used to track motor and gear actual (not ordered) state
-float currentSpeed = stepper1.speed();
-int currentPos;
-enum manCommandState
-{
-	none,
-	CW,
-	CCW,
-	SEL
-}; //used for tracking the commanded state with manual controls
-static const char *manCommandState_String[] = {"none", "CW", "CCW", "SEL"};
-int manSelCnt = 0;					   //used to track how many times the select switch is pressed sequentially
-manCommandState lastManCommand = none; //used to track last manual command (control box) to determine what a "select" command does
-
-//starting positions (guesses) for the limit switches.  FULL_SWING should be set to be a little more than full travel.
-int motorPosAtCCW = -FULL_SWING;
-int motorPosAtCW = FULL_SWING;
-bool motorPosAtCCWset = false;
-bool motorPosAtCWset = false;
-int motorPosAtFullCCW = -FULL_SWING; //used to store actual limit SW position for reference
-int motorPosAtFullCW = FULL_SWING;   //used to store actual limit SW position for reference
-
-//make a struct of type fishyDevice to hold data on devices on the net; and if this is the master node
-//then create an array of size MAX_DEVICE to store all the stuff found on the net
-typedef struct fishyDevice
-{
-	IPAddress ip;
-	String name = "Default";
-	int port = 8266;
-	bool isCalibrated = false;
-	int motorPosAtCCW = -FULL_SWING + 3;
-	int motorPosAtCW = FULL_SWING - 3;
-	int motorPos = 0;
-	int motorPosAtFullCCW = -FULL_SWING;
-	int motorPosAtFullCW = FULL_SWING;
-	bool openIsCCW = true;
-	bool isMaster;
-	bool dead = true;
-	String group = "";
-	String note = "";
-	String swVer = "";
-	String devType = "";
-	bool motorPosAtCCWset = false;
-	bool motorPosAtCWset = false;
-} fishyDevice;
-
-//188 byte struct for storing personailty data in EEPROM
-//remember a byte is needed for the string terminations
-#define EEPROMsz 188
-struct EEPROMdata
-{
-	char initstr[13] = "";
-	char namestr[41] = "";
-	bool master = 0;
-	char typestr[21] = "";
-	char groupstr[41] = "";
-	char note[56] = "";
-	char openIsCCW[4] = "";
-	char swVer[11] = "";
-} EEPROMdata;
-
-fishyDevice deviceArray[MAX_DEVICE];
-IPAddress masterIP = {0, 0, 0, 0};
-bool resetOnNextLoop = false; //used to tell the device to reset after it gets to the next main operating loop
-
-// ----------------------------------------------------------------------------------------
-// Use ESPfauxmo board version 2.3.0; newer versions don't seem to be discoverable
-// ----------------------------------------------------------------------------------------
-fauxmoESP fauxmo;
-
-// -----------------------------------------------------------------------------
-// WiFi
-// -----------------------------------------------------------------------------
-void WiFiSetup()
-{
-	//reset saved settings (for testing)--------------------------------------------
-	//WiFiManager.resetSettings();
-	//------------------------------------------------------------------------------
-
-	//if SSID and Password haven't been saved from before this opens an AP from the device
-	//allowing you to connect to the device from a phone/computer by joining its "network"
-	//from your wifi list - the name of the network will be the device name.
-	//After first configuration it will auto connect unless things fail and it needs to be reset
-	WiFiManager.autoConnect(EEPROMdata.namestr);
-
-	if (DEBUG_MESSAGES)
-	{
-		Serial.println();
-	}
-
-	// Connected!
-	if (DEBUG_MESSAGES)
-	{
-		Serial.printf("[WiFi] STATION Mode, SSID: %s, IP address: %s\n", WiFi.SSID().c_str(), WiFi.localIP().toString().c_str());
-	}
-
-	Udp.begin(UDP_LOCAL_PORT); //start listening on UDP port for node-node traffic
-	UDPbroadcast();			   //get a poll going
-
-	String hostName;
-	if (EEPROMdata.master)
-	{
-		hostName = "fishyDIY";
-	}
-	else
-	{
-		hostName = "fishyDIYNode" + String(WiFi.localIP()[3]);
-	}
-	MDNS.begin(hostName.c_str());					  //start mDNS to fishyDIYmaster.local
-	httpServer.on("/genericArgs", handleGenericArgs); //Associate the handler function to the path
-	httpServer.on("/", handleRoot);
-	httpServer.on("/dataDump", dataDump);
-	httpServer.on("/device.JSON", handleJSON);
-	httpServer.onNotFound(handleNotFound);
-	httpUpdater.setup(&httpServer);
-	httpServer.begin();
-
-	MDNS.addService("http", "tcp", 80);
-	fastBlinks(5);
-	if (DEBUG_MESSAGES)
-	{
-		Serial.printf("%s is now ready! Open http://%s.local/update in your browser\n", EEPROMdata.namestr, hostName.c_str());
-	}
-}
-
-//this is the base setup routine called first
+//this is the base setup routine called first on power up or reboot
 void setup()
 {
 	// Initialize serial port and clean garbage
@@ -263,8 +80,8 @@ void setup()
 	if (DEBUG_MESSAGES)
 	{
 		Serial.println("[SETUP] Found: Init string: "+String(EEPROMdata.initstr)+", Name string: "+String(EEPROMdata.namestr)+", Master: " + String(EEPROMdata.master?"True":"False")+", Group name string: "+String(EEPROMdata.groupstr)+",Type string: "+String(EEPROMdata.typestr)+",Note string: "+String(EEPROMdata.note)+", OpenIsCCW: "+String(EEPROMdata.openIsCCW)+", SW Version string: "+String(EEPROMdata.swVer));
-
-		Serial.println("[SETUP] New init string: " + String(INITIALIZE) + ". Stored init string: " + String(EEPROMdata.initstr));
+		Serial.println("[SETUP] Found motor data: {CCW,CW,FCCW,FCW,CCWset,CWset,Pos}: {" + String(EEPROMdata.motorPosAtCCW) + "," + String(EEPROMdata.motorPosAtCW)+ "," + String(EEPROMdata.motorPosAtFullCCW)+ "," + String(EEPROMdata.motorPosAtFullCW )+ "," + String(EEPROMdata.motorPosAtCCWset)+ "," + String(EEPROMdata.motorPosAtCWset)+ "," + String(EEPROMdata.motorPos)+"}");  	
+		Serial.println("[SETUP] Compiled init string: " + String(INITIALIZE) + ". Stored init string: " + String(EEPROMdata.initstr));
 	}
 	//always show the latest SW_VER
 	strncpy(EEPROMdata.swVer, SW_VER, 11);
@@ -276,20 +93,29 @@ void setup()
 	{
 		if (DEBUG_MESSAGES)
 		{
-			Serial.println("[SETUP] Updating.");
+			Serial.println("[SETUP] Updating...");
 		}
+		//store specified personality data
 		strncpy(EEPROMdata.initstr, INITIALIZE, 13);
 		strncpy(EEPROMdata.namestr, CUSTOM_DEVICE_NAME, 41);
 		strncpy(EEPROMdata.groupstr, CUSTOM_GROUP_NAME, 41);
 		strncpy(EEPROMdata.typestr, CUSTOM_DEVICE_TYPE, 21);
 		strncpy(EEPROMdata.note, CUSTOM_NOTE, 56);
 		strncpy(EEPROMdata.openIsCCW, OPEN_IS_CCW_OR_CW, 4);
+		//Just put defaults into motor data
+		EEPROMdata.motorPosAtCCW = -FULL_SWING + 3; 	
+		EEPROMdata.motorPosAtCW = FULL_SWING - 3;		
+		EEPROMdata.motorPosAtFullCCW = -FULL_SWING; 	
+		EEPROMdata.motorPosAtFullCW = FULL_SWING;		
+		EEPROMdata.motorPosAtCCWset = false;			
+		EEPROMdata.motorPosAtCWset = false;			
+		EEPROMdata.motorPos = 0; 	
 		
 		if (MASTER_NODE)
 		{
 			if (DEBUG_MESSAGES)
 			{
-				Serial.println("[SETUP] Setting as MASTER.");
+				Serial.println("[SETUP] Setting this node as MASTER.");
 			}
 			EEPROMdata.master = true;
 		}
@@ -312,7 +138,9 @@ void setup()
 	}
 
 	if (DEBUG_MESSAGES)
-	{Serial.println("Personality values are: Init string: "+String(EEPROMdata.initstr)+", Name string: "+String(EEPROMdata.namestr)+", Master: " + String(EEPROMdata.master?"True":"False")+", Group name string: "+String(EEPROMdata.groupstr)+",Type string: "+String(EEPROMdata.typestr)+",Note string: "+String(EEPROMdata.note)+", OpenIsCCW: "+String(EEPROMdata.openIsCCW)+", SW Version string: "+String(EEPROMdata.swVer));
+	{
+		Serial.println("[SETUP] Personality values are: Init string: "+String(EEPROMdata.initstr)+", Name string: "+String(EEPROMdata.namestr)+", Master: " + String(EEPROMdata.master?"True":"False")+", Group name string: "+String(EEPROMdata.groupstr)+",Type string: "+String(EEPROMdata.typestr)+",Note string: "+String(EEPROMdata.note)+", OpenIsCCW: "+String(EEPROMdata.openIsCCW)+", SW Version string: "+String(EEPROMdata.swVer));
+		Serial.println("[SETUP] Motor data is: {CCW,CW,FCCW,FCW,CCWset,CWset,Pos}: {" + String(EEPROMdata.motorPosAtCCW) + "," + String(EEPROMdata.motorPosAtCW)+ "," + String(EEPROMdata.motorPosAtFullCCW)+ "," + String(EEPROMdata.motorPosAtFullCW)+ "," + String(EEPROMdata.motorPosAtCCWset)+ "," + String(EEPROMdata.motorPosAtCWset)+ "," + String(EEPROMdata.motorPos)+"}");  	
 	}
 
 	//stepper motor setup
@@ -326,7 +154,7 @@ void setup()
 
 	if (!DEBUG_WiFiOFF)
 	{
-		// WiFi
+		// WiFi - see wifi-and-webserver.ino
 		WiFiSetup();
 		fauxmo.enable(true);
 		// Add virtual device
@@ -372,819 +200,7 @@ void setup()
 	}
 }
 
-//process UDP packets
-void UDPprocessPacket()
-{
-	//USED FOR UDP COMMS
-	char packetBuffer[MAXCMDSZ]; //buffer to hold incoming packet
-
-	// if there's data available, read a packet
-	int packetSize = Udp.parsePacket();
-	if (packetSize)
-	{
-		IPAddress remoteIp = Udp.remoteIP();
-		if (DEBUG_MESSAGES)
-		{
-			Serial.print("[UDPprocessPacket] Received packet of size ");
-			Serial.println(packetSize);
-			Serial.print("[UDPprocessPacket] From ");
-			Serial.print(remoteIp);
-			Serial.print(", port ");
-			Serial.println(Udp.remotePort());
-		}
-		// read the packet into packetBufffer
-		int len = Udp.read(packetBuffer, MAXCMDSZ);
-		if (len > 0)
-		{
-			packetBuffer[len] = 0;
-		}
-		if (DEBUG_MESSAGES)
-		{
-			Serial.print("[UDPprocessPacket] Executing:");
-			Serial.println(packetBuffer);
-		}
-		executeCommands(packetBuffer, remoteIp);
-	}
-}
-
-//take an address for a node and figure out what to do with it
-//return the index on success or -1 on fail
-int dealWithThisNode(fishyDevice netDevice)
-{
-	if (EEPROMdata.master || (masterIP.toString()=="0.0.0.0"))
-	{
-		int index = findNode(netDevice.ip);
-		if (index > -1)
-		{
-			updateNode(index, netDevice);
-			if (DEBUG_MESSAGES)
-			{
-				Serial.print("[dealWithThisNode] updated ");
-				Serial.print(netDevice.isMaster ? "[MASTER] " : "");
-				Serial.println(netDevice.name + " @ " + netDevice.ip.toString());
-			}
-			return index;
-		}
-		else
-		{
-			if (DEBUG_MESSAGES)
-			{
-				Serial.print("[dealWithThisNode] added.. ");
-				Serial.print(netDevice.isMaster ? "[MASTER] " : "");
-				Serial.println(netDevice.name + " @ " + netDevice.ip.toString());
-			}
-			return storeNewNode(netDevice);
-		}
-	}
-}
-
-//lookup the index for an IPAddress in the deviceArray---------------------------
-//returns -1 if not found. Otherwise returns the index.
-//first verifies this is the EEPROMdata.master
-int findNode(IPAddress lookupIP)
-{
-	if (EEPROMdata.master || (masterIP.toString()=="0.0.0.0"))
-	{
-		for (int i = 0; i < MAX_DEVICE; i++)
-		{
-			if (!deviceArray[i].dead)
-			{
-				if (deviceArray[i].ip == lookupIP)
-				{
-					return i;
-				}
-			}
-		}
-		return -1;
-	}
-}
-
-//lookup the index for the first dead (empty) device ---------------------------
-//returns -1 if not found. Otherwise returns the index.
-//first verifies this is the EEPROMdata.master 
-int findDeadNode()
-{
-	
-		for (int i = 0; i < MAX_DEVICE; i++)
-		{
-			if (deviceArray[i].dead)
-			{
-				return i;
-			}
-		}
-		return -1; //no more room - oh well
-	
-}
-
-//store an updated device in the deviceArray at index
-void updateNode(int index, fishyDevice updatedDevice)
-{
-	
-		deviceArray[index] = updatedDevice;
-
-}
-
-//store a new device's data in the deviceArray
-int storeNewNode(fishyDevice newDevice)
-{
-	
-		int index = findDeadNode();
-		if (index > -1)
-		{
-			deviceArray[index] = newDevice;
-			return index;
-		}
-		else
-			return -1;
-	
-}
-
-//return a fishyDevice with this devices status in it
-fishyDevice makeMyFishyDevice()
-{
-	fishyDevice holder;
-	//fill with current data
-	holder.dead = false;
-	holder.ip = WiFi.localIP();
-	if (motorPosAtCCWset && motorPosAtCWset)
-	{
-		holder.isCalibrated = true;
-	}
-	else
-	{
-		holder.isCalibrated = false;
-	}
-	holder.isMaster = EEPROMdata.master;
-	holder.motorPos = stepper1.currentPosition();
-	holder.motorPosAtCCW = motorPosAtCCW;
-	holder.motorPosAtCW = motorPosAtCW;
-	holder.motorPosAtFullCCW = motorPosAtFullCCW;
-	holder.motorPosAtFullCW = motorPosAtFullCW;
-	holder.name = String(EEPROMdata.namestr);
-	holder.port = UDP_LOCAL_PORT;
-	holder.isMaster = EEPROMdata.master;
-	holder.devType = String(EEPROMdata.typestr);
-	holder.group = String(EEPROMdata.groupstr);
-	holder.note = String(EEPROMdata.note);
-	holder.swVer = String(EEPROMdata.swVer);
-	if (OPEN_IS_CCW_OR_CW == "CCW")
-	{
-		holder.openIsCCW = true;
-	}
-	else
-	{
-		holder.openIsCCW = false;
-	}
-
-	return holder;
-}
-//broadcast on subnet to see who will respond
-void UDPbroadcast()
-{
-	IPAddress broadcast = WiFi.localIP();
-	broadcast[3] = 255;
-
-	//process this devices data first, storing it in the deviceArray, then poll the rest of the network
-	dealWithThisNode(makeMyFishyDevice());
-
-	Udp.beginPacket(broadcast, UDP_LOCAL_PORT);
-	Udp.write("ANYFISHYDEV_THERE");
-	//UDPdataDump();
-	Udp.endPacket();
-}
-
-void UDPannounceMaster()
-{
-	IPAddress broadcast = WiFi.localIP();
-	broadcast[3] = 255;
-	Udp.beginPacket(broadcast, UDP_LOCAL_PORT);
-	Udp.write("FISHYDIYMASTER");
-	Udp.endPacket();
-}
-
-//put out this devices data on the net
-void UDPpollReply(IPAddress remote)
-{
-
-	fishyDevice holder; //temp
-	holder = makeMyFishyDevice();
-
-	String response = "POLL_RESPONSE ";
-
-	Udp.beginPacket(remote, UDP_LOCAL_PORT);
-
-/* 
-send fishyDevice data.
-Note - this is parsed by UDPparsePollResponse and paralleled by getJSON; 
-if adding elements all three need updating.
-{ip,isCalibrated,isMaster,motorPos,motorPosAtCCW,motorPosAtCW,motorPosAtFullCCW,motorPosAtFullCW,name,openIsCCW,port,group,note,swVer,devType}
-*/
-	response += "{" + holder.ip.toString() + "," + 
-			String(holder.isCalibrated ? "true" : "false") + "," +
-			String(holder.isMaster ? "true" : "false") + "," + 
-			String(holder.motorPos) + "," +
-			String(holder.motorPosAtCCW) + "," + 
-			String(holder.motorPosAtCW) + "," + 
-			String(holder.motorPosAtFullCCW) + "," +
-			String(holder.motorPosAtFullCW) + "," + 
-			String(holder.name) + ","  +  
-			String(holder.openIsCCW ? "true" : "false") + "," + 
-			String(holder.port) + "," + 
-			String(holder.group) + "," +
-			String(holder.note) + "," + 
-			String(holder.swVer) + "," + 
-			String(holder.devType) + "}";
-
-	Udp.write(response.c_str());
-	Udp.endPacket();
-
-	if (EEPROMdata.master)
-	{
-		UDPannounceMaster();
-	} //make sure they know who is in charge
-}
-
-//parses a UDP poll reply and takes action
-//TODO - parse the response further and add new nodes to the list and drop off old nodes
-void UDPparsePollResponse(String responseIn, IPAddress remote)
-{
-	if (EEPROMdata.master )
-	{
-/* 
-parse fishyDevice data.
-Note - this data set is sent by UDPparsePollResponse and getJSON; 
-it is also parsed by scripts in webresources.h if adding elements all three need updating:
-{ip,isCalibrated,isMaster,motorPos,motorPosAtCCW,motorPosAtCW,motorPosAtFullCCW,motorPosAtFullCW,name,openIsCCW,port,group,note,swVer,devType}
-*/
-		String response = responseIn.substring(14); //strip off "POLL RESPONSE"
-		fishyDevice holder;
-		holder.dead = false;
-
-		//IP
-		int strStrt = 1;
-		int strStop = response.indexOf(",", strStrt);
-		String strIP = response.substring(strStrt, strStop);
-		holder.ip[3] = strIP.substring(strIP.lastIndexOf(".") + 1).toInt();
-		strIP = strIP.substring(0, strIP.lastIndexOf("."));
-		holder.ip[2] = strIP.substring(strIP.lastIndexOf(".") + 1).toInt();
-		strIP = strIP.substring(0, strIP.lastIndexOf("."));
-		holder.ip[1] = strIP.substring(strIP.lastIndexOf(".") + 1).toInt();
-		strIP = strIP.substring(0, strIP.lastIndexOf("."));
-		holder.ip[0] = strIP.toInt();
-		if (DEBUG_MESSAGES && UDP_PARSE_MESSAGES)
-		{
-			Serial.println("[UDPparsePollResponse] strIP: " + holder.ip.toString());
-		}
-
-		//isCalibrated
-		strStrt = strStop + 1;
-		strStop = response.indexOf(",", strStrt);
-		holder.isCalibrated = (response.substring(strStrt, strStop) == "false") ? false : true;
-		if (DEBUG_MESSAGES && UDP_PARSE_MESSAGES)
-		{
-			Serial.print("[UDPparsePollResponse] isCalibrated: ");
-			Serial.println(holder.isCalibrated ? "true" : "false");
-		}
-
-		//isMaster
-		strStrt = strStop + 1;
-		strStop = response.indexOf(",", strStrt);
-		holder.isMaster = (response.substring(strStrt, strStop) == "false") ? false : true;
-		if (DEBUG_MESSAGES && UDP_PARSE_MESSAGES)
-		{
-			Serial.print("[UDPparsePollResponse] isMaster: ");
-			Serial.println(holder.isMaster ? "true" : "false");
-		}
-
-		//motorPos
-		strStrt = strStop + 1;
-		strStop = response.indexOf(",", strStrt);
-		holder.motorPos = response.substring(strStrt, strStop).toInt();
-		if (DEBUG_MESSAGES && UDP_PARSE_MESSAGES)
-		{
-			Serial.println("[UDPparsePollResponse] motorPos: " + String(holder.motorPos));
-		}
-
-		//motorPosAtCCW
-		strStrt = strStop + 1;
-		strStop = response.indexOf(",", strStrt);
-		holder.motorPosAtCCW = response.substring(strStrt, strStop).toInt();
-		if (DEBUG_MESSAGES && UDP_PARSE_MESSAGES)
-		{
-			Serial.println("[UDPparsePollResponse] motorPosAtCCW: " + String(holder.motorPosAtCCW));
-		}
-
-		//motorPosAtCW
-		strStrt = strStop + 1;
-		strStop = response.indexOf(",", strStrt);
-		holder.motorPosAtCW = response.substring(strStrt, strStop).toInt();
-		if (DEBUG_MESSAGES && UDP_PARSE_MESSAGES)
-		{
-			Serial.println("[UDPparsePollResponse] strMotorPosAtCW: " + String(holder.motorPosAtCW));
-		}
-
-		//motorPosAtFullCCW
-		strStrt = strStop + 1;
-		strStop = response.indexOf(",", strStrt);
-		holder.motorPosAtFullCCW = response.substring(strStrt, strStop).toInt();
-		if (DEBUG_MESSAGES && UDP_PARSE_MESSAGES)
-		{
-			Serial.println("[UDPparsePollResponse] strMotorPosAtFullCCW: " + String(holder.motorPosAtFullCCW));
-		}
-
-		//motorPosAtFullCW
-		strStrt = strStop + 1;
-		strStop = response.indexOf(",", strStrt);
-		holder.motorPosAtFullCW = response.substring(strStrt, strStop).toInt();
-		if (DEBUG_MESSAGES && UDP_PARSE_MESSAGES)
-		{
-			Serial.println("[UDPparsePollResponse] strMotorPosAtFullCW: " + String(holder.motorPosAtFullCW));
-		}
-
-		//name
-		strStrt = strStop + 1;
-		strStop = response.indexOf(",", strStrt);
-		holder.name = response.substring(strStrt, strStop);
-		if (DEBUG_MESSAGES && UDP_PARSE_MESSAGES)
-		{
-			Serial.println("[UDPparsePollResponse] strName: " + holder.name);
-		}
-
-		//openIsCCW
-		strStrt = strStop + 1;
-		strStop = response.indexOf(",", strStrt);
-		holder.openIsCCW = (response.substring(strStrt, strStop) == "false") ? false : true;
-		if (DEBUG_MESSAGES && UDP_PARSE_MESSAGES)
-		{
-			Serial.print("[UDPparsePollResponse] openIsCCW: ");
-			Serial.println(holder.openIsCCW ? "true" : "false");
-		}
-
-		//port
-		strStrt = strStop + 1;
-		strStop = response.indexOf(",", strStrt);
-		holder.port = response.substring(strStrt, strStop).toInt(); 
-		if (DEBUG_MESSAGES && UDP_PARSE_MESSAGES)
-		{
-			Serial.println("[UDPparsePollResponse] strPort: " + String(holder.port));
-		}
-
-		//group
-		strStrt = strStop + 1;
-		strStop = response.indexOf(",", strStrt);
-		holder.group = response.substring(strStrt, strStop); 
-		if (DEBUG_MESSAGES && UDP_PARSE_MESSAGES)
-		{
-			Serial.println("[UDPparsePollResponse] strGroup: " + holder.group);
-		}
-
-		//note
-		strStrt = strStop + 1;
-		strStop = response.indexOf(",", strStrt);
-		holder.note = response.substring(strStrt, strStop);
-		if (DEBUG_MESSAGES && UDP_PARSE_MESSAGES)
-		{
-			Serial.println("[UDPparsePollResponse] strnote: " + holder.note);
-		}
-
-		//swVer
-		strStrt = strStop + 1;
-		strStop = response.indexOf(",", strStrt);
-		holder.swVer = response.substring(strStrt, strStop); 
-		if (DEBUG_MESSAGES && UDP_PARSE_MESSAGES)
-		{
-			Serial.println("[UDPparsePollResponse] strswVer: " + holder.swVer);
-		}
-
-		//devType
-		strStrt = strStop + 1;
-		strStop = response.indexOf("}", strStrt);
-		holder.devType = response.substring(strStrt, strStop); 
-		if (DEBUG_MESSAGES && UDP_PARSE_MESSAGES)
-		{
-			Serial.println("[UDPparsePollResponse] strdevType: " + holder.devType);
-		}
-
-		dealWithThisNode(holder);
-	}
-}
-
-void UDPparseConfigResponse(String responseIn, IPAddress remote){
-	String response = responseIn.substring(7); //strip off "CONFIG"
-	int strStrt, strStop;
-
-/*
-		parseString in this order: {ccwLim, cwLim, openIsCCW, isMaster, devName, groupName, devType, note}
-*/
-
-	if (DEBUG_MESSAGES && UDP_PARSE_MESSAGES)
-	{
-		Serial.println("[UDPparseConfigResponse] Got this: " + responseIn);
-	}	
-	//ccwLim
-	strStrt = response.indexOf("=", 1)+1;
-	strStop = response.indexOf(";", strStrt);
-	if (DEBUG_MESSAGES && UDP_PARSE_MESSAGES)
-	{
-		Serial.print("[UDPparseConfigResponse] ccwLim: ");
-		Serial.println(response.substring(strStrt, strStop));
-	}
-	//cwLim
-	strStrt = response.indexOf("=", strStop)+1;
-	strStop = response.indexOf(";", strStrt);
-	if (DEBUG_MESSAGES && UDP_PARSE_MESSAGES)
-	{
-		Serial.print("[UDPparseConfigResponse] cwLim: ");
-		Serial.println(response.substring(strStrt, strStop));
-	}
-	//openIsCCW
-	strStrt = response.indexOf("=", strStop)+1;
-	strStop = response.indexOf(";", strStrt);
-	strncpy(EEPROMdata.openIsCCW, (response.substring(strStrt, strStop) == "false") ? "CW" : "CCW", 4);
-	if (DEBUG_MESSAGES && UDP_PARSE_MESSAGES)
-	{
-		Serial.print("[UDPparseConfigResponse] openIsCCW: ");
-		Serial.println(EEPROMdata.openIsCCW ? "true" : "false");
-	}
-	//isMaster
-	strStrt = response.indexOf("=", strStop)+1;
-	strStop = response.indexOf(";", strStrt);
-	EEPROMdata.master = (response.substring(strStrt, strStop) == "false") ? false : true;
-	if (DEBUG_MESSAGES && UDP_PARSE_MESSAGES)
-	{
-		Serial.print("[UDPparseConfigResponse] isMaster: ");
-		Serial.println(EEPROMdata.master ? "true" : "false");
-	}
-	//devName
-	strStrt = response.indexOf("=", strStop)+1;
-	strStop = response.indexOf(";", strStrt);
-	strncpy(EEPROMdata.namestr, response.substring(strStrt, strStop).c_str(), 41);
-	if (DEBUG_MESSAGES && UDP_PARSE_MESSAGES)
-	{
-		Serial.println("[UDPparseConfigResponse] devName: " + String(EEPROMdata.namestr));
-	}
-	//groupName
-	strStrt = response.indexOf("=", strStop)+1;
-	strStop = response.indexOf(";", strStrt);
-	strncpy(EEPROMdata.groupstr, response.substring(strStrt, strStop).c_str(), 41);
-	if (DEBUG_MESSAGES && UDP_PARSE_MESSAGES)
-	{
-		Serial.println("[UDPparseConfigResponse] groupName: " + String(EEPROMdata.groupstr));
-	}
-	//devType
-	strStrt = response.indexOf("=", strStop)+1;
-	strStop = response.indexOf(";", strStrt);
-	strncpy(EEPROMdata.typestr, response.substring(strStrt, strStop).c_str(), 21);
-	if (DEBUG_MESSAGES && UDP_PARSE_MESSAGES)
-	{
-		Serial.println("[UDPparseConfigResponse] devType: " + String(EEPROMdata.typestr));
-	}
-	//note
-	strStrt = response.indexOf("=", strStop)+1;
-	strStop = response.indexOf(";", strStrt);
-	strncpy(EEPROMdata.note, response.substring(strStrt, strStop).c_str(), 56);
-	if (DEBUG_MESSAGES && UDP_PARSE_MESSAGES)
-	{
-		Serial.println("[UDPparseConfigResponse] note: " + String(EEPROMdata.note));
-	}
-
-	uint addr = 0;
-	EEPROM.begin(EEPROMsz);
-	// replace values in EEPROM
-	EEPROM.put(addr, EEPROMdata);
-	EEPROM.commit();
-	resetOnNextLoop = true;
-	
-}
-
-//Parses string command and then executes the move.
-//cmd will be of form goto### (e.g., goto034)
-void executeGoto(String cmd)
-{
-	int newPercentOpen = whichWayGoto(cmd.substring(4).toInt()); //STRIP OFF GOTO and correct for openisCCCW
-	if (DEBUG_MESSAGES)
-	{
-		Serial.printf("[executeGoto] Going to percent open: %d\n", newPercentOpen);
-	}
-	deviceTrueState = openPercentActuator(newPercentOpen);
-}
-//execute a WiFi received state change
-void executeState(bool state)
-{
-	bool correctedState = whichWay(state);
-	if (DEBUG_MESSAGES)
-	{
-		Serial.printf("[executeState] Going to state: %s\n", state ? "ON" : "OFF");
-	}
-	deviceState = state;
-
-	if (correctedState)
-	{
-		deviceTrueState = openActuator();
-	}
-	else
-	{
-		deviceTrueState = closeActuator();
-	}
-}
-
-//do a manual move in the CW direction
-void manCW()
-{
-	int CWlimSensorVal = digitalRead(SWpinLimitCW);
-	int curPos = stepper1.currentPosition();
-	manSelCnt = 0;
-	if (DEBUG_MESSAGES)
-	{
-		Serial.printf("[manCW] CWlim: %d; motorPos: %d; lastCommand: %s\n", CWlimSensorVal, curPos, manCommandState_String[lastManCommand]);
-	}
-
-	lastManCommand = CW;
-
-	if (CWlimSensorVal == 1)
-	{ //not at CW limit
-		deviceTrueState = man_CW;
-		if (DEBUG_MESSAGES)
-		{
-			Serial.printf("[manCW] ..moving CW..\n");
-		}
-
-		if (!stepper1.isRunning())
-		{
-			stepper1.enableOutputs();
-		}
-
-		stepper1.move(MANSTEP);
-		stepper1.setSpeed(MANSPEED);
-		stepper1.runSpeedToPosition();
-	}
-	else
-	{
-		//at actual SW limit update the limit SW position
-		motorPosAtFullCW = curPos;
-		deviceTrueState = man_idle;
-		idleActuator(deviceTrueState);
-	}
-}
-
-//do a manual move in the CCW direction
-
-void manCCW()
-{
-	int CCWlimSensorVal = digitalRead(SWpinLimitCCW);
-	int curPos = stepper1.currentPosition();
-	manSelCnt = 0;
-	if (DEBUG_MESSAGES)
-	{
-		Serial.printf("[manCCW] CCWlim: %d; motorPos: %d; lastCommand: %s\n", CCWlimSensorVal, curPos, manCommandState_String[lastManCommand]);
-	}
-
-	lastManCommand = CCW;
-
-	if (CCWlimSensorVal == 1)
-	{ //not at CCW limit
-		deviceTrueState = man_CCW;
-		if (DEBUG_MESSAGES)
-		{
-			Serial.printf("[manCCW] ..moving CCW..\n");
-		}
-
-		if (!stepper1.isRunning())
-		{
-			stepper1.enableOutputs();
-		}
-
-		stepper1.move(-MANSTEP);
-		stepper1.setSpeed(-MANSPEED);
-		stepper1.runSpeedToPosition();
-	}
-	else
-	{
-		//at actual SW limit update the limit SW position
-		motorPosAtFullCCW = curPos;
-		deviceTrueState = man_idle;
-		idleActuator(deviceTrueState);
-	}
-}
-
-//set new limit for stopping motor based on the last commanded manual position
-void manSel()
-{
-	int CCWlimSensorVal = digitalRead(SWpinLimitCCW);
-	int CWlimSensorVal = digitalRead(SWpinLimitCW);
-	int curPos = stepper1.currentPosition();
-
-	//if button pressed for more than 1 second increment the count
-	static unsigned long last = millis();
-	if (millis() - last > 1000)
-	{
-		last = millis();
-		manSelCnt++;
-	}
-
-	if (DEBUG_MESSAGES)
-	{
-		Serial.printf("[manSel] CCWlim: %d; CWlim: %d; motorPos: %d; lastCommand: %s; manSelCnt: %d;\n", CCWlimSensorVal, CWlimSensorVal, curPos, manCommandState_String[lastManCommand], manSelCnt);
-	}
-	switch (lastManCommand)
-	{
-	case CW: //set new CW limit position
-		if (!CWlimSensorVal)
-		{
-			setCWLimit(curPos - 3); //back off of limit switch a bit
-		}
-		else
-		{
-			setCWLimit(curPos);
-		}
-		break;
-	case CCW: //set new CCW limit position
-		if (!CCWlimSensorVal)
-		{
-			setCCWLimit(curPos + 3); //back off of limit switch a bit
-		}
-		else
-		{
-			setCCWLimit(curPos);
-		}
-		break;
-	case none:
-	case SEL:
-		if (manSelCnt > 5)
-		{ //select button held long time - reset the limits and put the deviceState -> unknown
-			if (DEBUG_MESSAGES)
-			{
-				Serial.printf("[manSEL] Long Press detected - reseting the box\n");
-			}
-			resetOnNextLoop = true;
-		}
-		break;
-	}
-	lastManCommand = SEL;
-}
-
-void setCWLimit(long newLimit)
-{
-	motorPosAtCW = newLimit;
-	if (DEBUG_MESSAGES)
-	{
-		Serial.printf("[setCWLimit] New Limit: %d \n", newLimit);
-	}
-	motorPosAtCWset = true;
-	if (motorPosAtCCW >= motorPosAtCW)
-	{ //if limits are reversed, update the CCW limit
-		if (DEBUG_MESSAGES)
-		{
-			Serial.printf("[setCWLimit] LIMITS REVERSED, updating CCW Limit: %d ", newLimit - 1);
-		}
-		motorPosAtCCW = motorPosAtCW - 1;
-		motorPosAtCCWset = true;
-	}
-}
-
-void setCCWLimit(long newLimit)
-{
-	motorPosAtCCW = newLimit;
-	if (DEBUG_MESSAGES)
-	{
-		Serial.printf("[setCCWLimit] New Limit: %d \n", newLimit);
-	}
-	motorPosAtCCWset = true;
-	if (motorPosAtCW <= motorPosAtCCW)
-	{ //if limits are reversed, update the CW limit
-		if (DEBUG_MESSAGES)
-		{
-			Serial.printf("[setCCWLimit] LIMITS REVERSED, updating CW Limit: %d \n", newLimit + 1);
-		}
-		motorPosAtCW = motorPosAtCCW + 1;
-		motorPosAtCCWset = true;
-	}
-}
-
-//function used to do a normal WiFi or calibration opening of the actuator
-void normalOpening()
-{
-	if (!digitalRead(SWpinLimitCCW))
-	{
-		//reached limit - disable everything and reset motor to idle
-		motorPosAtFullCCW = stepper1.currentPosition();
-		motorPosAtCCW = motorPosAtFullCCW + 3; //back off of limit switch a bit
-		motorPosAtCCWset = true;
-
-		if (!motorPosAtCWset)
-		{ //if opposite position not set, set guess at full swing
-			motorPosAtCW = motorPosAtCCW + FULL_SWING;
-		}
-		idleActuator(opened); //make actuator idle
-		if (DEBUG_MESSAGES)
-		{
-			int CCWlimSensorVal = digitalRead(SWpinLimitCCW);
-			int CWlimSensorVal = digitalRead(SWpinLimitCW);
-			Serial.printf("[normalOpening] Reached CCW stop at motor position %d; CCW: %d; CW: %d\n", stepper1.currentPosition(), CCWlimSensorVal, CWlimSensorVal);
-		}
-	}
-	else
-	{ //keep going if still have distance to travel
-		if (stepper1.distanceToGo() != 0)
-		{
-			stepper1.run();
-		}
-		else
-		{
-			idleActuator(opened);
-		}
-	}
-}
-
-//function used to do a normal WiFi or calibration closing of the actuator
-void normalClosing()
-{
-	if (!digitalRead(SWpinLimitCW))
-	{
-		//reached limit - disable everything and reset motor to idle
-		motorPosAtFullCW = stepper1.currentPosition();
-		motorPosAtCW = motorPosAtFullCW - 3; //back off of limit switch a bit
-		motorPosAtCWset = true;
-
-		if (!motorPosAtCCWset)
-		{ //if opposite position not set, set guess at full swing
-			motorPosAtCCW = motorPosAtCW - FULL_SWING;
-		}
-		idleActuator(closed); //make actuator idle
-		if (DEBUG_MESSAGES)
-		{
-			int CCWlimSensorVal = digitalRead(SWpinLimitCCW);
-			int CWlimSensorVal = digitalRead(SWpinLimitCW);
-			Serial.printf("[normalClosing] Reached CW stop at motor position %d; CCW: %d; CW: %d\n", stepper1.currentPosition(), CCWlimSensorVal, CWlimSensorVal);
-		}
-	}
-	else
-	{ //keep going if still have distance to travel
-		if (stepper1.distanceToGo() != 0)
-		{
-			stepper1.run();
-		}
-		else
-		{
-			idleActuator(closed);
-		}
-	}
-}
-
-//return data out for troubleshooting
-void dataDump()
-{
-	char temp[500];
-	int CCWlimSensorVal = digitalRead(SWpinLimitCCW);
-	int CWlimSensorVal = digitalRead(SWpinLimitCW);
-	int CWmanSensorVal = digitalRead(SWpinManCW);
-	int CCWmanSensorVal = digitalRead(SWpinManCCW);
-	int SELmanSensorVal = digitalRead(SWpinManSel);
-	long curPos = stepper1.currentPosition();
-	long distToGo = stepper1.distanceToGo();
-	float curSpeed = stepper1.speed();
-
-	sprintf(temp, "[DATA DUMP]\nSwitches -     LimCCW=%d LimCW=%d; ManCCW=%d ManCW=%d ManSEL=%d\nMotor -        "
-				  "Pos=%d Runn'g?=%s Speed=%d toGo=%d \nLimits Set -   CCW=%s (%d) CW=%s (%d)\nDeviceStates - WiFi=%s   True=%s   Cal=%s\n",
-			CCWlimSensorVal, CWlimSensorVal, CCWmanSensorVal, CWmanSensorVal, SELmanSensorVal, curPos, stepper1.isRunning() ? "Y" : "N", curSpeed, distToGo, motorPosAtCCWset ? "Y" : "N", motorPosAtCCW, motorPosAtCWset ? "Y" : "N", motorPosAtCW, deviceState ? "ON" : "OFF", trueState_String[deviceTrueState], calStages_String[deviceCalStage]);
-
-	httpServer.send(200, "text/html", temp);
-	//if(DEBUG_MESSAGES){Serial.println(temp);}
-	/*
-	String str = "";
-	Dir dir = SPIFFS.openDir("/");
-	Serial.println("dir" + dir.fileName());
-	while (dir.next()) {
-		str = "<br>";
-		str += dir.fileName();
-		str += " / ";
-		str += dir.fileSize();
-		str += "\r\n";
-		//httpServer.send(200, "text/html", str);
-		Serial.println("dir" + dir.fileName());
-	}
-	*/
-}
-
-//TEST - REMOVE ------------------------------------
-//print data out for troubleshooting
-void UDPdataDump()
-{
-	int CCWlimSensorVal = digitalRead(SWpinLimitCCW);
-	int CWlimSensorVal = digitalRead(SWpinLimitCW);
-	int CWmanSensorVal = digitalRead(SWpinManCW);
-	int CCWmanSensorVal = digitalRead(SWpinManCCW);
-	int SELmanSensorVal = digitalRead(SWpinManSel);
-	long curPos = stepper1.currentPosition();
-	long distToGo = stepper1.distanceToGo();
-	float curSpeed = stepper1.speed();
-	char reply[255];
-
-	sprintf(reply, "[UDP DATA DUMP]\nSwitches -     LimCCW=%d LimCW=%d; ManCCW=%d ManCW=%d ManSEL=%d", CCWlimSensorVal, CWlimSensorVal, CCWmanSensorVal, CWmanSensorVal, SELmanSensorVal);
-	Udp.write(reply);
-}
-//--------------------------------------------------
-
+//this is the main operating loop (MOL) that is repeatedly executed
 void loop()
 {
 	//reset if commanded to by someone last loop
@@ -1193,6 +209,7 @@ void loop()
 		delay(2000);
 		resetController();
 	}
+
 	//handle webrequests
 	httpServer.handleClient();
 
@@ -1272,26 +289,26 @@ void loop()
 			case unknown: //unknown state (bootup)
 				if (!CWlimSensorVal)
 				{ //at CW limit
-					motorPosAtFullCW = stepper1.currentPosition();
-					motorPosAtCW = motorPosAtFullCW - 3; //back off of limit switch a bit
-					motorPosAtCWset = true;
-					motorPosAtCCW = motorPosAtCW - FULL_SWING;
-					motorPosAtCCWset = false;
+					EEPROMdata.motorPosAtFullCW = stepper1.currentPosition();
+					EEPROMdata.motorPosAtCW = EEPROMdata.motorPosAtFullCW - 3; //back off of limit switch a bit
+					EEPROMdata.motorPosAtCWset = true;
+					EEPROMdata.motorPosAtCCW = EEPROMdata.motorPosAtCW - FULL_SWING;
+					EEPROMdata.motorPosAtCCWset = false;
 					idleActuator(closed); //make actuator idle
 				}
 				else if (!CCWlimSensorVal)
 				{ //at CCW limit
-					motorPosAtFullCCW = stepper1.currentPosition();
-					motorPosAtCCW = motorPosAtFullCCW + 3; //back off of limit switch a bit
-					motorPosAtCCWset = true;
-					motorPosAtCW = motorPosAtCCW + FULL_SWING;
-					motorPosAtCWset = false;
+					EEPROMdata.motorPosAtFullCCW = stepper1.currentPosition();
+					EEPROMdata.motorPosAtCCW = EEPROMdata.motorPosAtFullCCW + 3; //back off of limit switch a bit
+					EEPROMdata.motorPosAtCCWset = true;
+					EEPROMdata.motorPosAtCW = EEPROMdata.motorPosAtCCW + FULL_SWING;
+					EEPROMdata.motorPosAtCWset = false;
 					idleActuator(opened); //make actuator idle
 				}
 				else
 				{
-					motorPosAtCWset = false;
-					motorPosAtCCWset = false;
+					EEPROMdata.motorPosAtCWset = false;
+					EEPROMdata.motorPosAtCCWset = false;
 				}
 				break;
 			}
@@ -1303,7 +320,7 @@ void loop()
 				deviceCalStage = closingCal;
 				if (DEBUG_MESSAGES)
 				{
-					Serial.printf("[MAIN loop cal] Found open (CCW) limit (%d). Going to calibration closing stage.\n", motorPosAtCCW);
+					Serial.printf("[MAIN loop cal] Found open (CCW) limit (%d). Going to calibration closing stage.\n", EEPROMdata.motorPosAtCCW);
 				}
 				executeState(false);
 			}
@@ -1315,7 +332,7 @@ void loop()
 				deviceCalStage = doneCal;
 				if (DEBUG_MESSAGES)
 				{
-					Serial.printf("[MAIN loop cal] Found close (CW) limit (%d). Calibration complete.\n", motorPosAtCW);
+					Serial.printf("[MAIN loop cal] Found close (CW) limit (%d). Calibration complete.\n", EEPROMdata.motorPosAtCW);
 				}
 			}
 			break;
@@ -1326,6 +343,7 @@ void loop()
 		if (deviceCalStage != doneCal)
 		{
 			deviceCalStage = doneCal;
+			EEPROMdata.motorPos = stepper1.currentPosition();
 			if (DEBUG_MESSAGES)
 			{
 				Serial.printf("[MAIN man ctrl] CANCELLED CALIBRATION.\n");
@@ -1368,31 +386,17 @@ void loop()
 				last = millis();
 				Serial.printf("[MAIN] Free heap: %d bytes\n", ESP.getFreeHeap());
 				//print out the value of the limit switches
-				Serial.printf("[MAIN] TrueState: %d, POS: %d, CW_LIM_SET? %s,CCW_LIM_SET? %s\n", deviceTrueState, stepper1.currentPosition(), motorPosAtCCWset ? "Y" : "N", motorPosAtCWset ? "Y" : "N");
+				Serial.printf("[MAIN] TrueState: %d, POS: %d, CW_LIM_SET? %s,CCW_LIM_SET? %s\n", deviceTrueState, stepper1.currentPosition(), EEPROMdata.motorPosAtCCWset ? "Y" : "N", EEPROMdata.motorPosAtCWset ? "Y" : "N");
 				Serial.printf("[MAIN] Manual Switch Positions CCWman: %d; CWman: %d; SELman: %d\n", CCWmanSensorVal, CWmanSensorVal, SELmanSensorVal);
 			}
 		}
 	}
 }
-//this function replaces open with close if 
-//CW is defined as open by openIsCCW
-bool whichWay(bool in){
-	bool ret=in;
-	if(EEPROMdata.openIsCCW=="CCW"){
-		ret = !ret;
-	}
-	return ret;
-}
-//this function changes goto commmand values to their
-//complement (100-original value) if CW is defined as 
-//open by openIsCCW
-int whichWayGoto(int in){
-	int ret=in;
-	if(EEPROMdata.openIsCCW=="CCW"){
-		ret = 100-ret;
-	}
-	return ret;
-}
+
+//This function takes messages from some remote address (if from another node)
+//that are of maximum lenght MAXCMDSZ and determines what actions are required.
+//Commands can come from other nodes via UDP messages or from the web if this
+//is the MASTER node running the webserver 
 void executeCommands(char inputMsg[MAXCMDSZ], IPAddress remote)
 {
 	String cmd = String(inputMsg);
@@ -1415,14 +419,12 @@ void executeCommands(char inputMsg[MAXCMDSZ], IPAddress remote)
 		Serial.println("[executeCommands] Commanded GOTO (" + cmd + ")");
 		executeGoto(cmd); //WiFi "false" is close or going CW to stop
 	}
-	else if (cmd.startsWith("data"))
+	else if (cmd.startsWith("hi"))
 	{
 		if (DEBUG_MESSAGES)
 		{
-			Serial.println("[executeCommands] Commanded DATA");
+			Serial.println("[executeCommands] Hello!");
 		}
-		//TODO - make it work for serial also
-		//dataDump();
 	}
 	else if (cmd.startsWith("reset"))
 	{
@@ -1502,12 +504,307 @@ void executeCommands(char inputMsg[MAXCMDSZ], IPAddress remote)
 	}
 }
 
+//Parses string command and then executes the move.
+//cmd will be of form goto### (e.g., goto034)
+void executeGoto(String cmd)
+{
+	int newPercentOpen = whichWayGoto(cmd.substring(4).toInt()); //STRIP OFF GOTO and correct for openisCCCW
+	if (DEBUG_MESSAGES)
+	{
+		Serial.printf("[executeGoto] Going to percent open: %d\n", newPercentOpen);
+	}
+	deviceTrueState = openPercentActuator(newPercentOpen);
+}
+//execute a WiFi received state change
+void executeState(bool state)
+{
+	bool correctedState = whichWay(state);
+	if (DEBUG_MESSAGES)
+	{
+		Serial.printf("[executeState] Going to state: %s\n", state ? "ON" : "OFF");
+	}
+	deviceState = state;
+
+	if (correctedState)
+	{
+		deviceTrueState = openActuator();
+	}
+	else
+	{
+		deviceTrueState = closeActuator();
+	}
+}
+
+//do a manual move in the CW direction
+void manCW()
+{
+	int CWlimSensorVal = digitalRead(SWpinLimitCW);
+	int curPos = stepper1.currentPosition();
+	manSelCnt = 0;
+	if (DEBUG_MESSAGES)
+	{
+		Serial.printf("[manCW] CWlim: %d; motorPos: %d; lastCommand: %s\n", CWlimSensorVal, curPos, manCommandState_String[lastManCommand]);
+	}
+
+	lastManCommand = CW;
+
+	if (CWlimSensorVal == 1)
+	{ //not at CW limit
+		deviceTrueState = man_CW;
+		if (DEBUG_MESSAGES)
+		{
+			Serial.printf("[manCW] ..moving CW..\n");
+		}
+
+		if (!stepper1.isRunning())
+		{
+			stepper1.enableOutputs();
+		}
+
+		stepper1.move(MANSTEP);
+		stepper1.setSpeed(MANSPEED);
+		stepper1.runSpeedToPosition();
+	}
+	else
+	{
+		//at actual SW limit update the limit SW position
+		EEPROMdata.motorPosAtFullCW = curPos;
+		deviceTrueState = man_idle;
+		idleActuator(deviceTrueState);
+	}
+}
+
+//do a manual move in the CCW direction
+
+void manCCW()
+{
+	int CCWlimSensorVal = digitalRead(SWpinLimitCCW);
+	int curPos = stepper1.currentPosition();
+	manSelCnt = 0;
+	if (DEBUG_MESSAGES)
+	{
+		Serial.printf("[manCCW] CCWlim: %d; motorPos: %d; lastCommand: %s\n", CCWlimSensorVal, curPos, manCommandState_String[lastManCommand]);
+	}
+
+	lastManCommand = CCW;
+
+	if (CCWlimSensorVal == 1)
+	{ //not at CCW limit
+		deviceTrueState = man_CCW;
+		if (DEBUG_MESSAGES)
+		{
+			Serial.printf("[manCCW] ..moving CCW..\n");
+		}
+
+		if (!stepper1.isRunning())
+		{
+			stepper1.enableOutputs();
+		}
+
+		stepper1.move(-MANSTEP);
+		stepper1.setSpeed(-MANSPEED);
+		stepper1.runSpeedToPosition();
+	}
+	else
+	{
+		//at actual SW limit update the limit SW position
+		EEPROMdata.motorPosAtFullCCW = curPos;
+		deviceTrueState = man_idle;
+		idleActuator(deviceTrueState);
+	}
+}
+
+//set new limit for stopping motor based on the last commanded manual position
+void manSel()
+{
+	int CCWlimSensorVal = digitalRead(SWpinLimitCCW);
+	int CWlimSensorVal = digitalRead(SWpinLimitCW);
+	int curPos = stepper1.currentPosition();
+
+	//if button pressed for more than 1 second increment the count
+	static unsigned long last = millis();
+	if (millis() - last > 1000)
+	{
+		last = millis();
+		manSelCnt++;
+	}
+
+	if (DEBUG_MESSAGES)
+	{
+		Serial.printf("[manSel] CCWlim: %d; CWlim: %d; motorPos: %d; lastCommand: %s; manSelCnt: %d;\n", CCWlimSensorVal, CWlimSensorVal, curPos, manCommandState_String[lastManCommand], manSelCnt);
+	}
+	switch (lastManCommand)
+	{
+	case CW: //set new CW limit position
+		if (!CWlimSensorVal)
+		{
+			setCWLimit(curPos - 3); //back off of limit switch a bit
+		}
+		else
+		{
+			setCWLimit(curPos);
+		}
+		break;
+	case CCW: //set new CCW limit position
+		if (!CCWlimSensorVal)
+		{
+			setCCWLimit(curPos + 3); //back off of limit switch a bit
+		}
+		else
+		{
+			setCCWLimit(curPos);
+		}
+		break;
+	case none:
+	case SEL:
+		if (manSelCnt > 5)
+		{ //select button held long time - reset the limits and put the deviceState -> unknown
+			if (DEBUG_MESSAGES)
+			{
+				Serial.printf("[manSEL] Long Press detected - reseting the box\n");
+			}
+			resetOnNextLoop = true;
+		}
+		break;
+	}
+	lastManCommand = SEL;
+}
+
+void setCWLimit(long newLimit)
+{
+	EEPROMdata.motorPosAtCW = newLimit;
+	if (DEBUG_MESSAGES)
+	{
+		Serial.printf("[setCWLimit] New Limit: %d \n", newLimit);
+	}
+	EEPROMdata.motorPosAtCWset = true;
+	if (EEPROMdata.motorPosAtCCW >= EEPROMdata.motorPosAtCW)
+	{ //if limits are reversed, update the CCW limit
+		if (DEBUG_MESSAGES)
+		{
+			Serial.printf("[setCWLimit] LIMITS REVERSED, updating CCW Limit: %d ", newLimit - 1);
+		}
+		EEPROMdata.motorPosAtCCW = EEPROMdata.motorPosAtCW - 1;
+		EEPROMdata.motorPosAtCCWset = true;
+	}
+}
+
+void setCCWLimit(long newLimit)
+{
+	EEPROMdata.motorPosAtCCW = newLimit;
+	if (DEBUG_MESSAGES)
+	{
+		Serial.printf("[setCCWLimit] New Limit: %d \n", newLimit);
+	}
+	EEPROMdata.motorPosAtCCWset = true;
+	if (EEPROMdata.motorPosAtCW <= EEPROMdata.motorPosAtCCW)
+	{ //if limits are reversed, update the CW limit
+		if (DEBUG_MESSAGES)
+		{
+			Serial.printf("[setCCWLimit] LIMITS REVERSED, updating CW Limit: %d \n", newLimit + 1);
+		}
+		EEPROMdata.motorPosAtCW = EEPROMdata.motorPosAtCCW + 1;
+		EEPROMdata.motorPosAtCCWset = true;
+	}
+}
+
+//function used to do a normal WiFi or calibration opening of the actuator
+void normalOpening()
+{
+	if (!digitalRead(SWpinLimitCCW))
+	{
+		//reached limit - disable everything and reset motor to idle
+		EEPROMdata.motorPosAtFullCCW = stepper1.currentPosition();
+		EEPROMdata.motorPosAtCCW = EEPROMdata.motorPosAtFullCCW + 3; //back off of limit switch a bit
+		EEPROMdata.motorPosAtCCWset = true;
+
+		if (!EEPROMdata.motorPosAtCWset)
+		{ //if opposite position not set, set guess at full swing
+			EEPROMdata.motorPosAtCW = EEPROMdata.motorPosAtCCW + FULL_SWING;
+		}
+		idleActuator(opened); //make actuator idle
+		if (DEBUG_MESSAGES)
+		{
+			int CCWlimSensorVal = digitalRead(SWpinLimitCCW);
+			int CWlimSensorVal = digitalRead(SWpinLimitCW);
+			Serial.printf("[normalOpening] Reached CCW stop at motor position %d; CCW: %d; CW: %d\n", stepper1.currentPosition(), CCWlimSensorVal, CWlimSensorVal);
+		}
+	}
+	else
+	{ //keep going if still have distance to travel
+		if (stepper1.distanceToGo() != 0)
+		{
+			stepper1.run();
+		}
+		else
+		{
+			idleActuator(opened);
+		}
+	}
+}
+
+//function used to do a normal WiFi or calibration closing of the actuator
+void normalClosing()
+{
+	if (!digitalRead(SWpinLimitCW))
+	{
+		//reached limit - disable everything and reset motor to idle
+		EEPROMdata.motorPosAtFullCW = stepper1.currentPosition();
+		EEPROMdata.motorPosAtCW = EEPROMdata.motorPosAtFullCW - 3; //back off of limit switch a bit
+		EEPROMdata.motorPosAtCWset = true;
+
+		if (!EEPROMdata.motorPosAtCCWset)
+		{ //if opposite position not set, set guess at full swing
+			EEPROMdata.motorPosAtCCW = EEPROMdata.motorPosAtCW - FULL_SWING;
+		}
+		idleActuator(closed); //make actuator idle
+		if (DEBUG_MESSAGES)
+		{
+			int CCWlimSensorVal = digitalRead(SWpinLimitCCW);
+			int CWlimSensorVal = digitalRead(SWpinLimitCW);
+			Serial.printf("[normalClosing] Reached CW stop at motor position %d; CCW: %d; CW: %d\n", stepper1.currentPosition(), CCWlimSensorVal, CWlimSensorVal);
+		}
+	}
+	else
+	{ //keep going if still have distance to travel
+		if (stepper1.distanceToGo() != 0)
+		{
+			stepper1.run();
+		}
+		else
+		{
+			idleActuator(closed);
+		}
+	}
+}
+//this function replaces open with close if 
+//CW is defined as open by openIsCCW
+bool whichWay(bool in){
+	bool ret=in;
+	if(EEPROMdata.openIsCCW=="CCW"){
+		ret = !ret;
+	}
+	return ret;
+}
+//this function changes goto commmand values to their
+//complement (100-original value) if CW is defined as 
+//open by openIsCCW
+int whichWayGoto(int in){
+	int ret=in;
+	if(EEPROMdata.openIsCCW=="CW"){
+		ret = 100-ret;
+	}
+	return ret;
+}
+
 trueState idleActuator(trueState idleState)
 {
 	stepper1.stop();
 	stepper1.setSpeed(0);
 	stepper1.disableOutputs();
 	deviceTrueState = idleState;
+	EEPROMdata.motorPos = int(stepper1.currentPosition());
+	storeMotorDataToEEPROM();
 	UDPpollReply(masterIP); //tell the Master Node the new info
 	return idleState;
 }
@@ -1520,15 +817,15 @@ trueState openActuator()
 		newState = opening;
 		if (DEBUG_MESSAGES)
 		{
-			Serial.printf("[openActuator] OPENING -> NEWSTATE: %s, Pos: %d, Target: %d\n", trueState_String[newState], stepper1.currentPosition(), motorPosAtCCW);
+			Serial.printf("[openActuator] OPENING -> NEWSTATE: %s, Pos: %d, Target: %d\n", trueState_String[newState], stepper1.currentPosition(), EEPROMdata.motorPosAtCCW);
 		}
 		stepper1.enableOutputs();
-		stepper1.moveTo(motorPosAtCCW);
+		stepper1.moveTo(EEPROMdata.motorPosAtCCW);
 		stepper1.setSpeed(-START_SPEED);
 	}
 	else
 	{
-		motorPosAtFullCCW = stepper1.currentPosition();
+		EEPROMdata.motorPosAtFullCCW = stepper1.currentPosition();
 		newState = idleActuator(opened);
 		if (DEBUG_MESSAGES)
 		{
@@ -1546,7 +843,7 @@ trueState openActuator()
 trueState openPercentActuator(int percent)
 {
 	trueState newState;
-	int newMotorPos = (int)((motorPosAtCW - motorPosAtCCW) * percent / 100 + motorPosAtCCW);
+	int newMotorPos = (int)((EEPROMdata.motorPosAtCW - EEPROMdata.motorPosAtCCW) * percent / 100 + EEPROMdata.motorPosAtCCW);
 	if (DEBUG_MESSAGES)
 	{
 		Serial.printf("[openPercentActuator] Going to %d percent open. New Pos: %d\n", percent, newMotorPos);
@@ -1558,7 +855,7 @@ trueState openPercentActuator(int percent)
 			newState = opening;
 			if (DEBUG_MESSAGES)
 			{
-				Serial.printf("[openPercentActuator] Moving CCW -> NEWSTATE: %s, Pos: %d, Target: %d\n", trueState_String[newState], stepper1.currentPosition(), motorPosAtCCW);
+				Serial.printf("[openPercentActuator] Moving CCW -> NEWSTATE: %s, Pos: %d, Target: %d\n", trueState_String[newState], stepper1.currentPosition(), EEPROMdata.motorPosAtCCW);
 			}
 			stepper1.enableOutputs();
 			stepper1.moveTo(newMotorPos);
@@ -1566,7 +863,7 @@ trueState openPercentActuator(int percent)
 		}
 		else
 		{
-			motorPosAtFullCCW = stepper1.currentPosition();
+			EEPROMdata.motorPosAtFullCCW = stepper1.currentPosition();
 			newState = idleActuator(opened);
 			if (DEBUG_MESSAGES)
 			{
@@ -1582,7 +879,7 @@ trueState openPercentActuator(int percent)
 			newState = closing;
 			if (DEBUG_MESSAGES)
 			{
-				Serial.printf("[openPercentActuator] Moving CW -> NEWSTATE: %s, Pos: %d, Target: %d\n", trueState_String[newState], stepper1.currentPosition(), motorPosAtCW);
+				Serial.printf("[openPercentActuator] Moving CW -> NEWSTATE: %s, Pos: %d, Target: %d\n", trueState_String[newState], stepper1.currentPosition(), EEPROMdata.motorPosAtCW);
 			}
 			stepper1.enableOutputs();
 			stepper1.moveTo(newMotorPos);
@@ -1590,7 +887,7 @@ trueState openPercentActuator(int percent)
 		}
 		else
 		{
-			motorPosAtFullCW = stepper1.currentPosition();
+			EEPROMdata.motorPosAtFullCW = stepper1.currentPosition();
 			newState = idleActuator(closed);
 			if (DEBUG_MESSAGES)
 			{
@@ -1608,15 +905,15 @@ trueState closeActuator()
 		newState = closing;
 		if (DEBUG_MESSAGES)
 		{
-			Serial.printf("[closeActuator] CLOSING -> NEWSTATE: %s, Pos: %d, Target: %d\n", trueState_String[newState], stepper1.currentPosition(), motorPosAtCW);
+			Serial.printf("[closeActuator] CLOSING -> NEWSTATE: %s, Pos: %d, Target: %d\n", trueState_String[newState], stepper1.currentPosition(), EEPROMdata.motorPosAtCW);
 		}
 		stepper1.enableOutputs();
-		stepper1.moveTo(motorPosAtCW);
+		stepper1.moveTo(EEPROMdata.motorPosAtCW);
 		stepper1.setSpeed(START_SPEED);
 	}
 	else
 	{
-		motorPosAtFullCW = stepper1.currentPosition();
+		EEPROMdata.motorPosAtFullCW = stepper1.currentPosition();
 		newState = idleActuator(closed);
 		if (DEBUG_MESSAGES)
 		{
@@ -1656,215 +953,6 @@ void slowBlinks(int numBlinks)
 	pinMode(SWpinManSel, INPUT_PULLUP);
 }
 
-/*========================================
-===========WEB SERVER FUNCTIONS===========
-=========================================*/
-//provide a JSON structure with all the deviceArray data
-void handleJSON()
-{
-	if (EEPROMdata.master || (masterIP.toString()=="0.0.0.0"))
-	{
-		UDPbroadcast();
-		//TODO - IF NEW JSON DEVICE NOT IN THE CONTROL THEN CTRL PANEL SHOULD BE TOLD TO REFRESH
-		httpServer.send(200, "text/html", getJSON().c_str());
-	}
-	else
-	{
-		handleNotMaster();
-	}
-}
-
-void handleNotMaster()
-{
-	String ipToShow = masterIP.toString();
-	if(ipToShow == "0.0.0.0") {
-		ipToShow = WiFi.localIP().toString();
-	}
-	String response = " <!DOCTYPE html> <html> <head> <title>fishDIY Device Network</title> <style> body {background-color: #edf3ff;font-family: \"Lucida Sans Unicode\", \"Lucida Grande\", sans-serif;}  .fishyHdr {align:center; border-radius:25px;font-size: 18px;     font-weight: bold;color: white;background: #3366cc; vertical-align: middle; } </style>  <body> <div class=\"fishyHdr\">Go to <a href=\"http://" + ipToShow + "\"> Master (" + ipToShow + ")</a></div> </body> </html> ";
-	httpServer.send(200, "text/html", response.c_str());
-}
-
-String getJSON()
-{
-	String temp;
-	temp = "{\"fishyDevices\":[";
-	for (int i = 0; i < MAX_DEVICE; i++)
-	{
-		if (!deviceArray[i].dead)
-		{
-			if (i > 0)
-			{
-				temp += ",";
-			}
-/* 
-put fishyDevice data in a string.
-Note - this is parsed by scripts in webresources.h 
-and paralleled by UDPpollReply; 
-if adding elements all these need updating.
-{ip,isCalibrated,isMaster,motorPos,motorPosAtCCW,motorPosAtCW,motorPosAtFullCCW,motorPosAtFullCW,name,openIsCCW,port,group,note,swVer,devType}
-*/
-			temp += "{\"deviceID\":\"" + String(i) + "\",\"IP\":\"" + deviceArray[i].ip.toString() + "\",\"dead\":\"" + String(deviceArray[i].dead) +
-					"\",\"isCalibrated\":\"" + String(deviceArray[i].isCalibrated ? "true" : "false") +
-					"\",\"isMaster\":\"" + String(deviceArray[i].isMaster ? "true" : "false") + "\",\"motorPos\":\"" + String(deviceArray[i].motorPos) +
-					"\",\"motorPosAtCCW\":\"" + String(deviceArray[i].motorPosAtCCW) + "\",\"motorPosAtCW\":\"" + String(deviceArray[i].motorPosAtCW) +
-					"\",\"motorPosAtFullCCW\":\"" + String(deviceArray[i].motorPosAtFullCCW) + "\",\"motorPosAtFullCW\":\"" + String(deviceArray[i].motorPosAtFullCW) +
-					"\",\"deviceName\":\"" + String(deviceArray[i].name) + "\",\"openIsCCW\":\"" + String(deviceArray[i].openIsCCW ? "true" : "false") +
-					"\",\"port\":\"" + String(deviceArray[i].port) + "\",\"group\":\"" + String(deviceArray[i].group) + "\",\"note\":\"" + String(deviceArray[i].note) + "\",\"swVer\":\"" + String(deviceArray[i].swVer) + "\",\"devType\":\"" + String(deviceArray[i].devType) + "\"}";
-		}
-	}
-	temp += "]}";
-	//if(DEBUG_MESSAGES){Serial.println("[getJSON] built: " + temp);}
-	return temp;
-}
-
-void handleGenericArgs()
-{ //Handler
-	if (EEPROMdata.master || (masterIP.toString()=="0.0.0.0"))
-	{
-		IPAddress IPtoSend;
-		String IPforCommand = "";
-		char command[MAXCMDSZ] = "";
-		String message = "Number of args received:";
-		message += httpServer.args(); //Get number of parameters
-		message += "\n";			  //Add a new line
-		if (DEBUG_MESSAGES)
-		{
-			Serial.println("[handleGenericArgs] :" + message);
-		}
-		for (int i = 0; i < httpServer.args(); i++)
-		{
-			message += "Arg #" + String(i) + " -> "; //Include the current iteration value
-			message += httpServer.argName(i) + ": "; //Get the name of the parameter
-			message += httpServer.arg(i) + "\n";	 //Get the value of the parameter
-
-			if (httpServer.argName(i) == "IPCommand")
-			{
-				String response = httpServer.arg(i);
-
-				//IP
-				int strStrt = 0;
-				int strStop = response.indexOf(";", strStrt);
-				String strIP = response.substring(strStrt, strStop);
-				IPtoSend[3] = strIP.substring(strIP.lastIndexOf(".") + 1).toInt();
-				strIP = strIP.substring(0, strIP.lastIndexOf("."));
-				IPtoSend[2] = strIP.substring(strIP.lastIndexOf(".") + 1).toInt();
-				strIP = strIP.substring(0, strIP.lastIndexOf("."));
-				IPtoSend[1] = strIP.substring(strIP.lastIndexOf(".") + 1).toInt();
-				strIP = strIP.substring(0, strIP.lastIndexOf("."));
-				IPtoSend[0] = strIP.toInt();
-				response = response.substring(strStop + 1);
-				if (DEBUG_MESSAGES && UDP_PARSE_MESSAGES)
-				{
-					Serial.println("[handleGenericArgs] strIP:response " + IPtoSend.toString() + ":" + response);
-				}
-				message += "[handleGenericArgs] strIP:response " + IPtoSend.toString() + ":" + response;
-				
-				response.toCharArray(command, MAXCMDSZ);
-				if (IPtoSend == WiFi.localIP())
-				{
-					if (DEBUG_MESSAGES && UDP_PARSE_MESSAGES)
-					{
-						Serial.println("[handleGenericArgs] MASTER node processing configuration change...");
-					}
-					executeCommands(command, WiFi.localIP());
-				}
-				else
-				{
-					if (DEBUG_MESSAGES && UDP_PARSE_MESSAGES)
-					{
-						Serial.println("[handleGenericArgs] Sending slave node configuration change...");
-					}
-					Udp.beginPacket(IPtoSend, UDP_LOCAL_PORT);
-					Udp.write(response.c_str());
-					Udp.endPacket();
-				}
-			}
-		}
-		httpServer.send(200, "text/plain", message); //Response to the HTTP request
-	}
-	else
-	{
-		handleNotMaster();
-	}
-}
-void handleRoot()
-{
-	//only process the webrequest if you are the master or if there is no master
-	if (EEPROMdata.master || (masterIP.toString()=="0.0.0.0"))
-	{
-		if (DEBUG_MESSAGES)
-		{
-			Serial.println("[handleRoot] 1: ");
-		}
-
-		int szchnk = 2900;
-
-		//LARGE STRINGS - Break response into parts
-		httpServer.sendHeader("Cache-Control", "no-cache, no-store, must-revalidate");
-		httpServer.sendHeader("Pragma", "no-cache");
-		httpServer.sendHeader("Expires", "-1");
-		httpServer.setContentLength(CONTENT_LENGTH_UNKNOWN); 
-		httpServer.send(200, "text/html", "");
-
-		//Send PART1:
-		handleStrPartResp(WEBSTRPT1,szchnk);
-		
-		//Send JSON:
-		handleStrPartResp(String("var fishyNetJSON ='" + getJSON() + "';"),szchnk);
-		
-		//Send PART2:
-		handleStrPartResp(WEBSTRPT2,szchnk);
-
-		//Send PART3: - this is the svg which is really optional
-		handleStrPartResp(WEBSTRPT3,szchnk);
-
-		//Send PART4:
-		handleStrPartResp(WEBSTRPT4,szchnk);
-		
-		//Send PART5:
-		handleStrPartResp(WEBSTRPT5,szchnk);
-		
-		httpServer.sendContent("");
-		httpServer.client().stop();
-
-		if (DEBUG_MESSAGES)
-		{
-			Serial.println("[handleRoot]\n");
-		}
-	}
-	else
-	{
-		handleNotMaster();
-	}
-}
-
-//send a str that is part of a webresponse and break it into chunks of szchnk
-void handleStrPartResp(String str,int szchnk){
-	int strt = 0;
-	int stp = 0;
-	int len = str.length();
-	if (DEBUG_MESSAGES)	{Serial.println("[handleRoot] PT1 str.len: " + String(len));}
-	while (stp < len)
-	{
-		strt = stp;
-		stp = strt + szchnk;
-		if (stp > len)
-		{
-			stp = len;
-		}
-		httpServer.sendContent(str.substring(strt, stp).c_str());
-		if (DEBUG_MESSAGES)
-		{
-			Serial.println(str.substring(strt, stp));
-		}
-	}
-}
-
-//web server response to other
-void handleNotFound()
-{
-	handleNotMaster();
-}
 
 //makes the name string 255 in length and adds H3 tags (space after tags so ignored by browser)
 String paddedH3Name(String name)

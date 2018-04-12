@@ -5,27 +5,29 @@
 //--------------------------PERSONALITY SETTINGS-----------------------------------//
 //Put in a time/date string to define the personality variables. On load the device will look to
 //see if the settings stored in EEPROM are different; if so they will be loaded.  If not
-//they will use the new software but keep the old EEPROM settings.  This allows a single 
-//software upload to be used for multiple devices without overwritting their "personality settings".
+//they will use the new software but keep the old EEPROM settings and any stored motor position 
+//and calibration info.  
+//This allows a single software upload to be used for multiple devices without overwritting 
+//their "personality settings" and wiping out stored motor info.
 //String format -> "YYYYMMDDHHmm" (where HHmm is 24 hr time). The other device settings 
 //are used every time software is loaded
-#define INITIALIZE "201804072033"
+#define INITIALIZE "201804080055"
 
 //this is for keeping track of SW version
 //it is displayed but not otherwise used
 //LIMITED to 10 alpanumeric characters
-#define SW_VER "20180407-5"
+#define SW_VER "20180408-1"
 
 //PICK A UNIQUE NAME FOR EACH DEVICE USING ONLY LETTERS AND NUMBERS
 // LIMITED to 40 alpanumeric characters (abcdefghijklmnopqrstuvwxyz0123456789)
 // #define CUSTOM_DEVICE_NAME "Vent Damper 1"
-#define CUSTOM_DEVICE_NAME "Vent Damper 2"
-// #define CUSTOM_DEVICE_NAME "Vent Damper 3"
+// #define CUSTOM_DEVICE_NAME "Vent Damper 2"
+#define CUSTOM_DEVICE_NAME "Vent Damper 3"
 
 //PICK ONLY ONE DEVICE ON THE NETWORK AS MASTER (and set this to true when you compile its code).  
 //IT WILL BE THE WEBSERVER AND CONTROLLER FOR ALL OTHER NODES.  Set false for all the others.
-#define MASTER_NODE true
-// #define MASTER_NODE false
+// #define MASTER_NODE true
+#define MASTER_NODE false
 
 //FIGURE OUT WHAT DIRECTION YOU WANT TO PICK AS OPEN or CLOSE FOR YOUR DEVICE.  
 //TODO - use this parameter correctly
@@ -59,7 +61,7 @@
 
 //Test switches for Serial output text (set to false to disable debug messages) and WiFi Functions
 #define DEBUG_MESSAGES true
-#define UDP_PARSE_MESSAGES false
+#define UDP_PARSE_MESSAGES true
 #define DEBUG_HEAP_MESSAGE false
 #define DEBUG_WiFiOFF false //turn to true to test without wifi
 //-----------------------------------------------------------------------------------

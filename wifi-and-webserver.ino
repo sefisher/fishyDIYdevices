@@ -39,6 +39,7 @@ void WiFiSetup()
 	MDNS.begin(hostName.c_str());					  //start mDNS to fishyDIYmaster.local
 	httpServer.on("/genericArgs", handleGenericArgs); //Associate the handler function to the path
 	httpServer.on("/", handleRoot);
+	httpServer.on("/SWupdater", handleSWupdater);
 	httpServer.on("/device.JSON", handleJSON);
 	httpServer.onNotFound(handleNotFound);
 	httpUpdater.setup(&httpServer);
@@ -226,6 +227,53 @@ void handleRoot()
 		if (DEBUG_MESSAGES)
 		{
 			Serial.println("[handleRoot]\n");
+		}
+	}
+	else
+	{
+		handleNotMaster();
+	}
+}
+void handleSWupdater()
+{
+	//only process the webrequest if you are the master or if there is no master
+	if (EEPROMdata.master || (masterIP.toString()=="0.0.0.0"))
+	{
+		if (DEBUG_MESSAGES)
+		{
+			Serial.println("[handleSWupdater] 1: ");
+		}
+
+		int szchnk = 2900;
+
+		//LARGE STRINGS - Break response into parts
+		httpServer.sendHeader("Cache-Control", "no-cache, no-store, must-revalidate");
+		httpServer.sendHeader("Pragma", "no-cache");
+		httpServer.sendHeader("Expires", "-1");
+		httpServer.setContentLength(CONTENT_LENGTH_UNKNOWN); 
+		httpServer.send(200, "text/html", "");
+
+		//Send PART1:
+		handleStrPartResp(WEBSTRPT1,szchnk);
+		
+		//Send JSON:
+		handleStrPartResp(String("var fishyNetJSON ='" + getJSON() + "';"),szchnk);
+		
+		//Send PART2ALT:
+		handleStrPartResp(WEBSTRPT2ALT,szchnk);
+
+		//Skip PART3 Send PART4ALT:
+		handleStrPartResp(WEBSTRPT4ALT,szchnk);
+		
+		//Send PART5:
+		handleStrPartResp(WEBSTRPT5,szchnk);
+		
+		httpServer.sendContent("");
+		httpServer.client().stop();
+
+		if (DEBUG_MESSAGES)
+		{
+			Serial.println("[handleSWupdater]\n");
 		}
 	}
 	else

@@ -78,6 +78,14 @@ typedef struct fishyDevice
 	String devType = "";
 	bool motorPosAtCCWset = false;
 	bool motorPosAtCWset = false;
+	//TODO - copy initialization string and swVer into 
+	//fishydevice and send via poll requests
+	// then build a webpage that shows that info
+	//for all devices in fishynetwork with 
+	//ability to update each using 
+	// iframes
+	String initStamp;
+	String swVer;
 } fishyDevice;
 
 //210 byte struct for storing personailty data in real time and for storing in EEPROM

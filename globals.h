@@ -85,7 +85,6 @@ typedef struct fishyDevice
 	//ability to update each using 
 	// iframes
 	String initStamp;
-	String swVer;
 } fishyDevice;
 
 //210 byte struct for storing personailty data in real time and for storing in EEPROM

@@ -207,7 +207,7 @@ void handleRoot()
 		handleStrPartResp(WEBSTRPT1,szchnk);
 		
 		//Send JSON:
-		handleStrPartResp(String("var fishyNetJSON ='" + getJSON() + "';"),szchnk);
+		handleStrPartResp(String("<script>var fishyNetJSON ='" + getJSON() + "';</script>"),szchnk);
 		
 		//Send PART2:
 		handleStrPartResp(WEBSTRPT2,szchnk);
@@ -257,7 +257,7 @@ void handleSWupdater()
 		handleStrPartResp(WEBSTRPT1,szchnk);
 		
 		//Send JSON:
-		handleStrPartResp(String("var fishyNetJSON ='" + getJSON() + "';"),szchnk);
+		handleStrPartResp(String("<script>var fishyNetJSON ='" + getJSON() + "';</script>"),szchnk);
 		
 		//Send PART2ALT:
 		handleStrPartResp(WEBSTRPT2ALT,szchnk);

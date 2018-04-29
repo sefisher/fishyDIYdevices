@@ -16,7 +16,7 @@
 //this is for keeping track of SW version
 //it is displayed but not otherwise used
 //LIMITED to 10 alpanumeric characters
-#define SW_VER "20180408-1"
+#define SW_VER "20180429-2"
 
 //PICK A UNIQUE NAME FOR EACH DEVICE USING ONLY LETTERS AND NUMBERS
 // LIMITED to 40 alpanumeric characters (abcdefghijklmnopqrstuvwxyz0123456789)

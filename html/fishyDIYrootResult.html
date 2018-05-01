@@ -316,7 +316,7 @@ the code do the following:
     -------------------------------------------------------------------------------------------- -->
         
         <script>
-        var fishyNetJSON = '{"fishyDevices":[{"deviceID":"0","IP":"10.203.1.197","dead":"0","isCalibrated":"false","isMaster":"true","motorPos":"0","motorPosAtCCW":"-3500","motorPosAtCW":"3500","motorPosAtFullCCW":"-3500","motorPosAtFullCW":"3500","deviceName":"Vent Damper 2","openIsCCW":"true","port":"8266","group":"","note":"","swVer":"20180330-1","devType":""},{"deviceID":"2","IP":"10.203.1.145","dead":"0","isCalibrated":"false","isMaster":"false","motorPos":"0","motorPosAtCCW":"-3500","motorPosAtCW":"3500","motorPosAtFullCCW":"-3500","motorPosAtFullCW":"3500","deviceName":"Vent Damper 3","openIsCCW":"true","port":"8266","group":"","note":"","swVer":"","devType":""}]}';
+        var fishyNetJSON = '{"fishyDevices":[{"deviceID":"0","IP":"10.203.1.197","dead":"0","isCalibrated":"false","isMaster":"true","motorPos":"0","motorPosAtCCW":"-3500","motorPosAtCW":"3500","motorPosAtFullCCW":"-3500","motorPosAtFullCW":"3500","deviceName":"Vent Damper 2","openIsCCW":"true","port":"8266","group":"","note":"","swVer":"20180330-1","devType":"","initStamp":"201804292100"},{"deviceID":"2","IP":"10.203.1.145","dead":"0","isCalibrated":"false","isMaster":"false","motorPos":"0","motorPosAtCCW":"-3500","motorPosAtCW":"3500","motorPosAtFullCCW":"-3500","motorPosAtFullCW":"3500","deviceName":"Vent Damper 3","openIsCCW":"false","port":"8266","group":"","note":"","swVer":"","devType":"","initStamp":"201804292100"}]}';
         </script>
 
     <!-- -------------------------------------------------------------------------------------------
@@ -492,6 +492,7 @@ the code do the following:
             var ret = Math.round(100 * ((motPos - motPosCCW) / (motPosCW - motPosCCW)));
             //correct if CW = open
             if(openIsCCW=='true') ret = 100-ret;
+            
             return ret;
         }
         function addDevice(d){
@@ -507,7 +508,7 @@ the code do the following:
                     "<div class='sldRow'>" +
                     "	<div class='sldLab'>% Open</div><input class='sld' id='pctOpenSld-" + ii + "' type='range' value='" + posPct(d.motorPos, d.motorPosAtCCW, d.motorPosAtCW,d.openIsCCW) + "' max='100' min='0' oninput=sync(" + ii + ",'pctOpen',1)> <input class='sldVal' id='pctOpenVal-" + ii + "' type='number' value='" + posPct(d.motorPos, d.motorPosAtCCW, d.motorPosAtCW,d.openIsCCW) + "' max='100' min='0' onchange=sync(" + ii + ",'pctOpen',2)>" +
                     "</div>" +
-                    "<div class='btnRow'><input class='lftBtn' id='fobtn-" + ii + "' type='button' value='Full Open' onclick=sendCmd(" + ii + ",'O')><input class='midBtn' id='pobtn-" + ii + "' type='button' value='Go % Open' onclick=sendCmd(" + ii + ",'G')><input class='rgtBtn' id='fcbtn-" + ii + "' type='button' value='Full Close' onclick=sendCmd(" + ii + ",'C')></div>" +
+                    "<div class='btnRow'><input class='lftBtn' id='fcbtn-" + ii + "' type='button' value='Full Close' onclick=sendCmd(" + ii + ",'C')><input class='midBtn' id='pobtn-" + ii + "' type='button' value='Go % Open' onclick=sendCmd(" + ii + ",'G')><input class='rgtBtn' id='fobtn-" + ii + "' type='button' value='Full Open' onclick=sendCmd(" + ii + ",'O')></div>" +
                     "<div class='cfgPnl' id='cfgPnl-" + ii + "' style='display: hidden;'><hr>" +
                     "<label class='cfgInpLab' for='devNote-" + ii + "'>Note:<input class='cfgInp' id='note-" + ii + "' value='" + d.note + "' maxlength='55'></label><div class='calTxt' id='calTxt-" + ii + "'>" + calTxt + "</div>" +
                     "	<div class='sldRow'>" +

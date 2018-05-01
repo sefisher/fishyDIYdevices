@@ -87,21 +87,20 @@ typedef struct fishyDevice
 	String initStamp;
 } fishyDevice;
 
-//210 byte struct for storing personailty data in real time and for storing in EEPROM
+//207 byte struct for storing personailty data in real time and for storing in EEPROM
 //remember a character is needed for the string terminations
-#define EEPROMsz 210
-//motor data starts at addr 188 and is 22 bytes long (when just updating that data)
-#define EEPROMmotDataAddr 188
-#define EEPROMmotDataSz 22
+//SW reports needed 212 bytes; left some margin
+#define EEPROMsz 220
+
 struct EEPROMdata
 {
 	char initstr[13] = ""; 					//13 bytes
 	char namestr[41] = "";					//41 bytes
-	bool master = 0;						//1 byte
+	bool master = false;					//1 byte
 	char typestr[21] = "";					//21 bytes
 	char groupstr[41] = "";					//41 bytes
 	char note[56] = "";						//56 bytes
-	char openIsCCW[4] = "";					//4 bytes
+	bool openIsCCW = true;					//1 byte
 	char swVer[11] = "";					//11 bytes
 	//used to store "soft" limits set by users to constrain open-close range
 	int motorPosAtCCW = -FULL_SWING + 3; 	//4 bytes

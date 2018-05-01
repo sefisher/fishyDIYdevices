@@ -64,29 +64,40 @@ void setup()
 	}
 
 	//Setup Device Personaility and update EEPROM data as needed
-
 	if (DEBUG_MESSAGES)
 	{
 		Serial.println("[SETUP] The personality data needs " + String(sizeof(EEPROMdata)) + " Bytes in EEPROM.");
+		Serial.println("[SETUP] initstr " + String(sizeof(EEPROMdata.initstr)));
+		Serial.println("[SETUP] namestr " + String(sizeof(EEPROMdata.namestr)));
+		Serial.println("[SETUP] master " + String(sizeof(EEPROMdata.master)));
+		Serial.println("[SETUP] typestr " + String(sizeof(EEPROMdata.typestr)));
+		Serial.println("[SETUP] groupstr " + String(sizeof(EEPROMdata.groupstr)));
+		Serial.println("[SETUP] note " + String(sizeof(EEPROMdata.note)));
+		Serial.println("[SETUP] openIsCCW " + String(sizeof(EEPROMdata.openIsCCW)));
+		Serial.println("[SETUP] swVer " + String(sizeof(EEPROMdata.swVer)));
+		Serial.println("[SETUP] motorPosAtCCW " + String(sizeof(EEPROMdata.motorPosAtCCW)));
+		Serial.println("[SETUP] motorPosAtCW " + String(sizeof(EEPROMdata.motorPosAtCW)));
+		Serial.println("[SETUP] motorPosAtFullCCW " + String(sizeof(EEPROMdata.motorPosAtFullCCW)));
+		Serial.println("[SETUP] motorPosAtFullCW " + String(sizeof(EEPROMdata.motorPosAtFullCW)));
+		Serial.println("[SETUP] motorPosAtCCWset " + String(sizeof(EEPROMdata.motorPosAtCCWset)));
+		Serial.println("[SETUP] motorPosAtCWset " + String(sizeof(EEPROMdata.motorPosAtCWset)));
+		Serial.println("[SETUP] motorPos " + String(sizeof(EEPROMdata.motorPos)));
 	}
 
-	uint addr = 0;
-	EEPROM.begin(EEPROMsz);
-
-	// load EEPROM data into RAM, see it
-	EEPROM.get(addr, EEPROMdata);
+	retrieveDataFromEEPROM();
 	
-
 	if (DEBUG_MESSAGES)
 	{
-		Serial.println("[SETUP] Found: Init string: "+String(EEPROMdata.initstr)+", Name string: "+String(EEPROMdata.namestr)+", Master: " + String(EEPROMdata.master?"True":"False")+", Group name string: "+String(EEPROMdata.groupstr)+",Type string: "+String(EEPROMdata.typestr)+",Note string: "+String(EEPROMdata.note)+", OpenIsCCW: "+String(EEPROMdata.openIsCCW)+", SW Version string: "+String(EEPROMdata.swVer));
+		Serial.println("[SETUP] Found: Init string: "+String(EEPROMdata.initstr)+", Name string: "+String(EEPROMdata.namestr)+", Master: " + String(EEPROMdata.master?"True":"False")+", Group name string: "+String(EEPROMdata.groupstr)+",Type string: "+String(EEPROMdata.typestr)+",Note string: "+String(EEPROMdata.note)+", OpenIsCCW: "+String(EEPROMdata.openIsCCW?"True":"False")+", SW Version string: "+String(EEPROMdata.swVer));
 		Serial.println("[SETUP] Found motor data: {CCW,CW,FCCW,FCW,CCWset,CWset,Pos}: {" + String(EEPROMdata.motorPosAtCCW) + "," + String(EEPROMdata.motorPosAtCW)+ "," + String(EEPROMdata.motorPosAtFullCCW)+ "," + String(EEPROMdata.motorPosAtFullCW )+ "," + String(EEPROMdata.motorPosAtCCWset)+ "," + String(EEPROMdata.motorPosAtCWset)+ "," + String(EEPROMdata.motorPos)+"}");  	
 		Serial.println("[SETUP] Compiled init string: " + String(INITIALIZE) + ". Stored init string: " + String(EEPROMdata.initstr));
 	}
 	//always show the latest SW_VER
 	strncpy(EEPROMdata.swVer, SW_VER, 11);
-	if (DEBUG_MESSAGES)
-	{		Serial.println("[SETUP] Actual swVER: " + String(EEPROMdata.swVer));}
+	if (DEBUG_MESSAGES)	
+	{
+		Serial.println("[SETUP] Actual swVER: " + String(EEPROMdata.swVer));
+	}
 
 	// change EEPROMdata in RAM
 	if (String(INITIALIZE) != String(EEPROMdata.initstr))
@@ -101,8 +112,8 @@ void setup()
 		strncpy(EEPROMdata.groupstr, CUSTOM_GROUP_NAME, 41);
 		strncpy(EEPROMdata.typestr, CUSTOM_DEVICE_TYPE, 21);
 		strncpy(EEPROMdata.note, CUSTOM_NOTE, 56);
-		strncpy(EEPROMdata.openIsCCW, OPEN_IS_CCW_OR_CW, 4);
-		//Just put defaults into motor data
+		EEPROMdata.openIsCCW = OPEN_IS_CCW;
+		//Just put defaults into motor data following Initialization
 		EEPROMdata.motorPosAtCCW = -FULL_SWING + 3; 	
 		EEPROMdata.motorPosAtCW = FULL_SWING - 3;		
 		EEPROMdata.motorPosAtFullCCW = -FULL_SWING; 	
@@ -123,11 +134,8 @@ void setup()
 		{
 			EEPROMdata.master = false;
 		}
-		// replace values in EEPROM
-		EEPROM.put(addr, EEPROMdata);
-		EEPROM.commit();
-		// reload EEPROMdata for EEPROM, see the change
-		EEPROM.get(addr, EEPROMdata);
+		
+		storeDataToEEPROM();
 	}
 	else
 	{
@@ -139,14 +147,27 @@ void setup()
 
 	if (DEBUG_MESSAGES)
 	{
-		Serial.println("[SETUP] Personality values are: Init string: "+String(EEPROMdata.initstr)+", Name string: "+String(EEPROMdata.namestr)+", Master: " + String(EEPROMdata.master?"True":"False")+", Group name string: "+String(EEPROMdata.groupstr)+",Type string: "+String(EEPROMdata.typestr)+",Note string: "+String(EEPROMdata.note)+", OpenIsCCW: "+String(EEPROMdata.openIsCCW)+", SW Version string: "+String(EEPROMdata.swVer));
+		Serial.println("[SETUP] Personality values are: Init string: "+String(EEPROMdata.initstr)+", Name string: "+String(EEPROMdata.namestr)+", Master: " + String(EEPROMdata.master?"True":"False")+", Group name string: "+String(EEPROMdata.groupstr)+",Type string: "+String(EEPROMdata.typestr)+",Note string: "+String(EEPROMdata.note)+", OpenIsCCW: "+String(EEPROMdata.openIsCCW?"True":"False")+", SW Version string: "+String(EEPROMdata.swVer));
 		Serial.println("[SETUP] Motor data is: {CCW,CW,FCCW,FCW,CCWset,CWset,Pos}: {" + String(EEPROMdata.motorPosAtCCW) + "," + String(EEPROMdata.motorPosAtCW)+ "," + String(EEPROMdata.motorPosAtFullCCW)+ "," + String(EEPROMdata.motorPosAtFullCW)+ "," + String(EEPROMdata.motorPosAtCCWset)+ "," + String(EEPROMdata.motorPosAtCWset)+ "," + String(EEPROMdata.motorPos)+"}");  	
+
+		Serial.println("Trying to retrieve again from EEPROM...");
+		delay(500);
+		retrieveDataFromEEPROM();
+		delay(500);
+
+		Serial.println("[SETUP] Personality values are: Init string: "+String(EEPROMdata.initstr)+", Name string: "+String(EEPROMdata.namestr)+", Master: " + String(EEPROMdata.master?"True":"False")+", Group name string: "+String(EEPROMdata.groupstr)+",Type string: "+String(EEPROMdata.typestr)+",Note string: "+String(EEPROMdata.note)+", OpenIsCCW: "+String(EEPROMdata.openIsCCW?"True":"False")+", SW Version string: "+String(EEPROMdata.swVer));
+		Serial.println("[SETUP] Motor data is: {CCW,CW,FCCW,FCW,CCWset,CWset,Pos}: {" + String(EEPROMdata.motorPosAtCCW) + "," + String(EEPROMdata.motorPosAtCW)+ "," + String(EEPROMdata.motorPosAtFullCCW)+ "," + String(EEPROMdata.motorPosAtFullCW)+ "," + String(EEPROMdata.motorPosAtCCWset)+ "," + String(EEPROMdata.motorPosAtCWset)+ "," + String(EEPROMdata.motorPos)+"}");
 	}
 
 	//stepper motor setup
 	stepper1.setMaxSpeed(MAX_SPEED);
 	stepper1.setAcceleration(ACCELERATION);
 	stepper1.setSpeed(0);
+	stepper1.setCurrentPosition(EEPROMdata.motorPos);
+	if((EEPROMdata.motorPosAtCCWset+EEPROMdata.motorPosAtCWset)==2){
+		//if prior HW limits set state to man_idle to prevent unknown state effects
+		deviceTrueState = man_idle;
+	}
 
 	// You can enable or disable the library at any moment
 	// Disabling it will prevent the devices from being discovered and switched
@@ -286,7 +307,7 @@ void loop()
 			case closing: //closing not at limit
 				normalClosing();
 				break;
-			case unknown: //unknown state (bootup)
+			case unknown: //unknown state (bootup without stored HW limits)
 				if (!CWlimSensorVal)
 				{ //at CW limit
 					EEPROMdata.motorPosAtFullCW = stepper1.currentPosition();
@@ -527,11 +548,11 @@ void executeState(bool state)
 
 	if (correctedState)
 	{
-		deviceTrueState = openActuator();
+		deviceTrueState = openPercentActuator(100);
 	}
 	else
 	{
-		deviceTrueState = closeActuator();
+		deviceTrueState = openPercentActuator(0);
 	}
 }
 
@@ -781,7 +802,7 @@ void normalClosing()
 //CW is defined as open by openIsCCW
 bool whichWay(bool in){
 	bool ret=in;
-	if(EEPROMdata.openIsCCW=="CCW"){
+	if(EEPROMdata.openIsCCW==true){
 		ret = !ret;
 	}
 	return ret;
@@ -791,12 +812,13 @@ bool whichWay(bool in){
 //open by openIsCCW
 int whichWayGoto(int in){
 	int ret=in;
-	if(EEPROMdata.openIsCCW=="CW"){
+	if(EEPROMdata.openIsCCW==false){
 		ret = 100-ret;
 	}
 	return ret;
 }
-
+//put the actuator/stepper-motor in an idle state, store position in EEPROM, 
+//and annonuce the final position to the MASTER
 trueState idleActuator(trueState idleState)
 {
 	stepper1.stop();
@@ -804,42 +826,12 @@ trueState idleActuator(trueState idleState)
 	stepper1.disableOutputs();
 	deviceTrueState = idleState;
 	EEPROMdata.motorPos = int(stepper1.currentPosition());
-	storeMotorDataToEEPROM();
+	storeDataToEEPROM();
 	UDPpollReply(masterIP); //tell the Master Node the new info
 	return idleState;
 }
-
-trueState openActuator()
-{
-	trueState newState;
-	if (digitalRead(SWpinLimitCCW) == 1)
-	{ //switch is open; not at CCW limit
-		newState = opening;
-		if (DEBUG_MESSAGES)
-		{
-			Serial.printf("[openActuator] OPENING -> NEWSTATE: %s, Pos: %d, Target: %d\n", trueState_String[newState], stepper1.currentPosition(), EEPROMdata.motorPosAtCCW);
-		}
-		stepper1.enableOutputs();
-		stepper1.moveTo(EEPROMdata.motorPosAtCCW);
-		stepper1.setSpeed(-START_SPEED);
-	}
-	else
-	{
-		EEPROMdata.motorPosAtFullCCW = stepper1.currentPosition();
-		newState = idleActuator(opened);
-		if (DEBUG_MESSAGES)
-		{
-			Serial.printf("[openActuator] OPENING -> ALREADY OPENED. Pos: %d\n", stepper1.currentPosition());
-		}
-	}
-	return newState;
-}
-
 //TODO - implement this for CCW is open, and make the opposite for CW is open
 // explain things were designed from the perspective of CCW is open
-//TODO - update trueState for the percent open state
-//TODO - consider deleting the other open/closeActuator functions and just using 0 and 100%
-//to do the same thing
 trueState openPercentActuator(int percent)
 {
 	trueState newState;
@@ -896,31 +888,6 @@ trueState openPercentActuator(int percent)
 		}
 		return newState;
 	}
-}
-trueState closeActuator()
-{
-	trueState newState;
-	if (digitalRead(SWpinLimitCW) == 1)
-	{ //switch is open; not at CW limit
-		newState = closing;
-		if (DEBUG_MESSAGES)
-		{
-			Serial.printf("[closeActuator] CLOSING -> NEWSTATE: %s, Pos: %d, Target: %d\n", trueState_String[newState], stepper1.currentPosition(), EEPROMdata.motorPosAtCW);
-		}
-		stepper1.enableOutputs();
-		stepper1.moveTo(EEPROMdata.motorPosAtCW);
-		stepper1.setSpeed(START_SPEED);
-	}
-	else
-	{
-		EEPROMdata.motorPosAtFullCW = stepper1.currentPosition();
-		newState = idleActuator(closed);
-		if (DEBUG_MESSAGES)
-		{
-			Serial.printf("[closeActuator] CLOSING -> ALREADY CLOSED. Pos: %d\n", stepper1.currentPosition());
-		}
-	}
-	return newState;
 }
 
 void fastBlinks(int numBlinks)

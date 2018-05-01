@@ -32,19 +32,12 @@ fishyDevice makeMyFishyDevice()
 	holder.motorPosAtFullCW = EEPROMdata.motorPosAtFullCW;
 	holder.name = String(EEPROMdata.namestr);
 	holder.port = UDP_LOCAL_PORT;
-	holder.isMaster = EEPROMdata.master;
+	holder.openIsCCW = EEPROMdata.openIsCCW;
 	holder.devType = String(EEPROMdata.typestr);
 	holder.group = String(EEPROMdata.groupstr);
 	holder.note = String(EEPROMdata.note);
 	holder.swVer = String(EEPROMdata.swVer);
-	if (OPEN_IS_CCW_OR_CW == "CCW")
-	{
-		holder.openIsCCW = true;
-	}
-	else
-	{
-		holder.openIsCCW = false;
-	}
+	holder.initStamp = String(EEPROMdata.initstr);
 
 	return holder;
 }

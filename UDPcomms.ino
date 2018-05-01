@@ -44,7 +44,7 @@ void UDPbroadcast()
 
 	Udp.beginPacket(broadcast, UDP_LOCAL_PORT);
 	Udp.write("ANYFISHYDEV_THERE");
-	//UDPdataDump();
+
 	Udp.endPacket();
 }
 
@@ -72,7 +72,7 @@ void UDPpollReply(IPAddress remote)
 send fishyDevice data.
 Note - this is parsed by UDPparsePollResponse and paralleled by getJSON; 
 if adding elements all three need updating.
-{ip,isCalibrated,isMaster,motorPos,motorPosAtCCW,motorPosAtCW,motorPosAtFullCCW,motorPosAtFullCW,name,openIsCCW,port,group,note,swVer,devType}
+{ip,isCalibrated,isMaster,motorPos,motorPosAtCCW,motorPosAtCW,motorPosAtFullCCW,motorPosAtFullCW,name,openIsCCW,port,group,note,swVer,devType,initStamp}
 */
 	response += "{" + holder.ip.toString() + "," + 
 			String(holder.isCalibrated ? "true" : "false") + "," +
@@ -88,7 +88,8 @@ if adding elements all three need updating.
 			String(holder.group) + "," +
 			String(holder.note) + "," + 
 			String(holder.swVer) + "," + 
-			String(holder.devType) + "}";
+			String(holder.devType) + "," + 
+			String(holder.initStamp) +"}";
 
 	Udp.write(response.c_str());
 	Udp.endPacket();
@@ -109,7 +110,7 @@ void UDPparsePollResponse(String responseIn, IPAddress remote)
 parse fishyDevice data.
 Note - this data set is sent by UDPparsePollResponse and getJSON; 
 it is also parsed by scripts in webresources.h if adding elements all three need updating:
-{ip,isCalibrated,isMaster,motorPos,motorPosAtCCW,motorPosAtCW,motorPosAtFullCCW,motorPosAtFullCW,name,openIsCCW,port,group,note,swVer,devType}
+{ip,isCalibrated,isMaster,motorPos,motorPosAtCCW,motorPosAtCW,motorPosAtFullCCW,motorPosAtFullCW,name,openIsCCW,port,group,note,swVer,devType,initStamp}
 */
 		String response = responseIn.substring(14); //strip off "POLL RESPONSE"
 		fishyDevice holder;
@@ -253,11 +254,20 @@ it is also parsed by scripts in webresources.h if adding elements all three need
 
 		//devType
 		strStrt = strStop + 1;
-		strStop = response.indexOf("}", strStrt);
+		strStop = response.indexOf(",", strStrt);
 		holder.devType = response.substring(strStrt, strStop); 
 		if (DEBUG_MESSAGES && UDP_PARSE_MESSAGES)
 		{
 			Serial.println("[UDPparsePollResponse] strdevType: " + holder.devType);
+		}
+		
+		//initStamp
+		strStrt = strStop + 1;
+		strStop = response.indexOf("}", strStrt);
+		holder.initStamp = response.substring(strStrt, strStop); 
+		if (DEBUG_MESSAGES && UDP_PARSE_MESSAGES)
+		{
+			Serial.println("[UDPparsePollResponse] strinitStamp: " + holder.initStamp);
 		}
 
 		dealWithThisNode(holder);
@@ -279,23 +289,34 @@ void UDPparseConfigResponse(String responseIn, IPAddress remote){
 	//ccwLim
 	strStrt = response.indexOf("=", 1)+1;
 	strStop = response.indexOf(";", strStrt);
+	EEPROMdata.motorPosAtCCW = response.substring(strStrt, strStop).toInt();
 	if (DEBUG_MESSAGES && UDP_PARSE_MESSAGES)
 	{
 		Serial.print("[UDPparseConfigResponse] ccwLim: ");
-		Serial.println(response.substring(strStrt, strStop));
+		Serial.println(String(EEPROMdata.motorPosAtCCW));
 	}
 	//cwLim
 	strStrt = response.indexOf("=", strStop)+1;
 	strStop = response.indexOf(";", strStrt);
+	EEPROMdata.motorPosAtCW = response.substring(strStrt, strStop).toInt();
 	if (DEBUG_MESSAGES && UDP_PARSE_MESSAGES)
 	{
 		Serial.print("[UDPparseConfigResponse] cwLim: ");
-		Serial.println(response.substring(strStrt, strStop));
+		Serial.println(String(EEPROMdata.motorPosAtCW));
+	}
+	//verify cwLim > ccwLim + 4 (margin), if not set at ccwLim+4
+	if(EEPROMdata.motorPosAtCW<(EEPROMdata.motorPosAtCCW+4)){
+		EEPROMdata.motorPosAtCW = EEPROMdata.motorPosAtCCW+4;
+		if (DEBUG_MESSAGES && UDP_PARSE_MESSAGES)
+		{
+			Serial.print("[UDPparseConfigResponse] cwLim updated to be greater than ccwLim +4. ");
+			Serial.println(String(EEPROMdata.motorPosAtCW));
+		}
 	}
 	//openIsCCW
 	strStrt = response.indexOf("=", strStop)+1;
 	strStop = response.indexOf(";", strStrt);
-	strncpy(EEPROMdata.openIsCCW, (response.substring(strStrt, strStop) == "false") ? "CW" : "CCW", 4);
+	EEPROMdata.openIsCCW = (response.substring(strStrt, strStop) == "false") ? false : true;
 	if (DEBUG_MESSAGES && UDP_PARSE_MESSAGES)
 	{
 		Serial.print("[UDPparseConfigResponse] openIsCCW: ");
@@ -342,12 +363,10 @@ void UDPparseConfigResponse(String responseIn, IPAddress remote){
 	{
 		Serial.println("[UDPparseConfigResponse] note: " + String(EEPROMdata.note));
 	}
+	//inform the master of new settings
+	UDPpollReply(masterIP);
+	//save them to EEPROM
+	storeDataToEEPROM();
 
-	uint addr = 0;
-	EEPROM.begin(EEPROMsz);
-	// replace values in EEPROM
-	EEPROM.put(addr, EEPROMdata);
-	EEPROM.commit();
-	resetOnNextLoop = true;
 	
 }

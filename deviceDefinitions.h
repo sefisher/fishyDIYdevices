@@ -11,28 +11,28 @@
 //their "personality settings" and wiping out stored motor info.
 //String format -> "YYYYMMDDHHmm" (where HHmm is 24 hr time). The other device settings 
 //are used every time software is loaded
-#define INITIALIZE "201804080055"
+#define INITIALIZE "201804301900"
 
 //this is for keeping track of SW version
 //it is displayed but not otherwise used
 //LIMITED to 10 alpanumeric characters
-#define SW_VER "20180429-2"
+#define SW_VER "20180430-1"
 
 //PICK A UNIQUE NAME FOR EACH DEVICE USING ONLY LETTERS AND NUMBERS
 // LIMITED to 40 alpanumeric characters (abcdefghijklmnopqrstuvwxyz0123456789)
-// #define CUSTOM_DEVICE_NAME "Vent Damper 1"
-// #define CUSTOM_DEVICE_NAME "Vent Damper 2"
+//#define CUSTOM_DEVICE_NAME "Vent Damper 1"
+//#define CUSTOM_DEVICE_NAME "Vent Damper 2"
 #define CUSTOM_DEVICE_NAME "Vent Damper 3"
 
 //PICK ONLY ONE DEVICE ON THE NETWORK AS MASTER (and set this to true when you compile its code).  
 //IT WILL BE THE WEBSERVER AND CONTROLLER FOR ALL OTHER NODES.  Set false for all the others.
-// #define MASTER_NODE true
+//#define MASTER_NODE true
 #define MASTER_NODE false
 
 //FIGURE OUT WHAT DIRECTION YOU WANT TO PICK AS OPEN or CLOSE FOR YOUR DEVICE.  
 //TODO - use this parameter correctly
-#define OPEN_IS_CCW_OR_CW "CCW"
-// #define OPEN_IS_CCW_OR_CW "CW"
+//#define OPEN_IS_CCW true
+#define OPEN_IS_CCW false
 
 //IF DESIRED, SPECIFY THE DEVICE TYPE
 //LIMITED to 20 alpanumeric characters 

@@ -98,7 +98,7 @@ put fishyDevice data in a string.
 Note - this is parsed by scripts in webresources.h 
 and paralleled by UDPpollReply; 
 if adding elements all these need updating.
-{ip,isCalibrated,isMaster,motorPos,motorPosAtCCW,motorPosAtCW,motorPosAtFullCCW,motorPosAtFullCW,name,openIsCCW,port,group,note,swVer,devType}
+{ip,isCalibrated,isMaster,motorPos,motorPosAtCCW,motorPosAtCW,motorPosAtFullCCW,motorPosAtFullCW,name,openIsCCW,port,group,note,swVer,devType,initStamp}
 */
 			temp += "{\"deviceID\":\"" + String(i) + "\",\"IP\":\"" + deviceArray[i].ip.toString() + "\",\"dead\":\"" + String(deviceArray[i].dead) +
 					"\",\"isCalibrated\":\"" + String(deviceArray[i].isCalibrated ? "true" : "false") +
@@ -106,7 +106,7 @@ if adding elements all these need updating.
 					"\",\"motorPosAtCCW\":\"" + String(deviceArray[i].motorPosAtCCW) + "\",\"motorPosAtCW\":\"" + String(deviceArray[i].motorPosAtCW) +
 					"\",\"motorPosAtFullCCW\":\"" + String(deviceArray[i].motorPosAtFullCCW) + "\",\"motorPosAtFullCW\":\"" + String(deviceArray[i].motorPosAtFullCW) +
 					"\",\"deviceName\":\"" + String(deviceArray[i].name) + "\",\"openIsCCW\":\"" + String(deviceArray[i].openIsCCW ? "true" : "false") +
-					"\",\"port\":\"" + String(deviceArray[i].port) + "\",\"group\":\"" + String(deviceArray[i].group) + "\",\"note\":\"" + String(deviceArray[i].note) + "\",\"swVer\":\"" + String(deviceArray[i].swVer) + "\",\"devType\":\"" + String(deviceArray[i].devType) + "\"}";
+					"\",\"port\":\"" + String(deviceArray[i].port) + "\",\"group\":\"" + String(deviceArray[i].group) + "\",\"note\":\"" + String(deviceArray[i].note) + "\",\"swVer\":\"" + String(deviceArray[i].swVer) + "\",\"devType\":\"" + String(deviceArray[i].devType) + "\",\"initStamp\":\"" + String(deviceArray[i].initStamp) + "\"}";
 		}
 	}
 	temp += "]}";

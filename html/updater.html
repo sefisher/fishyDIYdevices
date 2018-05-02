@@ -14,310 +14,317 @@ To build it in the code do the following:
 <!-- ----------------------------------------------------------------------------------------------------
  ----------------------------------- START OF PART 1 (STYLING): ------------------------------------------
  ------------------------------------------------------------------------------------------------------ -->
-<!DOCTYPE html>
-<html>
-<head>
-    <title>fishDIY Device Network</title>
-    <meta name='viewport' content='width=device-width, initial-scale=1'>
-    <script src='https://ajax.googleapis.com/ajax/libs/jquery/1.12.4/jquery.min.js'></script>
-    <style>
-        :root {
-            --big-fnt: 25px;
-            --mid-fnt: 20px;
-            --sml-fnt: 15px;
-            --on-col: #16234b;
-            --drk-col: #3366cc;
-            --lght-col: #ffffff;
-            --gry-col: #edf3ff;
-            --cp-sz: 300px;
-            --lab-sz: 90px;
-            --val-sz: 65px;
-            --sld-sz: 125px;
-            --rad-sz: 25px;
-            --hdr-ht: 100px;
-            --smrad-sz: 7px;
-            --thm-sz: 25px;
-            --sld-ht: 10px;
-            --sld-mar: 5px;
-            --sldRow-mar: 4px;
-            --sldRow-ht: 30px;
-            --btnRow-mar: 2px;
-            --btnRow-ht: 30px;
-            --btn-ht: 28px;
-            --cfg-lab: 120;
-            --cfg-inp: 180;
-        }
-        a{
-            color:white;
-        }
-        body,.main {
-            background-color: var(--gry-col);
-            font-family: "Lucida Sans Unicode", "Lucida Grande", sans-serif;
-        }
-        .flex-container {
-            display: flex;
-            flex-wrap: wrap;
-            justify-content: center;
-            background-color: var(--gry-col);
-        }
-
-        .flex-container>div {
-            border-radius: var(--rad-sz);
-            background-color: var(--lght-col);
-            width: calc(var(--cp-sz)+10);
-            margin: 5px;
-            vertical-align: middle;
-            text-align: center;
-            line-height: calc(var(--mid-fnt) + 2);
-            font-size: var(--mid-fnt);
-        }
-        .fishyFtr{
-            border-radius: 0 0 var(--rad-sz) var(--rad-sz);
-            font-size: var(--mid-fnt);
-            font-weight: bold;
-            color: white;
-            background: var(--drk-col);
-            height: calc(var(--hdr-ht)/2);
-        }
-        .fishyHdr,
-        .hdrIcon {
-            border-radius: var(--rad-sz) var(--rad-sz) 0 0;
-            font-size: calc(var(--hdr-ht)/3);
-            font-weight: bold;
-            color: white;
-            background: var(--drk-col);
-            height: var(--hdr-ht);
-            vertical-align: middle;
-           }
-        .fishyHdr{
-            width:100%;
-            text-align: center;
-        }
-        .CP {
-            width: var(--cp-sz);
-            flex: 0 1 var(--cp-sz);
-        }
-        .CPhd,
-        .CPhd2,
-        .CPhd3,
-        .CPft {
-            width: var(--cp-sz);
-            color: white;
-            background-color: var(--drk-col);
-        }
-        .CPhd {
-            border-radius: var(--rad-sz) var(--rad-sz) 0px 0px;
-            font-size: var(--big-fnt);
-        }
-        .CPft {
-            border-radius: 0px 0px var(--rad-sz) var(--rad-sz);
-            font-size: var(--big-fnt);
-        }
-        .CPhd3{
-            text-align: center;
-            width: 100%;
-        }
-        .sld {
-            position: absolute;
-            top: var(--sld-mar);
-            left: var(--lab-sz);
-            -webkit-appearance: none;
-            width: var(--sld-sz);
-            height: var(--sld-ht);
-            background: var(--gry-col);
-            outline: none;
-            opacity: 0.7;
-            -webkit-transition: .2s;
-            transition: opacity .2s;
-        }
-
-        .sld:hover {
-            opacity: 1;
-        }
-
-        .sld::-webkit-slider-thumb {
-            border-radius: var(--smrad-sz);
-            -webkit-appearance: none;
-            width: var(--thm-sz);
-            height: var(--thm-sz);
-            background: var(--drk-col);
-            cursor: pointer;
-        }
-
-        .sld::-moz-range-thumb {
-            border-radius: var(--smrad-sz);
-            width: var(--thm-sz);
-            height: var(--thm-sz);
-            background: var(--drk-col);
-            cursor: pointer;
-        }
-
-        .sldRow {
-            position: relative;
-            top: var(--sldRow-mar);
-            width: var(--cp-sz);
-            height: var(--sldRow-ht);
-        }
-
-        .sldLab {
-            position: absolute;
-            top: 0px;
-            left: 0px;
-            width: var(--lab-sz);
-            font-size: var(--mid-fnt);
-        }
-
-        .sldVal {
-            position: absolute;
-            top: 0px;
-            left: calc(var(--cp-sz) - var(--val-sz));
-            background-color: white;
-            border: none;
-            font-size: var(--mid-fnt);
-            width: var(--val-sz);
-        }
-
-        .btnRow {
-            position: relative;
-            top: var(--btnRow-mar);
-            width: var(--cp-sz);
-            height: var(--btnRow-ht);
-        }
-
-        .lftBtn,
-        .rgtBtn,
-        .midBtn,
-        .cfgBtn,
-        .tglBtn {
-            background-color: var(--drk-col);
-            height: var(--btn-ht);
-            border: 1px solid white;
-            color: white;
-            text-align: center;
-            text-decoration: none;
-            display: inline-block;
-            cursor: pointer;
-        }
-
-        .lftBtn {
-            border-radius: var(--smrad-sz) 0px 0px var(--smrad-sz);
-            width: calc(var(--cp-sz)/4);
-        }
-
-        .rgtBtn {
-            border-radius: 0px var(--smrad-sz) var(--smrad-sz) 0px;
-            width: calc(var(--cp-sz)/4);
-        }
-        .midBtn{
-            width: calc(var(--cp-sz)/2);
-        }
-        .cfgPnl {
-            display: none;
-        }
-
-        .cfgInpLab {
-            width: var(--cfg-lab);
-            font-size: var(--sml-fnt);
-        }
-
-        .cfgInp {
-            width: var(--cfg-inp);
-            background-color: white;
-            border: none;
-            font-size: var(--sml-fnt);
-        }
-
-        .cfgBtn {
-            border-radius: var(--smrad-sz);
-            width: 48%;
-            font-weight: bold;
-            background-color: red;
-        }
-
-        .calTxt {
-            font-size: var(--sml-fnt);
-            color: var(--drk-col);
-        }
-
-        .tglBtn {
-            border-radius: var(--smrad-sz) var(--smrad-sz) var(--rad-sz) var(--rad-sz);
-            width: 100%;
-        }
-
-        .sw {
-            position: relative;
-            display: inline-block;
-            width: 60px;
-            height: 34px;
-        }
-
-        .sw input {
-            display: none;
-        }
-
-        .swLab {
-            position: relative;
-            top: -10px;
-        }        
-        .swLabHdr {
-            position: relative;
-            top: -10px;
-            font-size: var(--sml-fnt);
-        }
-
-        .sldSw {
-            position: absolute;
-            cursor: pointer;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            background-color: #ccc;
-            -webkit-transition: .4s;
-            transition: .4s;
-            border-radius: 34px;
-        }
-
-        .sldSw:before {
-            position: absolute;
-            content: '';
-            height: 26px;
-            width: 26px;
-            left: 4px;
-            bottom: 4px;
-            background-color: white;
-            -webkit-transition: .4s;
-            transition: .4s;
-            border-radius: 50%;
-        }
-
-        input:checked+.sldSw {
-            background-color: var(--drk-col);
-        }
-
-        input:focus+.sldSw {
-            box-shadow: 0 0 1px var(--drk-col);
-        }
-
-        input:checked+.sldSw:before {
-            -webkit-transform: translateX(26px);
-            -ms-transform: translateX(26px);
-            transform: translateX(26px);
-        }
-        .swUpdate {
-             height: var(--hdr-ht);
-             width: var(--cp-sz);
-             border: none;
+ <!DOCTYPE html>
+ <html>
+ <head>
+     <title>fishDIY Device Network</title>
+     <meta name='viewport' content='width=device-width, initial-scale=1'>
+     <script src='https://ajax.googleapis.com/ajax/libs/jquery/1.12.4/jquery.min.js'></script>
+     <style>
+         :root {
+             --big-fnt: 25px;
+             --mid-fnt: 20px;
+             --sml-fnt: 15px;
+             --on-col: #16234b;
+             --drk-col: #3366cc;
+             --lght-col: #ffffff;
+             --gry-col: #edf3ff;
+             --cp-sz: 300px;
+             --lab-sz: 90px;
+             --val-sz: 65px;
+             --sld-sz: 125px;
+             --rad-sz: 25px;
+             --hdr-ht: 100px;
+             --smrad-sz: 7px;
+             --thm-sz: 25px;
+             --sld-ht: 10px;
+             --sld-mar: 5px;
+             --sldRow-mar: 4px;
+             --sldRow-ht: 30px;
+             --btnRow-mar: 2px;
+             --btnRow-ht: 30px;
+             --btn-ht: 28px;
+             --cfg-lab: 120;
+             --cfg-inp: 180;
          }
-    </style>
-
+         a{color: white;}
+         body,.main {
+             background-color: var(--gry-col);
+             font-family: "Lucida Sans Unicode", "Lucida Grande", sans-serif;
+         }
+ 
+         .flex-container {
+             display: flex;
+             flex-wrap: wrap;
+             justify-content: center;
+             background-color: var(--gry-col);
+         }
+ 
+         .flex-container>div {
+             border-radius: var(--rad-sz);
+             background-color: var(--lght-col);
+             width: calc(var(--cp-sz)+10);
+             margin: 5px;
+             vertical-align: middle;
+             text-align: center;
+             line-height: calc(var(--mid-fnt) + 2);
+             font-size: var(--mid-fnt);
+         }
+         .fishyFtr{
+             border-radius: 0 0 var(--rad-sz) var(--rad-sz);
+             font-size: var(--mid-fnt);
+             font-weight: bold;
+             color: white;
+             background: var(--drk-col);
+             height: calc(var(--hdr-ht)/2);
+             text-align: center;
+         }
+         .fishyHdr,
+         .hdrIcon {
+             border-radius: var(--rad-sz) var(--rad-sz) 0 0;
+             font-size: calc(var(--hdr-ht)/3);
+             font-weight: bold;
+             color: white;
+             background: var(--drk-col);
+             height: var(--hdr-ht);
+             vertical-align: middle;
+            }
+         .fishyHdr{
+             width:100%;
+             text-align: center;
+         }
+         .CP {
+             width: var(--cp-sz);
+             flex: 0 1 var(--cp-sz);
+         }
+         .CPhd,
+         .CPhd2,
+         .CPhd3,
+         .CPft {
+             width: var(--cp-sz);
+             color: white;
+             background-color: var(--drk-col);
+         }
+         .CPhd {
+             border-radius: var(--rad-sz) var(--rad-sz) 0px 0px;
+             font-size: var(--big-fnt);
+             -webkit-transition: color 0.4s ease;
+             -moz-transition: color 0.4s ease;
+             -o-transition: color 0.4s ease;
+             transition: color 0.4s ease;
+         }
+         .CPft {
+             border-radius: 0px 0px var(--rad-sz) var(--rad-sz);
+             font-size: var(--big-fnt);
+         }
+         .CPhd3{
+             text-align: center;
+             width: 100%;
+         }
+         .sld,.sld-dis {
+             position: absolute;
+             top: var(--sld-mar);
+             left: var(--lab-sz);
+             -webkit-appearance: none;
+             width: var(--sld-sz);
+             height: var(--sld-ht);
+             background: var(--gry-col);
+             outline: none;
+             opacity: 0.7;
+             -webkit-transition: .2s;
+             transition: opacity .2s;
+         }
+         .sld:hover {
+             opacity: 1;
+         }
+         .sld::-webkit-slider-thumb,.sld-dis::-webkit-slider-thumb {
+             border-radius: var(--smrad-sz);
+             -webkit-appearance: none;
+             width: var(--thm-sz);
+             height: var(--thm-sz);
+             background: var(--drk-col);
+             cursor: pointer;
+         }
+         .sld-dis::-webkit-slider-thumb {
+             background: grey;
+         }
+         .sld::-moz-range-thumb,.sld-dis::-moz-range-thumb {
+             border-radius: var(--smrad-sz);
+             width: var(--thm-sz);
+             height: var(--thm-sz);
+             background: var(--drk-col);
+             cursor: pointer;
+         }
+         .sld-dis::-moz-range-thumb  {
+             background: grey;
+         }
+         .sldRow {
+             position: relative;
+             top: var(--sldRow-mar);
+             width: var(--cp-sz);
+             height: var(--sldRow-ht);
+         }
+         .sldLab {
+             position: absolute;
+             top: 0px;
+             left: 0px;
+             width: var(--lab-sz);
+             font-size: var(--mid-fnt);
+         }
+         .sldVal {
+             position: absolute;
+             top: 0px;
+             left: calc(var(--cp-sz) - var(--val-sz));
+             background-color: white;
+             border: none;
+             font-size: var(--mid-fnt);
+             width: var(--val-sz);
+         }
+ 
+         .btnRow {
+             position: relative;
+             top: var(--btnRow-mar);
+             width: var(--cp-sz);
+             height: var(--btnRow-ht);
+         }
+ 
+         .lftBtn,
+         .rgtBtn,
+         .midBtn,
+         .cfgBtnY,
+         .cfgBtn,
+         .tglBtn {
+             background-color: var(--drk-col);
+             height: var(--btn-ht);
+             border: 1px solid white;
+             color: white;
+             text-align: center;
+             text-decoration: none;
+             display: inline-block;
+             cursor: pointer;
+         }
+         
+         .lftBtn {
+             border-radius: var(--smrad-sz) 0px 0px var(--smrad-sz);
+             width: calc(var(--cp-sz)/4);
+         }
+ 
+         .rgtBtn {
+             border-radius: 0px var(--smrad-sz) var(--smrad-sz) 0px;
+             width: calc(var(--cp-sz)/4);
+         }
+         .midBtn{
+             width: calc(var(--cp-sz)/2);
+         }
+         .cfgPnl {
+             display: none;
+         }
+ 
+         .cfgInpLab {
+             width: var(--cfg-lab);
+             font-size: var(--sml-fnt);
+         }
+ 
+         .cfgInp {
+             width: var(--cfg-inp);
+             background-color: white;
+             border: none;
+             font-size: var(--sml-fnt);
+         }
+ 
+         .cfgBtn,.cfgBtnY {
+             border-radius: var(--smrad-sz);
+             width: 48%;
+             font-weight: bold;
+             background-color: red;
+         }
+         .cfgBtnY{
+             color:black;
+             background-color: yellow;
+         }
+         .calTxt {
+             font-size: var(--sml-fnt);
+             color: var(--drk-col);
+         }
+ 
+         .tglBtn {
+             border-radius: var(--smrad-sz) var(--smrad-sz) var(--rad-sz) var(--rad-sz);
+             width: 100%;
+         }
+ 
+         .sw {
+             position: relative;
+             display: inline-block;
+             width: 60px;
+             height: 34px;
+         }
+ 
+         .sw input {
+             display: none;
+         }
+ 
+         .swLab {
+             position: relative;
+             top: -10px;
+         }        
+         .swLabHdr {
+             position: relative;
+             top: -10px;
+             font-size: var(--sml-fnt);
+         }
+ 
+         .sldSw {
+             position: absolute;
+             cursor: pointer;
+             top: 0;
+             left: 0;
+             right: 0;
+             bottom: 0;
+             background-color: #ccc;
+             -webkit-transition: .4s;
+             transition: .4s;
+             border-radius: 34px;
+         }
+ 
+         .sldSw:before {
+             position: absolute;
+             content: '';
+             height: 26px;
+             width: 26px;
+             left: 4px;
+             bottom: 4px;
+             background-color: white;
+             -webkit-transition: .4s;
+             transition: .4s;
+             border-radius: 50%;
+         }
+ 
+         input:checked+.sldSw {
+             background-color: rgb(71, 71, 71);
+         }
+ 
+         input:focus+.sldSw {
+             box-shadow: 0 0 1px rgb(71,71,71);
+         }
+ 
+         input:checked+.sldSw:before {
+             -webkit-transform: translateX(26px);
+             -ms-transform: translateX(26px);
+             transform: translateX(26px);
+         }
+         .swUpdate {
+              height: var(--hdr-ht);
+              width: var(--cp-sz);
+              border: none;
+          }
+     </style>
 
    <!-- -------------------------------------------------------------------------------------------
     --------END OF PART 1:  Do not copy the following lines - this is created within the code. ----
     ---------------------------------------------------------------------------------------------->
          
     <script>
-     var fishyNetJSON = '{"fishyDevices":[{"deviceID":"0","IP":"10.203.1.197","dead":"0","isCalibrated":"false","isMaster":"true","motorPos":"0","motorPosAtCCW":"-3497","motorPosAtCW":"3497","motorPosAtFullCCW":"-3500","motorPosAtFullCW":"3500","deviceName":"Vent Damper 2","openIsCCW":"true","port":"8266","group":"","note":"","swVer":"20180408-1","devType":""},{"deviceID":"1","IP":"10.203.1.145","dead":"0","isCalibrated":"false","isMaster":"false","motorPos":"0","motorPosAtCCW":"-3497","motorPosAtCW":"3497","motorPosAtFullCCW":"-3500","motorPosAtFullCW":"3500","deviceName":"Vent Damper 3","openIsCCW":"true","port":"8266","group":"","note":"","swVer":"20180408-1","devType":""},{"deviceID":"2","IP":"10.203.1.23","dead":"0","isCalibrated":"true","isMaster":"false","motorPos":"158","motorPosAtCCW":"-1252","motorPosAtCW":"158","motorPosAtFullCCW":"-2036","motorPosAtFullCW":"1235","deviceName":"Vent Damper 1","openIsCCW":"true","port":"8266","group":"","note":"","swVer":"20180408-1","devType":""}]}';
+     var fishyNetJSON = '{"fishyDevices":[{"deviceID":"0","IP":"10.203.1.197","dead":"0","isCalibrated":"false","isMaster":"true","motorPos":"0","motorPosAtCCW":"-3497","motorPosAtCW":"3497","motorPosAtFullCCW":"-3500","motorPosAtFullCW":"3500","deviceName":"Vent Damper 2","openIsCCW":"true","port":"8266","group":"","note":"","swVer":"20180430-1","devType":"","initStamp":"201804301900"},{"deviceID":"1","IP":"10.203.1.145","dead":"0","isCalibrated":"false","isMaster":"false","motorPos":"0","motorPosAtCCW":"-3497","motorPosAtCW":"3497","motorPosAtFullCCW":"-3500","motorPosAtFullCW":"3500","deviceName":"Vent Damper 3","openIsCCW":"false","port":"8266","group":"","note":"","swVer":"20180430-1","devType":"","initStamp":"201804301900"},{"deviceID":"2","IP":"10.203.1.23","dead":"0","isCalibrated":"true","isMaster":"false","motorPos":"2304","motorPosAtCCW":"59","motorPosAtCW":"2304","motorPosAtFullCCW":"56","motorPosAtFullCW":"3338","deviceName":"Vent Damper 1","openIsCCW":"false","port":"8266","group":"","note":"","swVer":"20180430-1","devType":"","initStamp":"201804301900"}]}';
      </script>
      <!-- -------------------------------------------------------------------------------------------
      --------------------------  START OF PART 2 ALTERNATE (TRANSITION):   ------------------------
@@ -336,8 +343,8 @@ To build it in the code do the following:
 
             var ii = d.deviceID;
             var addDiv = "<div class='CP' id='" + ii +"'><div class='CPhd' id='hd1-" + ii + "'>" + d.IP + "<br>" + d.deviceName + 
-                "<br>SWVER: " + d.swVer + "<br>INITSTRING: (TBD) " + "</div>" +
-                "<iframe class='swUpdate' src='http://"+d.IP+"/update' ></iframe><br>" +
+                "<br>SW Ver: " + d.swVer + "<br>Initialization: " + d.initStamp + "</div>" +
+                "<iframe id='swUpdate-" + ii + "' class='swUpdate' src='http://"+d.IP+"/update' ></iframe><br>" +
             "<div class='CPft'>"+mstrTxt+"</div></div>";
                      
             return addDiv;
@@ -361,6 +368,7 @@ To build it in the code do the following:
                  'class': 'flex-container',
                  html: items.join('')
              }).appendTo('#myBody');
+             
             
          }
          window.onload = buildPage();
@@ -371,7 +379,7 @@ To build it in the code do the following:
      -------------------------------------- END OF PART 4, START OF PART 5 (END)---------------------
      -------------------------------------------------------------------------------------------- -->
  
-     <div class='fishyFtr'><a href="/">[Controls]</a>  <a href="/SWupdater">[SW Update]</a></div></div>
+     <div class='fishyFtr'><a href="/">[Controls]</a>  <a href="/SWupdater">[SW Update]</a></div><input type=button onclick="alert($('#swUpdate-1').context.body.innerHTML)"></div>
  </body>
  </html>
     <!-- -------------------------------------------------------------------------------------------

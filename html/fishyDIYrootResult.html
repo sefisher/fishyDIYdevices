@@ -108,6 +108,10 @@ the code do the following:
         .CPhd {
             border-radius: var(--rad-sz) var(--rad-sz) 0px 0px;
             font-size: var(--big-fnt);
+            -webkit-transition: color 0.4s ease;
+            -moz-transition: color 0.4s ease;
+            -o-transition: color 0.4s ease;
+            transition: color 0.4s ease;
         }
         .CPft {
             border-radius: 0px 0px var(--rad-sz) var(--rad-sz);
@@ -117,7 +121,7 @@ the code do the following:
             text-align: center;
             width: 100%;
         }
-        .sld {
+        .sld,.sld-dis {
             position: absolute;
             top: var(--sld-mar);
             left: var(--lab-sz);
@@ -130,12 +134,10 @@ the code do the following:
             -webkit-transition: .2s;
             transition: opacity .2s;
         }
-
         .sld:hover {
             opacity: 1;
         }
-
-        .sld::-webkit-slider-thumb {
+        .sld::-webkit-slider-thumb,.sld-dis::-webkit-slider-thumb {
             border-radius: var(--smrad-sz);
             -webkit-appearance: none;
             width: var(--thm-sz);
@@ -143,22 +145,25 @@ the code do the following:
             background: var(--drk-col);
             cursor: pointer;
         }
-
-        .sld::-moz-range-thumb {
+        .sld-dis::-webkit-slider-thumb {
+            background: grey;
+        }
+        .sld::-moz-range-thumb,.sld-dis::-moz-range-thumb {
             border-radius: var(--smrad-sz);
             width: var(--thm-sz);
             height: var(--thm-sz);
             background: var(--drk-col);
             cursor: pointer;
         }
-
+        .sld-dis::-moz-range-thumb  {
+            background: grey;
+        }
         .sldRow {
             position: relative;
             top: var(--sldRow-mar);
             width: var(--cp-sz);
             height: var(--sldRow-ht);
         }
-
         .sldLab {
             position: absolute;
             top: 0px;
@@ -166,7 +171,6 @@ the code do the following:
             width: var(--lab-sz);
             font-size: var(--mid-fnt);
         }
-
         .sldVal {
             position: absolute;
             top: 0px;
@@ -187,6 +191,7 @@ the code do the following:
         .lftBtn,
         .rgtBtn,
         .midBtn,
+        .cfgBtnY,
         .cfgBtn,
         .tglBtn {
             background-color: var(--drk-col);
@@ -198,7 +203,7 @@ the code do the following:
             display: inline-block;
             cursor: pointer;
         }
-
+        
         .lftBtn {
             border-radius: var(--smrad-sz) 0px 0px var(--smrad-sz);
             width: calc(var(--cp-sz)/4);
@@ -227,13 +232,16 @@ the code do the following:
             font-size: var(--sml-fnt);
         }
 
-        .cfgBtn {
+        .cfgBtn,.cfgBtnY {
             border-radius: var(--smrad-sz);
             width: 48%;
             font-weight: bold;
             background-color: red;
         }
-
+        .cfgBtnY{
+            color:black;
+            background-color: yellow;
+        }
         .calTxt {
             font-size: var(--sml-fnt);
             color: var(--drk-col);
@@ -292,11 +300,11 @@ the code do the following:
         }
 
         input:checked+.sldSw {
-            background-color: var(--drk-col);
+            background-color: rgb(71, 71, 71);
         }
 
         input:focus+.sldSw {
-            box-shadow: 0 0 1px var(--drk-col);
+            box-shadow: 0 0 1px rgb(71,71,71);
         }
 
         input:checked+.sldSw:before {
@@ -316,7 +324,7 @@ the code do the following:
     -------------------------------------------------------------------------------------------- -->
         
         <script>
-        var fishyNetJSON = '{"fishyDevices":[{"deviceID":"0","IP":"10.203.1.197","dead":"0","isCalibrated":"false","isMaster":"true","motorPos":"0","motorPosAtCCW":"-3500","motorPosAtCW":"3500","motorPosAtFullCCW":"-3500","motorPosAtFullCW":"3500","deviceName":"Vent Damper 2","openIsCCW":"true","port":"8266","group":"","note":"","swVer":"20180330-1","devType":"","initStamp":"201804292100"},{"deviceID":"2","IP":"10.203.1.145","dead":"0","isCalibrated":"false","isMaster":"false","motorPos":"0","motorPosAtCCW":"-3500","motorPosAtCW":"3500","motorPosAtFullCCW":"-3500","motorPosAtFullCW":"3500","deviceName":"Vent Damper 3","openIsCCW":"false","port":"8266","group":"","note":"","swVer":"","devType":"","initStamp":"201804292100"}]}';
+        var fishyNetJSON = '{"fishyDevices":[{"deviceID":"0","IP":"10.203.1.197","dead":"0","isCalibrated":"false","isMaster":"true","motorPos":"250","motorPosAtCCW":"-3497","motorPosAtCW":"3497","motorPosAtFullCCW":"-3500","motorPosAtFullCW":"3500","deviceName":"Vent Damper 2","openIsCCW":"true","port":"8266","group":"","note":"","swVer":"20180430-1","devType":"","initStamp":"201804301900"},{"deviceID":"1","IP":"10.203.1.145","dead":"0","isCalibrated":"false","isMaster":"false","motorPos":"-2000","motorPosAtCCW":"-3497","motorPosAtCW":"3497","motorPosAtFullCCW":"-3500","motorPosAtFullCW":"3500","deviceName":"Vent Damper 3","openIsCCW":"false","port":"8266","group":"","note":"","swVer":"20180430-1","devType":"","initStamp":"201804301900"}]}';
         </script>
 
     <!-- -------------------------------------------------------------------------------------------
@@ -420,11 +428,19 @@ the code do the following:
             }
             var query = '/genericArgs?IPCommand=' + remIP + ';' + cmd;
             var jqxhr = $.get(query, function () {
-                alert('Success.');
+                $('#hd1-'+num).css("color","lime");
+                var tmr = setTimeout(function () {
+                    returnColor(num);
+                    pollJSON();
+                }, 1000);
             });
         }
+        function returnColor(num){
+            $('#hd1-'+num).css("color","white");
+        }
         function pollJSON() {
-            $.getJSON('./device.JSON', function (data) {
+            var srcStr = './device.JSON?nocache=' + (new Date()).getTime();
+            $.getJSON(srcStr, function (data) {
                 var DA = data.fishyDevices;
                 var addDiv = '';
                 var mstrTxt = '';
@@ -432,14 +448,14 @@ the code do the following:
                 var chckTxt = '';
                 var ii;
                 $.each(DA, function (num, d) {
-                    if (d.dead == '0') {
+                if (d.dead == '0') {
                         ii = d.deviceID;
                         //look for new devices in the JSON
                         if($('#pctOpenVal-' + ii)[0]==null){
                             $(addDevice(d)).appendTo('.flex-container');
                         }else{
                             if (d.isMaster == 'true') { mstrTxt = 'MASTER '; } else { mstrTxt = ''; }
-                            if (d.isCalibrated == 'false') { calTxt = 'HARD LIMITS ARE UNCALIBRATED<br>'; } else { calTxt = ''; }
+                            if (d.isCalibrated == 'false') { calTxt = 'HW LIMITS ARE UNCALIBRATED<br>'; } else { calTxt = ''; }
                             if (d.openIsCCW == 'true') { chckTxt = 'checked'; } else { chckTxt = ''; }
                             $('#hd1-'+ii)[0].innerHTML = d.deviceName;
                             $('#hd2-'+ii)[0].innerHTML = '(' + mstrTxt + d.IP + ')';
@@ -447,6 +463,7 @@ the code do the following:
                             $('#devName-'+ii)[0].value = d.deviceName;
                             $('#groupName-'+ii)[0].value = d.group;
                             $('#devType-'+ii)[0].value = d.devType;
+                            $('#devSWver-'+ii)[0].innerHTML = d.swVer;
                             $('#pctOpenVal-' + ii)[0].value = posPct(d.motorPos, d.motorPosAtCCW, d.motorPosAtCW,d.openIsCCW);
                             $('#pctOpenSld-' + ii)[0].value = posPct(d.motorPos, d.motorPosAtCCW, d.motorPosAtCW,d.openIsCCW);
                             $('#ccwLimVal-' + ii)[0].value = d.motorPosAtCCW;
@@ -468,6 +485,8 @@ the code do the following:
                             $('#motPosSld-' + ii)[0].min = d.motorPosAtFullCCW;
                             $('#motPosSld-' + ii)[0].max = d.motorPosAtFullCW;
                             $('#calTxt-' + ii)[0].innerHTML = calTxt;
+                            $('#HWlim-' + ii)[0].innerHTML = "CCW = " + d.motorPosAtFullCCW + " CW = " + d.motorPosAtFullCW;
+                            
                         }
                     }
                 });
@@ -496,9 +515,9 @@ the code do the following:
             return ret;
         }
         function addDevice(d){
-            if (d.isMaster == 'true') { mstrTxt = 'MASTER '; mstrChckTxt = 'checked'; } else { mstrTxt = ''; mstrChckTxt = ''; }
-            if (d.isCalibrated == 'false') { calTxt = 'HARD LIMITS ARE UNCALIBRATED<br>'; } else { calTxt = ''; }
-            if (d.openIsCCW == 'true') { chckTxt = 'checked'; } else { chckTxt = ''; }
+            if (d.isMaster == 'true') { mstrTxt = 'MASTER '; mstrChckTxt = 'checked'; mstrLabel = 'Master Node'; } else { mstrTxt = ''; mstrChckTxt = ''; mstrLabel = 'Slave Node'; }
+            if (d.isCalibrated == 'false') { calTxt = 'HW LIMITS ARE UNCALIBRATED<br>'; } else { calTxt = ''; }
+            if (d.openIsCCW == 'true') { chckTxt = 'checked'; openLabel = 'Open is CCW';} else { chckTxt = ''; openLabel = 'Open is CW'; }
             if (d.dead == '0') {
                 var ii = d.deviceID;
                 var addDiv = "<div class='CP' id='" + ii +"'>" +
@@ -510,7 +529,8 @@ the code do the following:
                     "</div>" +
                     "<div class='btnRow'><input class='lftBtn' id='fcbtn-" + ii + "' type='button' value='Full Close' onclick=sendCmd(" + ii + ",'C')><input class='midBtn' id='pobtn-" + ii + "' type='button' value='Go % Open' onclick=sendCmd(" + ii + ",'G')><input class='rgtBtn' id='fobtn-" + ii + "' type='button' value='Full Open' onclick=sendCmd(" + ii + ",'O')></div>" +
                     "<div class='cfgPnl' id='cfgPnl-" + ii + "' style='display: hidden;'><hr>" +
-                    "<label class='cfgInpLab' for='devNote-" + ii + "'>Note:<input class='cfgInp' id='note-" + ii + "' value='" + d.note + "' maxlength='55'></label><div class='calTxt' id='calTxt-" + ii + "'>" + calTxt + "</div>" +
+                    "<label class='cfgInpLab' for='devNote-" + ii + "'>Note:<input class='cfgInp' id='note-" + ii + "' value='" + d.note + "' maxlength='55'></label><hr><div class='calTxt' id='calTxt-" + ii + "'>" + calTxt + "</div>" +
+                    "<label class='calTxt' >HW Limits: <span class='cfgInp' id='HWlim-" + ii + "'>CCW = " + d.motorPosAtFullCCW + " CW = " + d.motorPosAtFullCW + "</span></label> " +
                     "	<div class='sldRow'>" +
                     "		<div class='sldLab'>CCW Lim</div><input class='sld' id='ccwLimSld-" + ii + "' type='range' value='" + d.motorPosAtCCW + "' max='" + d.motorPosAtFullCW + "' min='" + d.motorPosAtFullCCW + "' oninput=sync(" + ii + ",'ccwLim',1)> <input class='sldVal' id='ccwLimVal-" + ii + "' type='number' value='" + d.motorPosAtCCW + "' max='" + d.motorPosAtFullCW + "' min='" + d.motorPosAtFullCCW + "' onchange=sync(" + ii + ",'ccwLim',2)>" +
                     "	</div>" +
@@ -518,24 +538,23 @@ the code do the following:
                     "		<div class='sldLab'>CW Lim</div><input class='sld' id='cwLimSld-" + ii + "' type='range' value='" + d.motorPosAtCW + "' max='" + d.motorPosAtFullCW + "' min='" + d.motorPosAtFullCCW + "' oninput=sync(" + ii + ",'cwLim',1)> <input class='sldVal' id='cwLimVal-" + ii + "' type='number' value='" + d.motorPosAtCW + "' max='" + d.motorPosAtFullCW + "' min='" + d.motorPosAtFullCCW + "' onchange=sync(" + ii + ",'cwLim',2)>" +
                     "	</div>" +
                     "	<div class='sldRow'>" +
-                    "		<div class='sldLab'>Mot Pos</div><input class='sld' id='motPosSld-" + ii + "' type='range' value='" + d.motorPos + "' max='" + d.motorPosAtFullCW + "' min='" + d.motorPosAtFullCCW + "' disabled> <input class='sldVal' id='motPosVal-" + ii + "' type='number' value='" + d.motorPos + "' max='" + d.motorPosAtFullCW + "' min='" + d.motorPosAtFullCCW + "' disabled>" +
+                    "		<div class='sldLab'>Mot Pos</div><input class='sld-dis' id='motPosSld-" + ii + "' type='range' value='" + d.motorPos + "' max='" + d.motorPosAtFullCW + "' min='" + d.motorPosAtFullCCW + "' disabled> <input class='sldVal' id='motPosVal-" + ii + "' type='number' value='" + d.motorPos + "' max='" + d.motorPosAtFullCW + "' min='" + d.motorPosAtFullCCW + "' disabled>" +
+                    "	</div><hr>" +
+                    "	<div class='swRow'>" +
+                    "		<label class='sw' id='sw-" + ii + "'><input type='checkbox' id='swChck-" + ii + "' " + chckTxt + " onchange=openIsCCWUpd(" + ii + ")><span class='sldSw'></span></label><span class='swLab' id='swLab-" + ii + "'>" + openLabel + "</span>" +
                     "	</div>" +
                     "	<div class='swRow'>" +
-                    "		<label class='sw' id='sw-" + ii + "'><input type='checkbox' id='swChck-" + ii + "' " + chckTxt + " onchange=openIsCCWUpd(" + ii + ")><span class='sldSw'></span></label><span class='swLab' id='swLab-" + ii + "'>Open is CCW</span>" +
-                    "	</div>" +
-                    "	<div class='swRow'>" +
-                    "		<label class='sw' id='swMstr-" + ii + "'><input type='checkbox' id='swMstrChck-" + ii + "' " + mstrChckTxt + " onchange=swMstrUpd(" + ii + ")><span class='sldSw'></span></label><span class='swLab' id='swMstrLab-" + ii + "'>Master Node</span>" +
+                    "		<label class='sw' id='swMstr-" + ii + "'><input type='checkbox' id='swMstrChck-" + ii + "' " + mstrChckTxt + " onchange=swMstrUpd(" + ii + ")><span class='sldSw'></span></label><span class='swLab' id='swMstrLab-" + ii + "'>"+mstrLabel+"</span>" +
                     "	</div>" +
                     "	<label class='cfgInpLab' for='devName-" + ii + "'>Device Name:<input class='cfgInp' id='devName-" + ii + "' value='" + d.deviceName + "' maxlength='40'></label>" +
                     "	<label class='cfgInpLab' for='devGroup-" + ii + "'>Group Name:<input class='cfgInp' id='groupName-" + ii + "' value='" + d.group + "' maxlength='40'></label>" +
                     "	<label class='cfgInpLab' for='devType-" + ii + "'>Device Type:<input class='cfgInp' id='devType-" + ii + "' value='" + d.devType + "' maxlength='20'></label>" +
                     "	<label class='cfgInpLab' >SW Version:<span class='cfgInp' id='devSWver-" + ii + "'>" + d.swVer + "</span></label>" +
                     "	<div class='btnRow'>" +
-                    "	<input class='cfgBtn' id='updCfgBtn-" + ii + "' type='button' value='UPDATE SETTINGS' onclick=sendCmd(" + ii + ",'config')>"+
+                    "	<input class='cfgBtnY' id='updCfgBtn-" + ii + "' type='button' value='UPDATE SETTINGS' onclick=sendCmd(" + ii + ",'config') title='This will save new settings in the device. New settings should be displayed on next refresh.  If trying to adjust mulitple settings it is recommended that you temporarily turn off Auto-refresh.'>"+
                     "	</div><div class='btnRow'>" +
-                    "<input class='cfgBtn' id='updCfgBtn-" + ii + "' type='button' value='AUTO-CAL.' onclick=sendCmd(" + ii + ",'cal')>" +
-
-                    "	<input class='cfgBtn' id='rstWifiBtn-" + ii + "' type='button' value='RESET WIFI' onclick=sendCmd(" + ii + ",'rstWifi')>" +
+                    "<input class='cfgBtn' id='updCfgBtn-" + ii + "' type='button' value='AUTO-CAL. HW LIM' onclick=sendCmd(" + ii + ",'cal') title='WARNING: Auto-Cal will attempt to cycle your actuator full open and shut to determine  hardware limit switch positions. Ensure that range is possible to prevent damage.'>" +
+                    "	<input class='cfgBtn' id='rstWifiBtn-" + ii + "' type='button' value='RESET WIFI' onclick=sendCmd(" + ii + ",'rstWifi') title='WARNING: Reset Wifi will attempt to delete your network SSID and password and put the device into wifi-server mode to learn new wifi SSID and password. To teach a reset device a new wifi network go to the device IP address using a mobile phone or computer.'>" +
                     "	</div>" +
                     "	<hr>" +
                     "</div>" +

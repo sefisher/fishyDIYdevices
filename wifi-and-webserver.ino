@@ -40,9 +40,11 @@ void WiFiSetup()
 	httpServer.on("/genericArgs", handleGenericArgs); //Associate the handler function to the path
 	httpServer.on("/", handleRoot);
 	httpServer.on("/SWupdater", handleSWupdater);
+	httpServer.on("/SWupdateDevForm", HTTP_GET, handleSWupdateDevForm);
+	httpServer.on("/SWupdateDevForm", HTTP_POST, handleSWupdateDevPostDone,  handleSWupdateDevPost);
 	httpServer.on("/device.JSON", handleJSON);
 	httpServer.onNotFound(handleNotFound);
-	httpUpdater.setup(&httpServer);
+	//httpUpdater.setup(&httpServer);
 	httpServer.begin();
 
 	MDNS.addService("http", "tcp", 80);
@@ -56,6 +58,9 @@ void WiFiSetup()
 //-----------------------------------------------------------------------------
 //-------------------------Web Server Functions--------------------------------
 //-----------------------------------------------------------------------------
+
+ String _updaterError;
+
 //provide a JSON structure with all the deviceArray data
 void handleJSON()
 {
@@ -97,7 +102,7 @@ String getJSON()
 put fishyDevice data in a string.
 Note - this is parsed by scripts in webresources.h 
 and paralleled by UDPpollReply; 
-if adding elements all these need updating.
+if adding new data elements all these functions need updating. Current dataset (in order) is:
 {ip,isCalibrated,isMaster,motorPos,motorPosAtCCW,motorPosAtCW,motorPosAtFullCCW,motorPosAtFullCW,name,openIsCCW,port,group,note,swVer,devType,initStamp}
 */
 			temp += "{\"deviceID\":\"" + String(i) + "\",\"IP\":\"" + deviceArray[i].ip.toString() + "\",\"dead\":\"" + String(deviceArray[i].dead) +
@@ -234,6 +239,87 @@ void handleRoot()
 		handleNotMaster();
 	}
 }
+
+//show the SW update form for the specifc device (function for every device webserver)
+void handleSWupdateDevForm()
+{
+ int szchnk = 2900;
+  //ESP8266WebServer *_server = &httpServer;
+  //build the device info string
+ String WEBSTR_SWUPDATE_DEVICE_INFO = "Type: " + String(EEPROMdata.typestr) + "<br>Software Version:" + String(EEPROMdata.swVer) + "<br>Initialization String:" + String(EEPROMdata.initstr) + "<br>";
+
+//open server response
+httpServer.sendHeader("Cache-Control", "no-cache, no-store, must-revalidate");
+httpServer.sendHeader("Pragma", "no-cache");
+httpServer.sendHeader("Expires", "-1");
+httpServer.setContentLength(CONTENT_LENGTH_UNKNOWN); 
+httpServer.send(200, "text/html", "");
+
+
+//send content in chunks
+handleStrPartResp(WEBSTR_SWUPDATE_PT1,szchnk);
+handleStrPartResp(WEBSTR_SWUPDATE_DEVICE_INFO,szchnk);
+handleStrPartResp(WEBSTR_SWUPDATE_PT2,szchnk);
+
+//close server response
+httpServer.sendContent("");
+httpServer.client().stop();
+
+}
+
+void setUpdaterError()
+{
+  if (DEBUG_MESSAGES) Update.printError(Serial);
+  StreamString str;
+  Update.printError(str);
+  _updaterError = str.c_str();
+}
+
+void handleSWupdateDevPostDone()
+{
+ 	if (Update.hasError()) {
+        httpServer.send(200, F("text/html"), String(F("Update error: ")) + _updaterError);
+    } else {
+        httpServer.client().setNoDelay(true);
+        httpServer.send_P(200, PSTR("text/html"),  WEBSTR_SWUPDATE_SUCCESS);
+        delay(100);
+        httpServer.client().stop();
+        ESP.restart();
+    }
+}
+
+void handleSWupdateDevPost()
+{
+	 HTTPUpload& upload = httpServer.upload();
+
+      if(upload.status == UPLOAD_FILE_START){
+
+        WiFiUDP::stopAll();
+        if (DEBUG_MESSAGES)
+          Serial.printf("Update: %s\n", upload.filename.c_str());
+        uint32_t maxSketchSpace = (ESP.getFreeSketchSpace() - 0x1000) & 0xFFFFF000;
+        if(!Update.begin(maxSketchSpace)){//start with max available size
+          setUpdaterError();
+        }
+      } else if( upload.status == UPLOAD_FILE_WRITE && !_updaterError.length()){
+        if (DEBUG_MESSAGES) Serial.printf(".");
+        if(Update.write(upload.buf, upload.currentSize) != upload.currentSize){
+          setUpdaterError();
+        }
+      } else if(upload.status == UPLOAD_FILE_END && !_updaterError.length()){
+        if(Update.end(true)){ //true to set the size to the current progress
+          if (DEBUG_MESSAGES) Serial.printf("Update Was Successful: %u\nRebooting...\n", upload.totalSize);
+        } else {
+          setUpdaterError();
+        }
+        if (DEBUG_MESSAGES) Serial.setDebugOutput(false);
+      } else if(upload.status == UPLOAD_FILE_ABORTED){
+        Update.end();
+        if (DEBUG_MESSAGES) Serial.println("Update was aborted");
+      }
+      delay(0);
+}
+//show the SW update webasite for all the fishyDIY devices in the network (MASTER function)
 void handleSWupdater()
 {
 	//only process the webrequest if you are the master or if there is no master

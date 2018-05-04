@@ -6,7 +6,7 @@
 
 //make the webserver and web updater
 ESP8266WebServer httpServer(80);	 //for master node web server
-ESP8266HTTPUpdateServer httpUpdater; //for processing software updates
+//customHTTPUpdateServer httpUpdater; //for processing software updates
 WiFiUDP Udp;						 //for UDP traffic between nodes
 WiFiManager WiFiManager;			 //for managing Wifi
 
@@ -86,7 +86,7 @@ typedef struct fishyDevice
 //SW reports needed 212 bytes; left some margin
 #define EEPROMsz 220
 
-struct EEPROMdata
+typedef struct EEPROMdata
 {
 	char initstr[13] = ""; 					//13 bytes
 	char namestr[41] = "";					//41 bytes
@@ -105,7 +105,9 @@ struct EEPROMdata
 	bool motorPosAtCCWset = false;			//1 byte
 	bool motorPosAtCWset = false;			//1 byte
 	int motorPos = 0; 						//4 bytes
-} EEPROMdata;
+};
+
+EEPROMdata EEPROMdata;
 
 fishyDevice deviceArray[MAX_DEVICE];
 IPAddress masterIP = {0, 0, 0, 0};

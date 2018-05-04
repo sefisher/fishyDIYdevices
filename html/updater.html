@@ -313,7 +313,7 @@ To build it in the code do the following:
              transform: translateX(26px);
          }
          .swUpdate {
-              height: var(--hdr-ht);
+              height: 250px;
               width: var(--cp-sz);
               border: none;
           }
@@ -342,9 +342,8 @@ To build it in the code do the following:
             if (d.isMaster == 'true') { mstrTxt = 'MASTER'; } else { mstrTxt = ''; }
 
             var ii = d.deviceID;
-            var addDiv = "<div class='CP' id='" + ii +"'><div class='CPhd' id='hd1-" + ii + "'>" + d.IP + "<br>" + d.deviceName + 
-                "<br>SW Ver: " + d.swVer + "<br>Initialization: " + d.initStamp + "</div>" +
-                "<iframe id='swUpdate-" + ii + "' class='swUpdate' src='http://"+d.IP+"/update' ></iframe><br>" +
+            var addDiv = "<div class='CP' id='" + ii +"'><div class='CPhd' id='hd1-" + ii + "'>" + d.IP + "<br>" + d.deviceName + "</div>" +
+                "<iframe id='swUpdate-" + ii + "' class='swUpdate' src='http://"+d.IP+"/SWupdateDevForm' ></iframe><br>" +
             "<div class='CPft'>"+mstrTxt+"</div></div>";
                      
             return addDiv;
@@ -379,7 +378,7 @@ To build it in the code do the following:
      -------------------------------------- END OF PART 4, START OF PART 5 (END)---------------------
      -------------------------------------------------------------------------------------------- -->
  
-     <div class='fishyFtr'><a href="/">[Controls]</a>  <a href="/SWupdater">[SW Update]</a></div><input type=button onclick="alert($('#swUpdate-1').context.body.innerHTML)"></div>
+     <div class='fishyFtr'><a href="/">[Controls]</a>  <a href="/SWupdater">[SW Update]</a></div></div>
  </body>
  </html>
     <!-- -------------------------------------------------------------------------------------------

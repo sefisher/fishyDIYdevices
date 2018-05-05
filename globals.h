@@ -86,7 +86,7 @@ typedef struct fishyDevice
 //SW reports needed 212 bytes; left some margin
 #define EEPROMsz 220
 
-typedef struct EEPROMdata
+struct EEPROMdata
 {
 	char initstr[13] = ""; 					//13 bytes
 	char namestr[41] = "";					//41 bytes
@@ -105,9 +105,7 @@ typedef struct EEPROMdata
 	bool motorPosAtCCWset = false;			//1 byte
 	bool motorPosAtCWset = false;			//1 byte
 	int motorPos = 0; 						//4 bytes
-};
-
-EEPROMdata EEPROMdata;
+} EEPROMdata;
 
 fishyDevice deviceArray[MAX_DEVICE];
 IPAddress masterIP = {0, 0, 0, 0};

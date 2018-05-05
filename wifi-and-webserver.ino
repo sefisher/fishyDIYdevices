@@ -58,7 +58,7 @@ void WiFiSetup()
 //-----------------------------------------------------------------------------
 //-------------------------Web Server Functions--------------------------------
 //-----------------------------------------------------------------------------
-
+ #include <StreamString.h>
  String _updaterError;
 
 //provide a JSON structure with all the deviceArray data

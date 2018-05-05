@@ -38,7 +38,6 @@ Notes:
 #include <ESP8266WiFi.h>
 #include <ESP8266mDNS.h>
 #include <ESP8266WebServer.h>
-//#include "customHTTPUpdateServer.h"
 #include <WiFiClient.h>
 #include <WiFiUdp.h>
 #include <WiFiManager.h> //https://github.com/tzapu/WiFiManager
@@ -92,12 +91,6 @@ void setup()
 		Serial.println("[SETUP] Found motor data: {CCW,CW,FCCW,FCW,CCWset,CWset,Pos}: {" + String(EEPROMdata.motorPosAtCCW) + "," + String(EEPROMdata.motorPosAtCW)+ "," + String(EEPROMdata.motorPosAtFullCCW)+ "," + String(EEPROMdata.motorPosAtFullCW )+ "," + String(EEPROMdata.motorPosAtCCWset)+ "," + String(EEPROMdata.motorPosAtCWset)+ "," + String(EEPROMdata.motorPos)+"}");  	
 		Serial.println("[SETUP] Compiled init string: " + String(INITIALIZE) + ". Stored init string: " + String(EEPROMdata.initstr));
 	}
-	//always show the latest SW_VER
-	strncpy(EEPROMdata.swVer, SW_VER, 11);
-	if (DEBUG_MESSAGES)	
-	{
-		Serial.println("[SETUP] Actual swVER: " + String(EEPROMdata.swVer));
-	}
 
 	// change EEPROMdata in RAM
 	if (String(INITIALIZE) != String(EEPROMdata.initstr))
@@ -107,6 +100,7 @@ void setup()
 			Serial.println("[SETUP] Updating...");
 		}
 		//store specified personality data
+		strncpy(EEPROMdata.swVer, SW_VER, 11);
 		strncpy(EEPROMdata.initstr, INITIALIZE, 13);
 		strncpy(EEPROMdata.namestr, CUSTOM_DEVICE_NAME, 41);
 		strncpy(EEPROMdata.groupstr, CUSTOM_GROUP_NAME, 41);
@@ -134,22 +128,28 @@ void setup()
 		{
 			EEPROMdata.master = false;
 		}
-		
 		storeDataToEEPROM();
 	}
 	else
 	{
+		//always show the latest SW_VER
+		strncpy(EEPROMdata.swVer, SW_VER, 11);
+		if (DEBUG_MESSAGES)	
+		{
+			Serial.println("[SETUP] Actual swVER: " + String(EEPROMdata.swVer));
+		}
 		if (DEBUG_MESSAGES)
 		{
-			Serial.println("[SETUP] Nothing to update.");
+			Serial.println("[SETUP] Nothing else to update.");
 		}
+		storeDataToEEPROM();
 	}
 
 	if (DEBUG_MESSAGES)
 	{
 		Serial.println("[SETUP] Personality values are: Init string: "+String(EEPROMdata.initstr)+", Name string: "+String(EEPROMdata.namestr)+", Master: " + String(EEPROMdata.master?"True":"False")+", Group name string: "+String(EEPROMdata.groupstr)+",Type string: "+String(EEPROMdata.typestr)+",Note string: "+String(EEPROMdata.note)+", OpenIsCCW: "+String(EEPROMdata.openIsCCW?"True":"False")+", SW Version string: "+String(EEPROMdata.swVer));
 		Serial.println("[SETUP] Motor data is: {CCW,CW,FCCW,FCW,CCWset,CWset,Pos}: {" + String(EEPROMdata.motorPosAtCCW) + "," + String(EEPROMdata.motorPosAtCW)+ "," + String(EEPROMdata.motorPosAtFullCCW)+ "," + String(EEPROMdata.motorPosAtFullCW)+ "," + String(EEPROMdata.motorPosAtCCWset)+ "," + String(EEPROMdata.motorPosAtCWset)+ "," + String(EEPROMdata.motorPos)+"}");  	
-
+//TODO - delete this extra retrieve cycle once done and we know it works---
 		Serial.println("Trying to retrieve again from EEPROM...");
 		delay(500);
 		retrieveDataFromEEPROM();
@@ -157,6 +157,7 @@ void setup()
 
 		Serial.println("[SETUP] Personality values are: Init string: "+String(EEPROMdata.initstr)+", Name string: "+String(EEPROMdata.namestr)+", Master: " + String(EEPROMdata.master?"True":"False")+", Group name string: "+String(EEPROMdata.groupstr)+",Type string: "+String(EEPROMdata.typestr)+",Note string: "+String(EEPROMdata.note)+", OpenIsCCW: "+String(EEPROMdata.openIsCCW?"True":"False")+", SW Version string: "+String(EEPROMdata.swVer));
 		Serial.println("[SETUP] Motor data is: {CCW,CW,FCCW,FCW,CCWset,CWset,Pos}: {" + String(EEPROMdata.motorPosAtCCW) + "," + String(EEPROMdata.motorPosAtCW)+ "," + String(EEPROMdata.motorPosAtFullCCW)+ "," + String(EEPROMdata.motorPosAtFullCW)+ "," + String(EEPROMdata.motorPosAtCCWset)+ "," + String(EEPROMdata.motorPosAtCWset)+ "," + String(EEPROMdata.motorPos)+"}");
+//------------------------------------------------------------------------------
 	}
 
 	//stepper motor setup

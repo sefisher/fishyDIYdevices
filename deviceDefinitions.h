@@ -2,43 +2,46 @@
 //--------------------------USER DEFINED VARIABLES-----------------------------------
 //-----------------------------------------------------------------------------------
 
-//--------------------------PERSONALITY SETTINGS-----------------------------------//
-//Put in a time/date string to define the personality variables. On load the device will look to
-//see if the settings stored in EEPROM are different; if so they will be loaded.  If not
-//they will use the new software but keep the old EEPROM settings and any stored motor position 
-//and calibration info.  
-//This allows a single software upload to be used for multiple devices without overwritting 
-//their "personality settings" and wiping out stored motor info.
-//String format -> "YYYYMMDDHHmm" (where HHmm is 24 hr time). The other device settings 
-//are used every time software is loaded
-#define INITIALIZE "201804301900"
-
-//this is for keeping track of SW version
-//it is displayed but not otherwise used
+//This is for keeping track of SW version it is displayed but not otherwise used
 //LIMITED to 10 alpanumeric characters
-#define SW_VER "20180504-1"
+#define SW_VER "20180504-6"
+
+//--------------------------PERSONALITY SETTINGS-----------------------------------//
+//Put in a time/date string to define the personality variables. 
+/*
+On load the device will look to see if this setting and that stored in EEPROM are 
+different; if so the rest of the settings will be will be loaded.  If not the new 
+software (and version number above) will be used but the device will keep the old 
+EEPROM settings (ignoring all the stuff below) and any stored motor position 
+and calibration info.  
+
+This allows a single software upload to be used for multiple devices without overwritting 
+their "personality settings" and wiping out stored motor info. 
+*/
+//String format -> "YYYYMMDDHHmm" (where HHmm is 24 hr time). 
+#define INITIALIZE "201805042100"
 
 //PICK A UNIQUE NAME FOR EACH DEVICE USING ONLY LETTERS AND NUMBERS
 // LIMITED to 40 alpanumeric characters (abcdefghijklmnopqrstuvwxyz0123456789)
-//#define CUSTOM_DEVICE_NAME "Vent Damper 1"
-//#define CUSTOM_DEVICE_NAME "Vent Damper 2"
+// #define CUSTOM_DEVICE_NAME "Vent Damper 1"
+// #define CUSTOM_DEVICE_NAME "Vent Damper 2"
 #define CUSTOM_DEVICE_NAME "Vent Damper 3"
 
 //PICK ONLY ONE DEVICE ON THE NETWORK AS MASTER (and set this to true when you compile its code).  
 //IT WILL BE THE WEBSERVER AND CONTROLLER FOR ALL OTHER NODES.  Set false for all the others.
-//#define MASTER_NODE true
+// #define MASTER_NODE true
 #define MASTER_NODE false
 
 //FIGURE OUT WHAT DIRECTION YOU WANT TO PICK AS OPEN or CLOSE FOR YOUR DEVICE.  
 //TODO - use this parameter correctly
-//#define OPEN_IS_CCW true
+// #define OPEN_IS_CCW true
 #define OPEN_IS_CCW false
 
-//IF DESIRED, SPECIFY THE DEVICE TYPE
+//IF DESIRED, SPECIFY THE DEVICE TYPE (default is "2-State Actuator")
 //LIMITED to 20 alpanumeric characters 
 //The note is displayed on the control panel for the device.
 //TODO - use this option
-#define CUSTOM_DEVICE_TYPE ""
+#define CUSTOM_DEVICE_TYPE "2-State Actuator"
 
 //IF DESIRED, PICK A GROUP NAME FOR EACH DEVICE USING ONLY LETTERS/NUMBERS
 //LIMITED to 40 alpanumeric characters 

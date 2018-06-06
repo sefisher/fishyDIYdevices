@@ -44,6 +44,7 @@ Notes:
 #include <fauxmoESP.h>
 #include <AccelStepper.h>
 #include <EEPROM.h>
+#include <StreamString.h>
 
 #include "deviceDefinitions.h"
 #include "motorDefinitions.h"
@@ -149,15 +150,7 @@ void setup()
 	{
 		Serial.println("[SETUP] Personality values are: Init string: "+String(EEPROMdata.initstr)+", Name string: "+String(EEPROMdata.namestr)+", Master: " + String(EEPROMdata.master?"True":"False")+", Group name string: "+String(EEPROMdata.groupstr)+",Type string: "+String(EEPROMdata.typestr)+",Note string: "+String(EEPROMdata.note)+", OpenIsCCW: "+String(EEPROMdata.openIsCCW?"True":"False")+", SW Version string: "+String(EEPROMdata.swVer));
 		Serial.println("[SETUP] Motor data is: {CCW,CW,FCCW,FCW,CCWset,CWset,Pos}: {" + String(EEPROMdata.motorPosAtCCW) + "," + String(EEPROMdata.motorPosAtCW)+ "," + String(EEPROMdata.motorPosAtFullCCW)+ "," + String(EEPROMdata.motorPosAtFullCW)+ "," + String(EEPROMdata.motorPosAtCCWset)+ "," + String(EEPROMdata.motorPosAtCWset)+ "," + String(EEPROMdata.motorPos)+"}");  	
-//TODO - delete this extra retrieve cycle once done and we know it works---
-		Serial.println("Trying to retrieve again from EEPROM...");
-		delay(500);
-		retrieveDataFromEEPROM();
-		delay(500);
 
-		Serial.println("[SETUP] Personality values are: Init string: "+String(EEPROMdata.initstr)+", Name string: "+String(EEPROMdata.namestr)+", Master: " + String(EEPROMdata.master?"True":"False")+", Group name string: "+String(EEPROMdata.groupstr)+",Type string: "+String(EEPROMdata.typestr)+",Note string: "+String(EEPROMdata.note)+", OpenIsCCW: "+String(EEPROMdata.openIsCCW?"True":"False")+", SW Version string: "+String(EEPROMdata.swVer));
-		Serial.println("[SETUP] Motor data is: {CCW,CW,FCCW,FCW,CCWset,CWset,Pos}: {" + String(EEPROMdata.motorPosAtCCW) + "," + String(EEPROMdata.motorPosAtCW)+ "," + String(EEPROMdata.motorPosAtFullCCW)+ "," + String(EEPROMdata.motorPosAtFullCW)+ "," + String(EEPROMdata.motorPosAtCCWset)+ "," + String(EEPROMdata.motorPosAtCWset)+ "," + String(EEPROMdata.motorPos)+"}");
-//------------------------------------------------------------------------------
 	}
 
 	//stepper motor setup
@@ -178,9 +171,11 @@ void setup()
 	{
 		// WiFi - see wifi-and-webserver.ino
 		WiFiSetup();
-		fauxmo.enable(true);
-		// Add virtual device
-		fauxmo.addDevice(EEPROMdata.namestr);
+		if(FAUXMO_ENABLED){
+			fauxmo.enable(true);
+			// Add virtual device
+			fauxmo.addDevice(EEPROMdata.namestr);
+		}
 	}
 
 	// Device and pin setup
@@ -199,22 +194,24 @@ void setup()
 	pinMode(SWpinManCCW, INPUT_PULLUP);
 	pinMode(SWpinManSel, INPUT_PULLUP);
 
-	// fauxmoESP 2.0.0 has changed the callback signature to add the device_id,
-	// this way it's easier to match devices to action without having to compare strings.
-	fauxmo.onSetState([](unsigned char device_id, const char *device_name, bool state) {
-		if (DEBUG_MESSAGES)
-		{
-			Serial.printf("[SETUP] Device #%d (%s) state was set: %s\n", device_id, device_name, state ? "ON" : "OFF");
-		}
-		executeState(state);
+	if(FAUXMO_ENABLED){
+		// fauxmoESP 2.0.0 has changed the callback signature to add the device_id,
+		// this way it's easier to match devices to action without having to compare strings.
+		fauxmo.onSetState([](unsigned char device_id, const char *device_name, bool state) {
+			if (DEBUG_MESSAGES)
+			{
+				Serial.printf("[SETUP] Device #%d (%s) state was set: %s\n", device_id, device_name, state ? "ON" : "OFF");
+			}
+			executeState(state);
 
-	});
+		});
 
-	// Callback to retrieve current state (for GetBinaryState queries)
-	fauxmo.onGetState([](unsigned char device_id, const char *device_name) {
-		return deviceState;
-	});
-
+		// Callback to retrieve current state (for GetBinaryState queries)
+		fauxmo.onGetState([](unsigned char device_id, const char *device_name) {
+			return deviceState;
+		});
+	}
+	
 	//announce master if this is the mastr node
 	if (EEPROMdata.master)
 	{
@@ -448,6 +445,19 @@ void executeCommands(char inputMsg[MAXCMDSZ], IPAddress remote)
 			Serial.println("[executeCommands] Hello!");
 		}
 	}
+	else if (cmd.startsWith("reset_wifi"))
+	{
+		if (DEBUG_MESSAGES)
+		{
+			Serial.println("[executeCommands] Commanded RESET_WIFI");
+		}
+		
+		WiFiManager.resetSettings();
+		resetOnNextLoop = true;
+		delay(2000);
+		//WiFi.disconnect(true);
+		//ESP.reset();
+	}
 	else if (cmd.startsWith("reset"))
 	{
 		if (DEBUG_MESSAGES)
@@ -508,17 +518,6 @@ void executeCommands(char inputMsg[MAXCMDSZ], IPAddress remote)
 			Serial.println("[executeCommands] Commanded CONFIG");
 		}
 		UDPparseConfigResponse(String(inputMsg), remote); //want the original case for this
-	}
-	else if (cmd.startsWith("reset_wifi"))
-	{
-		if (DEBUG_MESSAGES)
-		{
-			Serial.println("[executeCommands] Commanded RESET_WIFI");
-		}
-		//TODO - make this wifi reset work --  this doesn;t do it.
-		WiFi.disconnect(true);
-		delay(2000);
-		ESP.reset();
 	}
 	else
 	{

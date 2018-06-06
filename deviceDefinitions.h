@@ -4,7 +4,7 @@
 
 //This is for keeping track of SW version it is displayed but not otherwise used
 //LIMITED to 10 alpanumeric characters
-#define SW_VER "20180504-6"
+#define SW_VER "20180506-1"
 
 //--------------------------PERSONALITY SETTINGS-----------------------------------//
 //Put in a time/date string to define the personality variables. 
@@ -33,7 +33,6 @@ their "personality settings" and wiping out stored motor info.
 #define MASTER_NODE false
 
 //FIGURE OUT WHAT DIRECTION YOU WANT TO PICK AS OPEN or CLOSE FOR YOUR DEVICE.  
-//TODO - use this parameter correctly
 // #define OPEN_IS_CCW true
 #define OPEN_IS_CCW false
 
@@ -55,6 +54,13 @@ their "personality settings" and wiping out stored motor info.
 #define CUSTOM_NOTE ""
 
 //----------------------------OTHER DEVICES SETTINGS-------------------------------//
+//SET THIS TO TRUE IF YOU WANT A SIMPLE "TURN ON, TURN OFF" COMMAND CAPABILITY FOR 
+//CONTROLLING THE DEVICE THROUGH AMAZON ECHO (ALEXA) OR A SMART HOME HUB (LIKE SMARTTHINGS).
+//THE DEVICE WOULD THEN SHOW UP ON YOUR WIFI NETWORK AS A "WEMO PLUG" OR SIMILAR.
+//"TURN ON" = FULLY OPEN; "TURN OFF" = FULLY CLOSE.  
+//THIS IS NOT CONFIGURABLE AS A SETTING AFTER COMPILING AND UPLOADING SOFTWARE
+#define FAUXMO_ENABLED true
+
 //Board communication rate
 #define SERIAL_BAUDRATE 115200
 #define UDP_LOCAL_PORT 8266

@@ -429,6 +429,7 @@ the code do the following:
             var query = '/genericArgs?IPCommand=' + remIP + ';' + cmd;
             var jqxhr = $.get(query, function () {
                 $('#hd1-'+num).css("color","lime");
+                $('#updCfgBtn-'+num).css("background-color","lime"); 
                 var tmr = setTimeout(function () {
                     returnColor(num);
                     pollJSON();
@@ -437,6 +438,7 @@ the code do the following:
         }
         function returnColor(num){
             $('#hd1-'+num).css("color","white");
+            $('#updCfgBtn-'+num).css("background-color","yellow"); 
         }
         function pollJSON() {
             var srcStr = './device.JSON?nocache=' + (new Date()).getTime();

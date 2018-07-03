@@ -4,8 +4,8 @@
 // 3250 steps.  Setting it a little larger to ensure the limit switch is reached on
 // boot up when it calibrates.  Future motion will be software limited.  This is defined
 // to prevent a broken switch from running the motor continuously and causing damage.
-#define FULL_SWING 3500
-#define MAX_SPEED 1000
+#define FULL_SWING 10000
+#define MAX_SPEED 800
 #define START_SPEED 200
 #define ACCELERATION 200
 
@@ -23,9 +23,9 @@
 // Switch pin definitions
 #define SWpinLimitCW 14  // D5=GPIO14 for full close (CW) limit switch
 #define SWpinLimitCCW 12 // D6=GPIO12 for full open (CCW) limit switch
-#define SWpinManCW 9	 // SDD2=GPIO13 for close (CW) manual switch
-#define SWpinManCCW 10   // SDD3=GPIO15 for open (CCW) manual switch
-#define SWpinManSel 16   // D0=GPIO16 for select manual switch
+#define SWpinManCW 9	 // SDD2=GPIO9 for close (CW) manual switch
+#define SWpinManCCW 10   // SDD3=GPIO10 for open (CCW) manual switch
+#define SWpinManSel 13   // D7=GPIO13 for select manual switch
 
 //------------------------------------------------------------------
 

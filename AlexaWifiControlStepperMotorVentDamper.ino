@@ -333,6 +333,12 @@ void loop()
 			}
 			break;
 		case openingCal: //calibration in first stage
+			EEPROMdata.motorPosAtCCW = -FULL_SWING + 3; 	
+			EEPROMdata.motorPosAtCW = FULL_SWING - 3;		
+			EEPROMdata.motorPosAtFullCCW = -FULL_SWING; 	
+			EEPROMdata.motorPosAtFullCW = FULL_SWING;		
+			EEPROMdata.motorPosAtCCWset = false;			
+			EEPROMdata.motorPosAtCWset = false;	
 			normalOpening();
 			if (deviceTrueState == opened)
 			{ //Done with stage 1 go onto closing stage
@@ -370,14 +376,17 @@ void loop()
 		}
 		if (CWlimSensorVal && (CWmanSensorVal == 0))
 		{ //go CW since not at limit
+			
 			manCW();
 		}
 		else if (CCWlimSensorVal && (CCWmanSensorVal == 0))
 		{ //go CCW since not at limit
 			manCCW();
+			
 		}
 		else if (SELmanSensorVal == 0)
 		{
+			
 			manSel();
 		}
 	}
@@ -472,6 +481,7 @@ void executeCommands(char inputMsg[MAXCMDSZ], IPAddress remote)
 		{
 			Serial.println("[executeCommands] Commanded CALIBRATE");
 		}
+
 		deviceCalStage = openingCal;
 		if (DEBUG_MESSAGES)
 		{
@@ -893,31 +903,31 @@ trueState openPercentActuator(int percent)
 void fastBlinks(int numBlinks)
 {
 
-	pinMode(SWpinManSel, OUTPUT); // Initialize GPIO2 pin as an output
+	pinMode(LED_BUILTIN, OUTPUT); // Initialize GPIO2 pin as an output
 
 	for (int i = 0; i < numBlinks; i++)
 	{
-		digitalWrite(SWpinManSel, LOW);  // Turn the LED on by making the voltage LOW
+		digitalWrite(LED_BUILTIN, LOW);  // Turn the LED on by making the voltage LOW
 		delay(100);						 // Wait for a second
-		digitalWrite(SWpinManSel, HIGH); // Turn the LED off by making the voltage HIGH
+		digitalWrite(LED_BUILTIN, HIGH); // Turn the LED off by making the voltage HIGH
 		delay(200);						 // Wait for two seconds
 	}
-	pinMode(SWpinManSel, INPUT_PULLUP);
+	pinMode(LED_BUILTIN, INPUT_PULLUP);
 }
 
 void slowBlinks(int numBlinks)
 {
 
-	pinMode(SWpinManSel, OUTPUT); // Initialize GPIO2 pin as an output
+	pinMode(LED_BUILTIN, OUTPUT); // Initialize GPIO2 pin as an output
 
 	for (int i = 0; i < numBlinks; i++)
 	{
-		digitalWrite(SWpinManSel, LOW);  // Turn the LED on by making the voltage LOW
+		digitalWrite(LED_BUILTIN, LOW);  // Turn the LED on by making the voltage LOW
 		delay(1000);					 // Wait for a second
-		digitalWrite(SWpinManSel, HIGH); // Turn the LED off by making the voltage HIGH
+		digitalWrite(LED_BUILTIN, HIGH); // Turn the LED off by making the voltage HIGH
 		delay(1000);					 // Wait for two seconds
 	}
-	pinMode(SWpinManSel, INPUT_PULLUP);
+	pinMode(LED_BUILTIN, INPUT_PULLUP);
 }
 
 

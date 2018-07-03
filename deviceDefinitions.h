@@ -4,7 +4,7 @@
 
 //This is for keeping track of SW version it is displayed but not otherwise used
 //LIMITED to 10 alpanumeric characters
-#define SW_VER "20180506-1"
+#define SW_VER "20180506-2"
 
 //--------------------------PERSONALITY SETTINGS-----------------------------------//
 //Put in a time/date string to define the personality variables. 
@@ -19,13 +19,14 @@ This allows a single software upload to be used for multiple devices without ove
 their "personality settings" and wiping out stored motor info. 
 */
 //String format -> "YYYYMMDDHHmm" (where HHmm is 24 hr time). 
-#define INITIALIZE "201805042100"
+#define INITIALIZE "201806222200"
 
 //PICK A UNIQUE NAME FOR EACH DEVICE USING ONLY LETTERS AND NUMBERS
 // LIMITED to 40 alpanumeric characters (abcdefghijklmnopqrstuvwxyz0123456789)
-// #define CUSTOM_DEVICE_NAME "Vent Damper 1"
+ //#define CUSTOM_DEVICE_NAME "Vent Damper 1"
 // #define CUSTOM_DEVICE_NAME "Vent Damper 2"
-#define CUSTOM_DEVICE_NAME "Vent Damper 3"
+ #define CUSTOM_DEVICE_NAME "Vent Damper 3"
+//#define CUSTOM_DEVICE_NAME "Actuator 1"
 
 //PICK ONLY ONE DEVICE ON THE NETWORK AS MASTER (and set this to true when you compile its code).  
 //IT WILL BE THE WEBSERVER AND CONTROLLER FOR ALL OTHER NODES.  Set false for all the others.
@@ -69,8 +70,8 @@ their "personality settings" and wiping out stored motor info.
 #define MAX_DEVICE 24
 
 //Test switches for Serial output text (set to false to disable debug messages) and WiFi Functions
-#define DEBUG_MESSAGES true
-#define UDP_PARSE_MESSAGES true
+#define DEBUG_MESSAGES false
+#define UDP_PARSE_MESSAGES false
 #define DEBUG_HEAP_MESSAGE false
 #define DEBUG_WiFiOFF false //turn to true to test without wifi
 //-----------------------------------------------------------------------------------

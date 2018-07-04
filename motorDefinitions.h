@@ -23,9 +23,6 @@
 // Switch pin definitions
 #define SWpinLimitCW 14  // D5=GPIO14 for full close (CW) limit switch
 #define SWpinLimitCCW 12 // D6=GPIO12 for full open (CCW) limit switch
-#define SWpinManCW 9	 // SDD2=GPIO9 for close (CW) manual switch
-#define SWpinManCCW 10   // SDD3=GPIO10 for open (CCW) manual switch
-#define SWpinManSel 13   // D7=GPIO13 for select manual switch
 
 //------------------------------------------------------------------
 

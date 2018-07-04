@@ -26,10 +26,6 @@ fishyDevice makeMyFishyDevice()
 	}else{
 		holder.motorPos = stepper1.currentPosition();
 	}
-	holder.motorPosAtCCW = EEPROMdata.motorPosAtCCW;
-	holder.motorPosAtCW = EEPROMdata.motorPosAtCW;
-	holder.motorPosAtFullCCW = EEPROMdata.motorPosAtFullCCW;
-	holder.motorPosAtFullCW = EEPROMdata.motorPosAtFullCW;
 	holder.name = String(EEPROMdata.namestr);
 	holder.port = UDP_LOCAL_PORT;
 	holder.openIsCCW = EEPROMdata.openIsCCW;

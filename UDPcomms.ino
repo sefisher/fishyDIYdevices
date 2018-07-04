@@ -9,7 +9,7 @@ void UDPprocessPacket()
 	if (packetSize)
 	{
 		IPAddress remoteIp = Udp.remoteIP();
-		if (DEBUG_MESSAGES)
+		if (DEBUG_UDP_MESSAGES)
 		{
 			Serial.print("[UDPprocessPacket] Received packet of size ");
 			Serial.println(packetSize);
@@ -24,7 +24,7 @@ void UDPprocessPacket()
 		{
 			packetBuffer[len] = 0;
 		}
-		if (DEBUG_MESSAGES)
+		if (DEBUG_UDP_MESSAGES)
 		{
 			Serial.print("[UDPprocessPacket] Executing:");
 			Serial.println(packetBuffer);
@@ -72,16 +72,12 @@ void UDPpollReply(IPAddress remote)
 send fishyDevice data.
 Note - this is parsed by UDPparsePollResponse and paralleled by getJSON; 
 if adding elements all three need updating.
-{ip,isCalibrated,isMaster,motorPos,motorPosAtCCW,motorPosAtCW,motorPosAtFullCCW,motorPosAtFullCW,name,openIsCCW,port,group,note,swVer,devType,iniStamp,range}
+{ip,isCalibrated,isMaster,motorPos,name,openIsCCW,port,group,note,swVer,devType,iniStamp,range}
 */
 	response += "{" + holder.ip.toString() + "," + 
 			String(holder.isCalibrated ? "true" : "false") + "," +
 			String(holder.isMaster ? "true" : "false") + "," + 
-			String(holder.motorPos) + "," +
-			String(holder.motorPosAtCCW) + "," + 
-			String(holder.motorPosAtCW) + "," + 
-			String(holder.motorPosAtFullCCW) + "," +
-			String(holder.motorPosAtFullCW) + "," + 
+			String(holder.motorPos) + "," + 
 			String(holder.name) + ","  +  
 			String(holder.openIsCCW ? "true" : "false") + "," + 
 			String(holder.port) + "," + 
@@ -111,7 +107,7 @@ void UDPparsePollResponse(String responseIn, IPAddress remote)
 parse fishyDevice data.
 Note - this data set is sent by UDPparsePollResponse and getJSON; 
 it is also parsed by scripts in webresources.h if adding elements all three need updating:
-{ip,isCalibrated,isMaster,motorPos,motorPosAtCCW,motorPosAtCW,motorPosAtFullCCW,motorPosAtFullCW,name,openIsCCW,port,group,note,swVer,devType,initStamp,range}
+{ip,isCalibrated,isMaster,motorPos,name,openIsCCW,port,group,note,swVer,devType,initStamp,range}
 */
 		String response = responseIn.substring(14); //strip off "POLL RESPONSE"
 		fishyDevice holder;
@@ -160,42 +156,6 @@ it is also parsed by scripts in webresources.h if adding elements all three need
 		if (DEBUG_MESSAGES && UDP_PARSE_MESSAGES)
 		{
 			Serial.println("[UDPparsePollResponse] motorPos: " + String(holder.motorPos));
-		}
-
-		//motorPosAtCCW
-		strStrt = strStop + 1;
-		strStop = response.indexOf(",", strStrt);
-		holder.motorPosAtCCW = response.substring(strStrt, strStop).toInt();
-		if (DEBUG_MESSAGES && UDP_PARSE_MESSAGES)
-		{
-			Serial.println("[UDPparsePollResponse] motorPosAtCCW: " + String(holder.motorPosAtCCW));
-		}
-
-		//motorPosAtCW
-		strStrt = strStop + 1;
-		strStop = response.indexOf(",", strStrt);
-		holder.motorPosAtCW = response.substring(strStrt, strStop).toInt();
-		if (DEBUG_MESSAGES && UDP_PARSE_MESSAGES)
-		{
-			Serial.println("[UDPparsePollResponse] strMotorPosAtCW: " + String(holder.motorPosAtCW));
-		}
-
-		//motorPosAtFullCCW
-		strStrt = strStop + 1;
-		strStop = response.indexOf(",", strStrt);
-		holder.motorPosAtFullCCW = response.substring(strStrt, strStop).toInt();
-		if (DEBUG_MESSAGES && UDP_PARSE_MESSAGES)
-		{
-			Serial.println("[UDPparsePollResponse] strMotorPosAtFullCCW: " + String(holder.motorPosAtFullCCW));
-		}
-
-		//motorPosAtFullCW
-		strStrt = strStop + 1;
-		strStop = response.indexOf(",", strStrt);
-		holder.motorPosAtFullCW = response.substring(strStrt, strStop).toInt();
-		if (DEBUG_MESSAGES && UDP_PARSE_MESSAGES)
-		{
-			Serial.println("[UDPparsePollResponse] strMotorPosAtFullCW: " + String(holder.motorPosAtFullCW));
 		}
 
 		//name
@@ -289,40 +249,13 @@ void UDPparseConfigResponse(String responseIn, IPAddress remote){
 	int strStrt, strStop;
 
 /*
-		parseString in this order: {ccwLim, cwLim, openIsCCW, isMaster, devName, groupName, devType, note}
+		parseString in this order: {openIsCCW, isMaster, devName, groupName, devType, note}
 */
 
 	if (DEBUG_MESSAGES && UDP_PARSE_MESSAGES)
 	{
 		Serial.println("[UDPparseConfigResponse] Got this: " + responseIn);
 	}	
-	//ccwLim
-	strStrt = response.indexOf("=", 1)+1;
-	strStop = response.indexOf(";", strStrt);
-	EEPROMdata.motorPosAtCCW = response.substring(strStrt, strStop).toInt();
-	if (DEBUG_MESSAGES && UDP_PARSE_MESSAGES)
-	{
-		Serial.print("[UDPparseConfigResponse] ccwLim: ");
-		Serial.println(String(EEPROMdata.motorPosAtCCW));
-	}
-	//cwLim
-	strStrt = response.indexOf("=", strStop)+1;
-	strStop = response.indexOf(";", strStrt);
-	EEPROMdata.motorPosAtCW = response.substring(strStrt, strStop).toInt();
-	if (DEBUG_MESSAGES && UDP_PARSE_MESSAGES)
-	{
-		Serial.print("[UDPparseConfigResponse] cwLim: ");
-		Serial.println(String(EEPROMdata.motorPosAtCW));
-	}
-	//verify cwLim > ccwLim + 4 (margin), if not set at ccwLim+4
-	if(EEPROMdata.motorPosAtCW<(EEPROMdata.motorPosAtCCW+4)){
-		EEPROMdata.motorPosAtCW = EEPROMdata.motorPosAtCCW+4;
-		if (DEBUG_MESSAGES && UDP_PARSE_MESSAGES)
-		{
-			Serial.print("[UDPparseConfigResponse] cwLim updated to be greater than ccwLim +4. ");
-			Serial.println(String(EEPROMdata.motorPosAtCW));
-		}
-	}
 	//openIsCCW
 	strStrt = response.indexOf("=", strStop)+1;
 	strStop = response.indexOf(";", strStrt);

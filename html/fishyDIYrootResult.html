@@ -191,6 +191,7 @@ the code do the following:
         .lftBtn,
         .rgtBtn,
         .midBtn,
+        .fullBtn,
         .cfgBtnY,
         .cfgBtn,
         .tglBtn {
@@ -215,6 +216,10 @@ the code do the following:
         }
         .midBtn{
             width: calc(var(--cp-sz)/2);
+        }
+        .fullBtn{
+            border-radius: var(--smrad-sz);
+            width: var(--cp-sz);
         }
         .cfgPnl {
             display: none;
@@ -324,7 +329,7 @@ the code do the following:
     -------------------------------------------------------------------------------------------- -->
         
         <script>
-        var fishyNetJSON = '{"fishyDevices":[{"deviceID":"0","IP":"10.203.1.197","dead":"0","isCalibrated":"false","isMaster":"true","motorPos":"250","motorPosAtCCW":"-3497","motorPosAtCW":"3497","motorPosAtFullCCW":"-3500","motorPosAtFullCW":"3500","deviceName":"Vent Damper 2","openIsCCW":"true","port":"8266","group":"","note":"","swVer":"20180430-1","devType":"","initStamp":"201804301900"},{"deviceID":"1","IP":"10.203.1.145","dead":"0","isCalibrated":"false","isMaster":"false","motorPos":"-2000","motorPosAtCCW":"-3497","motorPosAtCW":"3497","motorPosAtFullCCW":"-3500","motorPosAtFullCW":"3500","deviceName":"Vent Damper 3","openIsCCW":"false","port":"8266","group":"","note":"","swVer":"20180430-1","devType":"","initStamp":"201804301900"}]}';
+        var fishyNetJSON = '{"fishyDevices":[{"deviceID":"0","IP":"10.203.1.197","dead":"0","isCalibrated":"false","isMaster":"true","motorPos":"250","deviceName":"Actuator 1","openIsCCW":"true","port":"8266","group":"","note":"","swVer":"20180430-1","devType":"","initStamp":"201804301900","range":"7000"},{"deviceID":"1","IP":"10.203.1.23","dead":"0","isCalibrated":"false","isMaster":"false","motorPos":"0","deviceName":"Vent Damper 3","openIsCCW":"false","port":"8266","group":"","note":"","swVer":"20180430-1","devType":"","initStamp":"201804301900","range":"3000"}]}';
         </script>
 
     <!-- -------------------------------------------------------------------------------------------
@@ -401,8 +406,12 @@ the code do the following:
                 cmd = 'open';
             } else if (command == 'C') {
                 cmd = 'close';
+            } else if (command == 'S') {
+                cmd = 'stop';
             } else if (command == 'cal') {
                 cmd = 'calibrate';
+            } else if (command == 'reboot') {
+                cmd = 'reset';
             } else if (command == 'rstWifi') {
                 cmd = 'reset_wifi';
             } else if (command == 'G') {
@@ -417,8 +426,6 @@ the code do the following:
                 if ($('#swMstrChck-' + num)[0].checked) isMstr = 'true';
                 if ($('#swChck-' + num)[0].checked) ccwIsOpen = 'true';
                 cmd = 'config';
-                cmd += ';ccwLim=' + $('#ccwLimVal-' + num)[0].value;
-                cmd += ';cwLim=' + $('#cwLimVal-' + num)[0].value;
                 cmd += ';openIsCCW=' + ccwIsOpen;
                 cmd += ';isMaster=' + isMstr;
                 cmd += ';devName=' + encodeURIComponent($('#devName-' + num)[0].value);
@@ -466,28 +473,16 @@ the code do the following:
                             $('#groupName-'+ii)[0].value = d.group;
                             $('#devType-'+ii)[0].value = d.devType;
                             $('#devSWver-'+ii)[0].innerHTML = d.swVer;
-                            $('#pctOpenVal-' + ii)[0].value = posPct(d.motorPos, d.motorPosAtCCW, d.motorPosAtCW,d.openIsCCW);
-                            $('#pctOpenSld-' + ii)[0].value = posPct(d.motorPos, d.motorPosAtCCW, d.motorPosAtCW,d.openIsCCW);
-                            $('#ccwLimVal-' + ii)[0].value = d.motorPosAtCCW;
-                            $('#ccwLimVal-' + ii)[0].min = d.motorPosAtFullCCW;
-                            $('#ccwLimVal-' + ii)[0].max = d.motorPosAtFullCW;
-                            $('#ccwLimSld-' + ii)[0].value = d.motorPosAtCCW;
-                            $('#ccwLimSld-' + ii)[0].min = d.motorPosAtFullCCW;
-                            $('#ccwLimSld-' + ii)[0].max = d.motorPosAtFullCW;
-                            $('#cwLimVal-' + ii)[0].value = d.motorPosAtCW;
-                            $('#cwLimVal-' + ii)[0].min = d.motorPosAtFullCCW;
-                            $('#cwLimVal-' + ii)[0].max = d.motorPosAtFullCW;
-                            $('#cwLimSld-' + ii)[0].value = d.motorPosAtCW;
-                            $('#cwLimSld-' + ii)[0].min = d.motorPosAtFullCCW;
-                            $('#cwLimSld-' + ii)[0].max = d.motorPosAtFullCW;
+                            $('#pctOpenVal-' + ii)[0].value = posPct(d.motorPos,d.range, d.openIsCCW);
+                            $('#pctOpenSld-' + ii)[0].value = posPct(d.motorPos, d.range, d.openIsCCW);
                             $('#motPosVal-' + ii)[0].value = d.motorPos;
-                            $('#motPosVal-' + ii)[0].min = d.motorPosAtFullCCW;
-                            $('#motPosVal-' + ii)[0].max = d.motorPosAtFullCW;
+                            $('#motPosVal-' + ii)[0].min = "0";
+                            $('#motPosVal-' + ii)[0].max = d.range;
                             $('#motPosSld-' + ii)[0].value = d.motorPos;
-                            $('#motPosSld-' + ii)[0].min = d.motorPosAtFullCCW;
-                            $('#motPosSld-' + ii)[0].max = d.motorPosAtFullCW;
+                            $('#motPosSld-' + ii)[0].min = "0";
+                            $('#motPosSld-' + ii)[0].max = d.range;
                             $('#calTxt-' + ii)[0].innerHTML = calTxt;
-                            $('#HWlim-' + ii)[0].innerHTML = "CCW = " + d.motorPosAtFullCCW + " CW = " + d.motorPosAtFullCW;
+                            $('#HWlim-' + ii)[0].innerHTML = "CCW = " + "0" + " CW = " + d.range;
                             
                         }
                     }
@@ -508,12 +503,11 @@ the code do the following:
                 }, 10000);
             });
         }
-        function posPct(motPos, motPosCCW, motPosCW,openIsCCW) {
-            if(motPosCW-motPosCCW==0) return 0;
-            var ret = Math.round(100 * ((motPos - motPosCCW) / (motPosCW - motPosCCW)));
+        function posPct(motPos, range, openIsCCW) {
+            if(range==0) return 0;
+            var ret = Math.round(100 * ((motPos ) / (range)));
             //correct if CW = open
             if(openIsCCW=='true') ret = 100-ret;
-            
             return ret;
         }
         function addDevice(d){
@@ -527,20 +521,15 @@ the code do the following:
                     "<div class='CPhd' id='hd1-" + ii + "'>" + d.deviceName + "</div>" +
                     "<div class='CPhd2' id='hd2-" + ii + "'>(" + mstrTxt + d.IP + ")</div>" +
                     "<div class='sldRow'>" +
-                    "	<div class='sldLab'>% Open</div><input class='sld' id='pctOpenSld-" + ii + "' type='range' value='" + posPct(d.motorPos, d.motorPosAtCCW, d.motorPosAtCW,d.openIsCCW) + "' max='100' min='0' oninput=sync(" + ii + ",'pctOpen',1)> <input class='sldVal' id='pctOpenVal-" + ii + "' type='number' value='" + posPct(d.motorPos, d.motorPosAtCCW, d.motorPosAtCW,d.openIsCCW) + "' max='100' min='0' onchange=sync(" + ii + ",'pctOpen',2)>" +
+                    "	<div class='sldLab'>% Open</div><input class='sld' id='pctOpenSld-" + ii + "' type='range' value='" + posPct(d.motorPos, d.range, d.openIsCCW) + "' max='100' min='0' oninput=sync(" + ii + ",'pctOpen',1)> <input class='sldVal' id='pctOpenVal-" + ii + "' type='number' value='" + posPct(d.motorPos, d.range, d.openIsCCW) + "' max='100' min='0' onchange=sync(" + ii + ",'pctOpen',2)>" +
                     "</div>" +
                     "<div class='btnRow'><input class='lftBtn' id='fcbtn-" + ii + "' type='button' value='Full Close' onclick=sendCmd(" + ii + ",'C')><input class='midBtn' id='pobtn-" + ii + "' type='button' value='Go % Open' onclick=sendCmd(" + ii + ",'G')><input class='rgtBtn' id='fobtn-" + ii + "' type='button' value='Full Open' onclick=sendCmd(" + ii + ",'O')></div>" +
+                    "<div class='btnRow'><input class='fullBtn' id='stpbtn-" + ii + "' type='button' value='Stop' onclick=sendCmd(" + ii + ",'S')></div>" +
                     "<div class='cfgPnl' id='cfgPnl-" + ii + "' style='display: hidden;'><hr>" +
                     "<label class='cfgInpLab' for='devNote-" + ii + "'>Note:<input class='cfgInp' id='note-" + ii + "' value='" + d.note + "' maxlength='55'></label><hr><div class='calTxt' id='calTxt-" + ii + "'>" + calTxt + "</div>" +
-                    "<label class='calTxt' >HW Limits: <span class='cfgInp' id='HWlim-" + ii + "'>CCW = " + d.motorPosAtFullCCW + " CW = " + d.motorPosAtFullCW + "</span></label> " +
+                    "<label class='calTxt' >HW Limits: <span class='cfgInp' id='HWlim-" + ii + "'>CCW = 0 CW = " + d.range + "</span></label> " +
                     "	<div class='sldRow'>" +
-                    "		<div class='sldLab'>CCW Lim</div><input class='sld' id='ccwLimSld-" + ii + "' type='range' value='" + d.motorPosAtCCW + "' max='" + d.motorPosAtFullCW + "' min='" + d.motorPosAtFullCCW + "' oninput=sync(" + ii + ",'ccwLim',1)> <input class='sldVal' id='ccwLimVal-" + ii + "' type='number' value='" + d.motorPosAtCCW + "' max='" + d.motorPosAtFullCW + "' min='" + d.motorPosAtFullCCW + "' onchange=sync(" + ii + ",'ccwLim',2)>" +
-                    "	</div>" +
-                    "	<div class='sldRow'>" +
-                    "		<div class='sldLab'>CW Lim</div><input class='sld' id='cwLimSld-" + ii + "' type='range' value='" + d.motorPosAtCW + "' max='" + d.motorPosAtFullCW + "' min='" + d.motorPosAtFullCCW + "' oninput=sync(" + ii + ",'cwLim',1)> <input class='sldVal' id='cwLimVal-" + ii + "' type='number' value='" + d.motorPosAtCW + "' max='" + d.motorPosAtFullCW + "' min='" + d.motorPosAtFullCCW + "' onchange=sync(" + ii + ",'cwLim',2)>" +
-                    "	</div>" +
-                    "	<div class='sldRow'>" +
-                    "		<div class='sldLab'>Mot Pos</div><input class='sld-dis' id='motPosSld-" + ii + "' type='range' value='" + d.motorPos + "' max='" + d.motorPosAtFullCW + "' min='" + d.motorPosAtFullCCW + "' disabled> <input class='sldVal' id='motPosVal-" + ii + "' type='number' value='" + d.motorPos + "' max='" + d.motorPosAtFullCW + "' min='" + d.motorPosAtFullCCW + "' disabled>" +
+                    "		<div class='sldLab'>Mot Pos</div><input class='sld-dis' id='motPosSld-" + ii + "' type='range' value='" + d.motorPos + "' max='" + d.range + "' min='0' disabled> <input class='sldVal' id='motPosVal-" + ii + "' type='number' value='" + d.motorPos + "' max='" + d.range + "' min='0' disabled>" +
                     "	</div><hr>" +
                     "	<div class='swRow'>" +
                     "		<label class='sw' id='sw-" + ii + "'><input type='checkbox' id='swChck-" + ii + "' " + chckTxt + " onchange=openIsCCWUpd(" + ii + ")><span class='sldSw'></span></label><span class='swLab' id='swLab-" + ii + "'>" + openLabel + "</span>" +
@@ -554,6 +543,7 @@ the code do the following:
                     "	<label class='cfgInpLab' >SW Version:<span class='cfgInp' id='devSWver-" + ii + "'>" + d.swVer + "</span></label>" +
                     "	<div class='btnRow'>" +
                     "	<input class='cfgBtnY' id='updCfgBtn-" + ii + "' type='button' value='UPDATE SETTINGS' onclick=sendCmd(" + ii + ",'config') title='This will save new settings in the device. New settings should be displayed on next refresh.  If trying to adjust mulitple settings it is recommended that you temporarily turn off Auto-refresh.'>"+
+                    "	<input class='cfgBtnY' id='updCfgBtn-" + ii + "' type='button' value='REBOOT DEVICE' onclick=sendCmd(" + ii + ",'reboot') title='This will reboot the device.'>"+
                     "	</div><div class='btnRow'>" +
                     "<input class='cfgBtn' id='updCfgBtn-" + ii + "' type='button' value='AUTO-CAL. HW LIM' onclick=sendCmd(" + ii + ",'cal') title='WARNING: Auto-Cal will attempt to cycle your actuator full open and shut to determine  hardware limit switch positions. Ensure that range is possible to prevent damage.'>" +
                     "	<input class='cfgBtn' id='rstWifiBtn-" + ii + "' type='button' value='RESET WIFI' onclick=sendCmd(" + ii + ",'rstWifi') title='WARNING: Reset Wifi will attempt to delete your network SSID and password and put the device into wifi-server mode to learn new wifi SSID and password. To teach a reset device a new wifi network go to the device IP address using a mobile phone or computer.'>" +
@@ -575,7 +565,7 @@ the code do the following:
             var calTxt = '';
             var chckTxt = '';
             var mstrChckTxt = '';
-            var ii;
+            var i=0;
             $.each(DA, function (i, d) {
                 items.push(addDevice(d));
             });

@@ -86,7 +86,7 @@ void setup()
 	if (DEBUG_MESSAGES)
 	{
 		Serial.println("[SETUP] Found: Init string: "+String(EEPROMdata.initstr)+", Name string: "+String(EEPROMdata.namestr)+", Master: " + String(EEPROMdata.master?"True":"False")+", Group name string: "+String(EEPROMdata.groupstr)+",Type string: "+String(EEPROMdata.typestr)+",Note string: "+String(EEPROMdata.note)+", OpenIsCCW: "+String(EEPROMdata.openIsCCW?"True":"False")+", SW Version string: "+String(EEPROMdata.swVer));
-		Serial.println("[SETUP] Found motor data: {CCW,CW,FCCW,FCW,CCWset,CWset,Pos}: {" + String(EEPROMdata.motorPosAtCCW) + "," + String(EEPROMdata.motorPosAtCW)+ "," + String(EEPROMdata.motorPosAtFullCCW)+ "," + String(EEPROMdata.motorPosAtFullCW )+ "," + String(EEPROMdata.motorPosAtCCWset)+ "," + String(EEPROMdata.motorPosAtCWset)+ "," + String(EEPROMdata.motorPos)+ "," + String(EEPROMdata.range)+"}");  	
+		Serial.println("[SETUP] Found motor data: {CCWset,CWset,Pos,range}: {" + String(EEPROMdata.motorPosAtCCWset)+ "," + String(EEPROMdata.motorPosAtCWset)+ "," + String(EEPROMdata.motorPos)+ "," + String(EEPROMdata.range)+"}");  	
 		Serial.println("[SETUP] Compiled init string: " + String(INITIALIZE) + ". Stored init string: " + String(EEPROMdata.initstr));
 	}
 
@@ -106,14 +106,10 @@ void setup()
 		strncpy(EEPROMdata.note, CUSTOM_NOTE, 56);
 		EEPROMdata.openIsCCW = OPEN_IS_CCW;
 		//Just put defaults into motor data following Initialization
-		EEPROMdata.motorPosAtCCW = -FULL_SWING + 3; 	
-		EEPROMdata.motorPosAtCW = FULL_SWING - 3;		
-		EEPROMdata.motorPosAtFullCCW = -FULL_SWING; 	
-		EEPROMdata.motorPosAtFullCW = FULL_SWING;		
-		EEPROMdata.motorPosAtCCWset = false;			
+		EEPROMdata.motorPosAtCCWset = false;	
 		EEPROMdata.motorPosAtCWset = false;			
 		EEPROMdata.motorPos = 0;
-		EEPROMdata.range = 0; 	
+		EEPROMdata.range = FULL_SWING; 	
 		
 		if (MASTER_NODE)
 		{
@@ -147,7 +143,7 @@ void setup()
 	if (DEBUG_MESSAGES)
 	{
 		Serial.println("[SETUP] Personality values are: Init string: "+String(EEPROMdata.initstr)+", Name string: "+String(EEPROMdata.namestr)+", Master: " + String(EEPROMdata.master?"True":"False")+", Group name string: "+String(EEPROMdata.groupstr)+",Type string: "+String(EEPROMdata.typestr)+",Note string: "+String(EEPROMdata.note)+", OpenIsCCW: "+String(EEPROMdata.openIsCCW?"True":"False")+", SW Version string: "+String(EEPROMdata.swVer));
-		Serial.println("[SETUP] Motor data is: {CCW,CW,FCCW,FCW,CCWset,CWset,Pos,range}: {" + String(EEPROMdata.motorPosAtCCW) + "," + String(EEPROMdata.motorPosAtCW)+ "," + String(EEPROMdata.motorPosAtFullCCW)+ "," + String(EEPROMdata.motorPosAtFullCW)+ "," + String(EEPROMdata.motorPosAtCCWset)+ "," + String(EEPROMdata.motorPosAtCWset)+ "," + String(EEPROMdata.motorPos) + "," + String(EEPROMdata.range) + "}");  	
+		Serial.println("[SETUP] Motor data is: {CCWset,CWset,Pos,range}: {" + String(EEPROMdata.motorPosAtCCWset)+ "," + String(EEPROMdata.motorPosAtCWset)+ "," + String(EEPROMdata.motorPos) + "," + String(EEPROMdata.range) + "}");  	
 
 	}
 
@@ -188,9 +184,6 @@ void setup()
 	//set switch pins to use internal pull_up resistor
 	pinMode(SWpinLimitCW, INPUT_PULLUP);
 	pinMode(SWpinLimitCCW, INPUT_PULLUP);
-	pinMode(SWpinManCW, INPUT_PULLUP);
-	pinMode(SWpinManCCW, INPUT_PULLUP);
-	pinMode(SWpinManSel, INPUT_PULLUP);
 
 	if(FAUXMO_ENABLED){
 		// fauxmoESP 2.0.0 has changed the callback signature to add the device_id,
@@ -256,16 +249,13 @@ void loop()
 	//get CURRENT position of the switches as wired they should be 1=switch open (not at limit)
 	int CCWlimSensorVal = digitalRead(SWpinLimitCCW);
 	int CWlimSensorVal = digitalRead(SWpinLimitCW);
-	int CWmanSensorVal = digitalRead(SWpinManCW);
-	int CCWmanSensorVal = digitalRead(SWpinManCCW);
-	int SELmanSensorVal = digitalRead(SWpinManSel);
 
 	//STATE MACHINE:
 	//First - if manual control commanded - jump to it and execute. Abort Calibration or WiFi state change if in progress.
 	//Second - check for a calibration in progress; if so - finish calibration.
 	//Last - go through all the other actions based on deviceTrueState.
-	if ((CWmanSensorVal + CCWmanSensorVal + SELmanSensorVal) == 3)
-	{ //New MANUAL CONTROL not ordered - all three are HIGH (switches open)
+	// if ((CWmanSensorVal + CCWmanSensorVal + SELmanSensorVal) == 3)
+	// { //New MANUAL CONTROL not ordered - all three are HIGH (switches open)
 		switch (deviceCalStage)
 		{
 		case doneCal:
@@ -277,50 +267,37 @@ void loop()
 			case opened:   //idle - do nothing
 			case closed:   //idle - do nothing
 				break;
-			case man_CCW: //opening manually
-				if (CCWmanSensorVal == 1)
-				{ //was manually opening, now done
-					idleActuator(man_idle);
-				}
-				else
-				{ //run
-					stepper1.runSpeedToPosition();
-				}
-				break;
-			case man_CW: //closing manually
-				if (CWmanSensorVal == 1)
-				{ //was manually closing, now done
-					idleActuator(man_idle);
-				}
-				else
-				{ //run
-					stepper1.runSpeedToPosition();
-				}
-				break;
 			case opening: //opening not at limit
-				normalOpening();
+				deviceTrueState = moveCCW();
 				break;
 			case closing: //closing not at limit
-				normalClosing();
+				deviceTrueState = moveCW();
 				break;
 			case unknown: //unknown state (bootup without stored HW limits)
 				if (!CWlimSensorVal)
 				{ //at CW limit
-					EEPROMdata.motorPosAtFullCW = stepper1.currentPosition();
-					EEPROMdata.motorPosAtCW = EEPROMdata.motorPosAtFullCW - 3; //back off of limit switch a bit
+					EEPROMdata.range = stepper1.currentPosition();
 					EEPROMdata.motorPosAtCWset = true;
-					EEPROMdata.motorPosAtCCW = EEPROMdata.motorPosAtCW - FULL_SWING;
 					EEPROMdata.motorPosAtCCWset = false;
-					idleActuator(closed); //make actuator idle
+					//make actuator idle
+					if(EEPROMdata.openIsCCW){
+						idleActuator(closed); 
+					}else{
+						idleActuator(opened);
+					}
 				}
 				else if (!CCWlimSensorVal)
 				{ //at CCW limit
-					EEPROMdata.motorPosAtFullCCW = stepper1.currentPosition();
-					EEPROMdata.motorPosAtCCW = EEPROMdata.motorPosAtFullCCW + 3; //back off of limit switch a bit
+					stepper1.setCurrentPosition(0);
 					EEPROMdata.motorPosAtCCWset = true;
-					EEPROMdata.motorPosAtCW = EEPROMdata.motorPosAtCCW + FULL_SWING;
+					EEPROMdata.range = FULL_SWING;
 					EEPROMdata.motorPosAtCWset = false;
-					idleActuator(opened); //make actuator idle
+						//make actuator idle
+					if(EEPROMdata.openIsCCW){
+						idleActuator(opened); 
+					}else{
+						idleActuator(closed);
+					}
 				}
 				else
 				{
@@ -330,65 +307,34 @@ void loop()
 				break;
 			}
 			break;
-		case openingCal: //calibration in first stage
-			EEPROMdata.motorPosAtCCW = -FULL_SWING + 3; 	
-			EEPROMdata.motorPosAtCW = FULL_SWING - 3;		
-			EEPROMdata.motorPosAtFullCCW = -FULL_SWING; 	
-			EEPROMdata.motorPosAtFullCW = FULL_SWING;		
+		case openingCal: //calibration in first stage	
+			EEPROMdata.range = FULL_SWING;		
 			EEPROMdata.motorPosAtCCWset = false;			
 			EEPROMdata.motorPosAtCWset = false;	
-			normalOpening();
+			deviceTrueState = moveCCW();
 			if (deviceTrueState == opened)
 			{ //Done with stage 1 go onto closing stage
 				deviceCalStage = closingCal;
 				if (DEBUG_MESSAGES)
 				{
-					Serial.printf("[MAIN loop cal] Found open (CCW) limit (%d). Going to calibration closing stage.\n", EEPROMdata.motorPosAtCCW);
+					Serial.printf("[MAIN loop cal] Found open (CCW) limit (0 by def'n). Set motorPos to 0. Going to calibration closing stage.\n");
 				}
 				executeState(false);
 			}
 			break;
 		case closingCal: //calibration in second stage
-			normalClosing();
+			moveCW();
 			if (deviceTrueState == closed)
 			{ //Done with stage 2 - done!
 				deviceCalStage = doneCal;
 				if (DEBUG_MESSAGES)
 				{
-					Serial.printf("[MAIN loop cal] Found close (CW) limit (%d). Calibration complete.\n", EEPROMdata.motorPosAtCW);
+					Serial.printf("[MAIN loop cal] Found close (CW) limit (%d). Calibration complete.\n", EEPROMdata.range);
 				}
 			}
 			break;
 		}
-	}
-	else
-	{ //manual controls in use
-		if (deviceCalStage != doneCal)
-		{
-			deviceCalStage = doneCal;
-			EEPROMdata.motorPos = stepper1.currentPosition();
-			if (DEBUG_MESSAGES)
-			{
-				Serial.printf("[MAIN man ctrl] CANCELLED CALIBRATION.\n");
-			}
-		}
-		if (CWlimSensorVal && (CWmanSensorVal == 0))
-		{ //go CW since not at limit
-			
-			manCW();
-		}
-		else if (CCWlimSensorVal && (CCWmanSensorVal == 0))
-		{ //go CCW since not at limit
-			manCCW();
-			
-		}
-		else if (SELmanSensorVal == 0)
-		{
-			
-			manSel();
-		}
-	}
-
+	
 	if (DEBUG_MESSAGES)
 	{
 		//take serial commands in
@@ -413,7 +359,6 @@ void loop()
 				Serial.printf("[MAIN] Free heap: %d bytes\n", ESP.getFreeHeap());
 				//print out the value of the limit switches
 				Serial.printf("[MAIN] TrueState: %d, POS: %d, CW_LIM_SET? %s,CCW_LIM_SET? %s\n", deviceTrueState, stepper1.currentPosition(), EEPROMdata.motorPosAtCCWset ? "Y" : "N", EEPROMdata.motorPosAtCWset ? "Y" : "N");
-				Serial.printf("[MAIN] Manual Switch Positions CCWman: %d; CWman: %d; SELman: %d\n", CCWmanSensorVal, CWmanSensorVal, SELmanSensorVal);
 			}
 		}
 	}
@@ -433,12 +378,17 @@ void executeCommands(char inputMsg[MAXCMDSZ], IPAddress remote)
 		{
 			Serial.println("[executeCommands] Commanded OPEN");
 		}
-		executeState(true); //WiFi "true" is open or going CCW to stop
+		executeState(true); //WiFi "true" is open (going CCW to stop for OpenisCCW=true)
 	}
 	else if (cmd.startsWith("close"))
 	{
 		Serial.println("[executeCommands] Commanded CLOSE");
-		executeState(false); //WiFi "false" is close or going CW to stop
+		executeState(false); //WiFi "false" is close (going CW to stop for OpenisCCW=true)
+	}
+	else if (cmd.startsWith("stop"))
+	{
+		Serial.println("[executeCommands] Commanded STOP");
+		executeStop();
 	}
 	else if (cmd.startsWith("goto"))
 	{ 
@@ -462,8 +412,6 @@ void executeCommands(char inputMsg[MAXCMDSZ], IPAddress remote)
 		WiFiManager.resetSettings();
 		resetOnNextLoop = true;
 		delay(2000);
-		//WiFi.disconnect(true);
-		//ESP.reset();
 	}
 	else if (cmd.startsWith("reset"))
 	{
@@ -474,7 +422,7 @@ void executeCommands(char inputMsg[MAXCMDSZ], IPAddress remote)
 		resetOnNextLoop=true;
 	}
 	else if (cmd.startsWith("calibrate"))
-	{ //TODO - rename this "test full range"
+	{
 		if (DEBUG_MESSAGES)
 		{
 			Serial.println("[executeCommands] Commanded CALIBRATE");
@@ -489,7 +437,7 @@ void executeCommands(char inputMsg[MAXCMDSZ], IPAddress remote)
 	}
 	else if (cmd.startsWith("anyfishydev_there"))
 	{
-		if (DEBUG_MESSAGES)
+		if (DEBUG_UDP_MESSAGES)
 		{
 			Serial.println("[executeCommands] Commanded ANYFISHYDEV_THERE");
 		}
@@ -497,7 +445,7 @@ void executeCommands(char inputMsg[MAXCMDSZ], IPAddress remote)
 	}
 	else if (cmd.startsWith("poll_net"))
 	{
-		if (DEBUG_MESSAGES)
+		if (DEBUG_UDP_MESSAGES)
 		{
 			Serial.println("[executeCommands] Commanded POLL_NET");
 		}
@@ -505,7 +453,7 @@ void executeCommands(char inputMsg[MAXCMDSZ], IPAddress remote)
 	}
 	else if (cmd.startsWith("poll_response"))
 	{
-		if (DEBUG_MESSAGES)
+		if (DEBUG_UDP_MESSAGES)
 		{
 			Serial.println("[executeCommands] Commanded POLL_RESPONSE");
 		}
@@ -513,7 +461,7 @@ void executeCommands(char inputMsg[MAXCMDSZ], IPAddress remote)
 	}
 	else if (cmd.startsWith("fishydiymaster"))
 	{
-		if (DEBUG_MESSAGES)
+		if (DEBUG_UDP_MESSAGES)
 		{
 			Serial.println("[executeCommands] Commanded FISHYDIYMASTER");
 		}
@@ -537,16 +485,42 @@ void executeCommands(char inputMsg[MAXCMDSZ], IPAddress remote)
 //cmd will be of form goto### (e.g., goto034)
 void executeGoto(String cmd)
 {
+	//ensure motor output is enabled
+	stepper1.enableOutputs();
 	int newPercentOpen = whichWayGoto(cmd.substring(4).toInt()); //STRIP OFF GOTO and correct for openisCCCW
+	if(newPercentOpen == 100){
+		targetPos=-1;
+		deviceTrueState = moveCCW();
+	}else if(newPercentOpen == 0){
+		targetPos=-1;
+		deviceTrueState = moveCW();
+	}else{ //targetting mid position
+		if (DEBUG_MESSAGES)
+		{
+			Serial.printf("[executeGoto] Going to percent open: %d\n", newPercentOpen);
+		}
+		deviceTrueState = openPercentActuator(newPercentOpen);
+	}
+}
+//stops acutator where it is
+void executeStop()
+{
+	
 	if (DEBUG_MESSAGES)
 	{
-		Serial.printf("[executeGoto] Going to percent open: %d\n", newPercentOpen);
+		Serial.println("[executeStop] Stopping actuator");
 	}
-	deviceTrueState = openPercentActuator(newPercentOpen);
+	deviceTrueState = man_idle;
+	idleActuator(deviceTrueState);
 }
 //execute a WiFi received state change
+// ON equates to open
+// OFF equates to close
 void executeState(bool state)
 {
+	//ensure motor output is enabled
+	stepper1.enableOutputs();
+	//determine correct direction based on OpenisCCW and correct the state
 	bool correctedState = whichWay(state);
 	if (DEBUG_MESSAGES)
 	{
@@ -556,279 +530,125 @@ void executeState(bool state)
 
 	if (correctedState)
 	{
-		deviceTrueState = openPercentActuator(100);
+		targetPos=-1;
+		if (DEBUG_MESSAGES)
+		{
+			Serial.println("[executeState] Transition to moving CCW...");
+		}
+		deviceTrueState = moveCCW();	
 	}
 	else
 	{
-		deviceTrueState = openPercentActuator(0);
-	}
-}
-
-//do a manual move in the CW direction
-void manCW()
-{
-	int CWlimSensorVal = digitalRead(SWpinLimitCW);
-	int curPos = stepper1.currentPosition();
-	manSelCnt = 0;
-	if (DEBUG_MESSAGES)
-	{
-		Serial.printf("[manCW] CWlim: %d; motorPos: %d; lastCommand: %s\n", CWlimSensorVal, curPos, manCommandState_String[lastManCommand]);
-	}
-
-	lastManCommand = CW;
-
-	if (CWlimSensorVal == 1)
-	{ //not at CW limit
-		deviceTrueState = man_CW;
+		targetPos=-1;
 		if (DEBUG_MESSAGES)
 		{
-			Serial.printf("[manCW] ..moving CW..\n");
+			Serial.println("[executeState] Transition to moving CW...");
 		}
-
-		if (!stepper1.isRunning())
-		{
-			stepper1.enableOutputs();
-		}
-
-		stepper1.move(MANSTEP);
-		stepper1.setSpeed(MANSPEED);
-		stepper1.runSpeedToPosition();
-	}
-	else
-	{
-		//at actual SW limit update the limit SW position
-		EEPROMdata.motorPosAtFullCW = curPos;
-		deviceTrueState = man_idle;
-		idleActuator(deviceTrueState);
+		deviceTrueState = moveCW();
 	}
 }
 
-//do a manual move in the CCW direction
 
-void manCCW()
-{
-	int CCWlimSensorVal = digitalRead(SWpinLimitCCW);
-	int curPos = stepper1.currentPosition();
-	manSelCnt = 0;
-	if (DEBUG_MESSAGES)
-	{
-		Serial.printf("[manCCW] CCWlim: %d; motorPos: %d; lastCommand: %s\n", CCWlimSensorVal, curPos, manCommandState_String[lastManCommand]);
-	}
-
-	lastManCommand = CCW;
-
-	if (CCWlimSensorVal == 1)
-	{ //not at CCW limit
-		deviceTrueState = man_CCW;
-		if (DEBUG_MESSAGES)
-		{
-			Serial.printf("[manCCW] ..moving CCW..\n");
-		}
-
-		if (!stepper1.isRunning())
-		{
-			stepper1.enableOutputs();
-		}
-
-		stepper1.move(-MANSTEP);
-		stepper1.setSpeed(-MANSPEED);
-		stepper1.runSpeedToPosition();
-	}
-	else
-	{
-		//at actual SW limit update the limit SW position
-		EEPROMdata.motorPosAtFullCCW = curPos;
-		deviceTrueState = man_idle;
-		idleActuator(deviceTrueState);
-	}
-}
-
-//set new limit for stopping motor based on the last commanded manual position
-void manSel()
-{
-	int CCWlimSensorVal = digitalRead(SWpinLimitCCW);
-	int CWlimSensorVal = digitalRead(SWpinLimitCW);
-	int curPos = stepper1.currentPosition();
-
-	//if button pressed for more than 1 second increment the count
-	static unsigned long last = millis();
-	if (millis() - last > 1000)
-	{
-		last = millis();
-		manSelCnt++;
-	}
-
-	if (DEBUG_MESSAGES)
-	{
-		Serial.printf("[manSel] CCWlim: %d; CWlim: %d; motorPos: %d; lastCommand: %s; manSelCnt: %d;\n", CCWlimSensorVal, CWlimSensorVal, curPos, manCommandState_String[lastManCommand], manSelCnt);
-	}
-	switch (lastManCommand)
-	{
-	case CW: //set new CW limit position
-		if (!CWlimSensorVal)
-		{
-			setCWLimit(curPos - 3); //back off of limit switch a bit
-		}
-		else
-		{
-			setCWLimit(curPos);
-		}
-		break;
-	case CCW: //set new CCW limit position
-		if (!CCWlimSensorVal)
-		{
-			setCCWLimit(curPos + 3); //back off of limit switch a bit
-		}
-		else
-		{
-			setCCWLimit(curPos);
-		}
-		break;
-	case none:
-	case SEL:
-		if (manSelCnt > 5)
-		{ //select button held long time - reset the limits and put the deviceState -> unknown
-			if (DEBUG_MESSAGES)
-			{
-				Serial.printf("[manSEL] Long Press detected - reseting the box\n");
-			}
-			resetOnNextLoop = true;
-		}
-		break;
-	}
-	lastManCommand = SEL;
-}
-
-void setCWLimit(long newLimit)
-{
-	EEPROMdata.motorPosAtCW = newLimit;
-	if (DEBUG_MESSAGES)
-	{
-		Serial.printf("[setCWLimit] New Limit: %d \n", newLimit);
-	}
-	EEPROMdata.motorPosAtCWset = true;
-	if (EEPROMdata.motorPosAtCCW >= EEPROMdata.motorPosAtCW)
-	{ //if limits are reversed, update the CCW limit
-		if (DEBUG_MESSAGES)
-		{
-			Serial.printf("[setCWLimit] LIMITS REVERSED, updating CCW Limit: %d ", newLimit - 1);
-		}
-		EEPROMdata.motorPosAtCCW = EEPROMdata.motorPosAtCW - 1;
-		EEPROMdata.motorPosAtCCWset = true;
-	}
-}
-
-void setCCWLimit(long newLimit)
-{
-	EEPROMdata.motorPosAtCCW = newLimit;
-	if (DEBUG_MESSAGES)
-	{
-		Serial.printf("[setCCWLimit] New Limit: %d \n", newLimit);
-	}
-	EEPROMdata.motorPosAtCCWset = true;
-	if (EEPROMdata.motorPosAtCW <= EEPROMdata.motorPosAtCCW)
-	{ //if limits are reversed, update the CW limit
-		if (DEBUG_MESSAGES)
-		{
-			Serial.printf("[setCCWLimit] LIMITS REVERSED, updating CW Limit: %d \n", newLimit + 1);
-		}
-		EEPROMdata.motorPosAtCW = EEPROMdata.motorPosAtCCW + 1;
-		EEPROMdata.motorPosAtCCWset = true;
-	}
-}
+//I'm here 
+//TODO - need to address gotocmd function here to goto specified place
+// - need to fix "exectue state to work with alexa"
 
 //function used to do a normal WiFi or calibration opening of the actuator
-void normalOpening()
+// - this moves at constant speed to HW limits
+trueState moveCCW()
 {
+	trueState newState;
 	if (!digitalRead(SWpinLimitCCW))
 	{
 		//reached limit - disable everything and reset motor to idle
-		EEPROMdata.motorPosAtFullCCW = stepper1.currentPosition();
-		EEPROMdata.motorPosAtCCW = EEPROMdata.motorPosAtFullCCW + 3; //back off of limit switch a bit
+		// -set stepper pos = 0;  (by definition fullCCW is 0) and
+		// -update flag indicating the HW lim sw was found
+		stepper1.setCurrentPosition(0);
 		EEPROMdata.motorPosAtCCWset = true;
-
-		if (!EEPROMdata.motorPosAtCWset)
-		{ //if opposite position not set, set guess at full swing
-			EEPROMdata.motorPosAtCW = EEPROMdata.motorPosAtCCW + FULL_SWING;
-		}
-		idleActuator(opened); //make actuator idle
+		newState = idleActuator(opened); //make actuator idle
 		if (DEBUG_MESSAGES)
 		{
 			int CCWlimSensorVal = digitalRead(SWpinLimitCCW);
 			int CWlimSensorVal = digitalRead(SWpinLimitCW);
-			Serial.printf("[normalOpening] Reached CCW stop at motor position %d; CCW: %d; CW: %d\n", stepper1.currentPosition(), CCWlimSensorVal, CWlimSensorVal);
+			Serial.printf("[moveCCW] Reached CCW stop at motor position %d; CCW: %d; CW: %d\n", stepper1.currentPosition(), CCWlimSensorVal, CWlimSensorVal);
 		}
-	}
-	else
-	{ //keep going if still have distance to travel
-		if (stepper1.distanceToGo() != 0)
-		{
+	}else{ //keep going if still have distance to travel
+		newState = opening;
+		
+		if(targetPos>-1){ 
+			//if true then moving to a given position
 			stepper1.run();
-		}
-		else
-		{
-			idleActuator(opened);
+		}else{
+			if (stepper1.speed() != -MAX_SPEED)
+			{
+				stepper1.setSpeed(-MAX_SPEED);
+			}
+			stepper1.runSpeed();
 		}
 	}
+	return newState;
 }
 
 //function used to do a normal WiFi or calibration closing of the actuator
-void normalClosing()
+trueState moveCW()
 {
+	trueState newState;
 	if (!digitalRead(SWpinLimitCW))
 	{
 		//reached limit - disable everything and reset motor to idle
-		EEPROMdata.motorPosAtFullCW = stepper1.currentPosition();
-		EEPROMdata.motorPosAtCW = EEPROMdata.motorPosAtFullCW - 3; //back off of limit switch a bit
+		// -set range to current stepper pos and
+		// -update flag indicating the HW lim sw was found
+		EEPROMdata.range = stepper1.currentPosition();
 		EEPROMdata.motorPosAtCWset = true;
 
-		if (!EEPROMdata.motorPosAtCCWset)
-		{ //if opposite position not set, set guess at full swing
-			EEPROMdata.motorPosAtCCW = EEPROMdata.motorPosAtCW - FULL_SWING;
-		}
-		idleActuator(closed); //make actuator idle
+		newState = idleActuator(closed); //make actuator idle
 		if (DEBUG_MESSAGES)
 		{
 			int CCWlimSensorVal = digitalRead(SWpinLimitCCW);
 			int CWlimSensorVal = digitalRead(SWpinLimitCW);
-			Serial.printf("[normalClosing] Reached CW stop at motor position %d; CCW: %d; CW: %d\n", stepper1.currentPosition(), CCWlimSensorVal, CWlimSensorVal);
+			Serial.printf("[moveCW] Reached CW stop at motor position %d; CCW: %d; CW: %d\n", stepper1.currentPosition(), CCWlimSensorVal, CWlimSensorVal);
 		}
-	}
-	else
-	{ //keep going if still have distance to travel
-		if (stepper1.distanceToGo() != 0)
-		{
+	}else{ //keep going if still have distance to travel
+		newState = closing;
+		
+		if(targetPos>-1){ 
+			//if true then moving to a given position using acceleration
 			stepper1.run();
-		}
-		else
-		{
-			idleActuator(closed);
+		}else{
+			if (stepper1.speed() != MAX_SPEED)
+			{
+				stepper1.setSpeed(MAX_SPEED);
+			}
+			stepper1.runSpeed();
 		}
 	}
+	return newState;
 }
-//this function replaces open with close if 
-//CW is defined as open by openIsCCW
+//this function swaps the state (makes open command go CW) if CW is defined as open by openIsCCW=false
 bool whichWay(bool in){
 	bool ret=in;
-	if(EEPROMdata.openIsCCW==true){
+	if(EEPROMdata.openIsCCW==false){
 		ret = !ret;
 	}
 	return ret;
 }
+
 //this function changes goto commmand values to their
 //complement (100-original value) if CW is defined as 
 //open by openIsCCW
 int whichWayGoto(int in){
 	int ret=in;
-	if(EEPROMdata.openIsCCW==false){
+	if(EEPROMdata.openIsCCW==true){
 		ret = 100-ret;
 	}
 	return ret;
 }
+
 //put the actuator/stepper-motor in an idle state, store position in EEPROM, 
 //and annonuce the final position to the MASTER
 trueState idleActuator(trueState idleState)
 {
+	targetPos = -1;
 	stepper1.stop();
 	stepper1.setSpeed(0);
 	stepper1.disableOutputs();
@@ -838,12 +658,15 @@ trueState idleActuator(trueState idleState)
 	UDPpollReply(masterIP); //tell the Master Node the new info
 	return idleState;
 }
-//TODO - implement this for CCW is open, and make the opposite for CW is open
-// explain things were designed from the perspective of CCW is open
+
+//this detemines which way to goto to get to a commanded position
+//sets targetPos and commands open or close
+//motor CCW limit = 0, motor CW limit = range, if no target set targetPos = -1
 trueState openPercentActuator(int percent)
 {
 	trueState newState;
-	int newMotorPos = (int)((EEPROMdata.motorPosAtCW - EEPROMdata.motorPosAtCCW) * percent / 100 + EEPROMdata.motorPosAtCCW);
+	int newMotorPos = (int)(EEPROMdata.range * percent / 100);
+	targetPos = newMotorPos;
 	if (DEBUG_MESSAGES)
 	{
 		Serial.printf("[openPercentActuator] Going to %d percent open. New Pos: %d\n", percent, newMotorPos);
@@ -855,7 +678,7 @@ trueState openPercentActuator(int percent)
 			newState = opening;
 			if (DEBUG_MESSAGES)
 			{
-				Serial.printf("[openPercentActuator] Moving CCW -> NEWSTATE: %s, Pos: %d, Target: %d\n", trueState_String[newState], stepper1.currentPosition(), EEPROMdata.motorPosAtCCW);
+				Serial.printf("[openPercentActuator] Moving CCW -> NEWSTATE: %s, Pos: %d, Target: %d\n", trueState_String[newState], stepper1.currentPosition(), newMotorPos);
 			}
 			stepper1.enableOutputs();
 			stepper1.moveTo(newMotorPos);
@@ -863,7 +686,6 @@ trueState openPercentActuator(int percent)
 		}
 		else
 		{
-			EEPROMdata.motorPosAtFullCCW = stepper1.currentPosition();
 			newState = idleActuator(opened);
 			if (DEBUG_MESSAGES)
 			{
@@ -879,7 +701,7 @@ trueState openPercentActuator(int percent)
 			newState = closing;
 			if (DEBUG_MESSAGES)
 			{
-				Serial.printf("[openPercentActuator] Moving CW -> NEWSTATE: %s, Pos: %d, Target: %d\n", trueState_String[newState], stepper1.currentPosition(), EEPROMdata.motorPosAtCW);
+				Serial.printf("[openPercentActuator] Moving CW -> NEWSTATE: %s, Pos: %d, Target: %d\n", trueState_String[newState], stepper1.currentPosition(), newMotorPos);
 			}
 			stepper1.enableOutputs();
 			stepper1.moveTo(newMotorPos);
@@ -887,7 +709,8 @@ trueState openPercentActuator(int percent)
 		}
 		else
 		{
-			EEPROMdata.motorPosAtFullCW = stepper1.currentPosition();
+//			EEPROMdata.motorPosAtFullCW = stepper1.currentPosition();
+			EEPROMdata.range = stepper1.currentPosition();
 			newState = idleActuator(closed);
 			if (DEBUG_MESSAGES)
 			{
@@ -943,12 +766,12 @@ String paddedH3Name(String name)
 //return motor position as a [%] of allowed range
 String motPosStr(int intPadded, fishyDevice device)
 {
-	int relPos = device.motorPos - device.motorPosAtCCW;
-	int range = device.motorPosAtCW - device.motorPosAtCCW;
+	int relPos = device.motorPos;
+	//int range = device.motorPosAtCW - device.motorPosAtCCW;
 	int answer;
-	if (range > 0)
+	if (device.range > 0)
 	{
-		answer = (int)(100 * relPos / range);
+		answer = (int)(100 * relPos / device.range);
 		return paddedInt(intPadded, answer);
 	}
 	else
@@ -997,10 +820,5 @@ String paddedIntQuotes(int lengthInt, int val)
 //put the controller in a unknown state ready for calibration
 void resetController()
 {
-	//TODO - save the motor variables and calibration ranges first.
-	//TODO - if wifireset is required also do that here
-
 	ESP.restart();
-	//asm volatile ("  jmp 0");  
-	//ESP.reset();
 }

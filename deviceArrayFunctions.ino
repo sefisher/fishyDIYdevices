@@ -105,15 +105,14 @@ int findDeadNode()
 			}
 		}
 		return -1; //no more room - oh well
-	
+		//TODO - alert the user on the webpage when the number of devices is at  MAX_NODES and no more space can be found
 }
 
 //store an updated device in the deviceArray at index
 void updateNode(int index, fishyDevice updatedDevice)
 {
-	
+		updatedDevice.timeStamp = millis();
 		deviceArray[index] = updatedDevice;
-
 }
 
 //store a new device's data in the deviceArray
@@ -123,6 +122,7 @@ int storeNewNode(fishyDevice newDevice)
 		int index = findDeadNode();
 		if (index > -1)
 		{
+			newDevice.timeStamp = millis();
 			deviceArray[index] = newDevice;
 			return index;
 		}
@@ -131,3 +131,33 @@ int storeNewNode(fishyDevice newDevice)
 	
 }
 //--------------------------------------------------------------------------
+
+//find nodes that have dropped of the net for more than about 10 minutes and mark them as dead
+void cullDeadNodes(){
+	unsigned long now = millis();
+	long age;
+	for (int i = 0; i < MAX_DEVICE; i++)
+	{
+		if (!deviceArray[i].dead)
+		{
+			age = (long)((now - deviceArray[i].timeStamp)/60000); //age in minutes (if negative then millis() has rolled over)
+			if (DEBUG_MESSAGES)
+			{
+				Serial.printf("[cullDeadNodes] Node %d ", i);
+				Serial.print(deviceArray[i].isMaster ? "(MASTER) " : "");
+				Serial.print(deviceArray[i].name + " @ " + deviceArray[i].ip.toString());
+				Serial.printf(" was updated %d minutes ago. \n",age);
+			}
+			if(age > 7){ //7 minutes off the net seems long enough to assume the node is dead
+				deviceArray[i].dead = true;
+				if (DEBUG_MESSAGES)
+				{
+					Serial.printf("[cullDeadNodes] Node %d ",i);
+					Serial.print(deviceArray[i].isMaster ? "(MASTER) " : "");
+					Serial.print(deviceArray[i].name + " @ " + deviceArray[i].ip.toString());
+					Serial.println(" is now marked dead.");	
+				}
+			}
+		}
+	}
+}

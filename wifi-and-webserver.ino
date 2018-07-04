@@ -64,17 +64,17 @@ void WiFiSetup()
 //provide a JSON structure with all the deviceArray data
 void handleJSON()
 {
-	//TODO - recomment out when done testing
-	//if (EEPROMdata.master || (masterIP.toString()=="0.0.0.0"))
-	//{
+	
+	if (EEPROMdata.master || (masterIP.toString()=="0.0.0.0"))
+	{
 		UDPbroadcast();
-		//TODO - IF NEW JSON DEVICE NOT IN THE CONTROL THEN CTRL PANEL SHOULD BE TOLD TO REFRESH
 		httpServer.send(200, "text/html", getJSON().c_str());
-	//}
-	//else
-	//{
-	//	handleNotMaster();
-	//}
+
+	}
+	else
+	{
+		handleNotMaster();
+	}
 }
 
 void handleNotMaster()

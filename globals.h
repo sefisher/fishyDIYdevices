@@ -60,7 +60,9 @@ typedef struct fishyDevice
 	bool motorPosAtCCWset = false;
 	bool motorPosAtCWset = false;
 	String initStamp;
-	int range;	
+	int range;
+	unsigned long timeStamp=0;	//used to track when updates were made last to cull dead nodes
+
 } fishyDevice;
 
 //struct for storing personailty data in real time and for storing in EEPROM

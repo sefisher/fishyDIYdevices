@@ -204,9 +204,12 @@ void setup()
 	}
 	
 	//announce master if this is the mastr node
+	//otherwise let the master know you're here
 	if (EEPROMdata.master)
 	{
 		UDPannounceMaster();
+	}else{
+		UDPbroadcast();
 	}
 }
 
@@ -233,8 +236,15 @@ void loop()
 		if (millis() - lastMstr > 60000)
 		{
 			lastMstr = millis();
-			Serial.printf("[MAIN] Announcing master");
+			if (DEBUG_MESSAGES){ Serial.println("[MAIN] Announcing master"); }
 			UDPannounceMaster();
+		}
+		static unsigned long lastNodeCulling = millis();
+		if (millis() - lastNodeCulling > 600000) //cull dead nodes from the list every 10 minutes
+		{
+			lastNodeCulling = millis();
+			if (DEBUG_MESSAGES){ Serial.println("[MAIN] Removing Dead Nodes"); }
+			cullDeadNodes();
 		}
 	}
 
@@ -251,89 +261,87 @@ void loop()
 	int CWlimSensorVal = digitalRead(SWpinLimitCW);
 
 	//STATE MACHINE:
-	//First - if manual control commanded - jump to it and execute. Abort Calibration or WiFi state change if in progress.
-	//Second - check for a calibration in progress; if so - finish calibration.
-	//Last - go through all the other actions based on deviceTrueState.
-	// if ((CWmanSensorVal + CCWmanSensorVal + SELmanSensorVal) == 3)
-	// { //New MANUAL CONTROL not ordered - all three are HIGH (switches open)
-		switch (deviceCalStage)
+	//First -- check for a calibration in progress; if so - finish calibration.
+	//second - go through all the other actions based on deviceTrueState.
+
+	switch (deviceCalStage)
+	{
+	case doneCal:
+		//No new manual ctrl ordered or calibration - use deviceTrueState to determine actions
+		//advance the stepper if opening or closing and not at a limit (or at the correct stopping position)
+		switch (deviceTrueState)
 		{
-		case doneCal:
-			//No new manual ctrl ordered or calibration - use deviceTrueState to determine actions
-			//advance the stepper if opening or closing and not at a limit (or at the correct stopping position)
-			switch (deviceTrueState)
-			{
-			case man_idle: //idle - do nothing
-			case opened:   //idle - do nothing
-			case closed:   //idle - do nothing
-				break;
-			case opening: //opening not at limit
-				deviceTrueState = moveCCW();
-				break;
-			case closing: //closing not at limit
-				deviceTrueState = moveCW();
-				break;
-			case unknown: //unknown state (bootup without stored HW limits)
-				if (!CWlimSensorVal)
-				{ //at CW limit
-					EEPROMdata.range = stepper1.currentPosition();
-					EEPROMdata.motorPosAtCWset = true;
-					EEPROMdata.motorPosAtCCWset = false;
-					//make actuator idle
-					if(EEPROMdata.openIsCCW){
-						idleActuator(closed); 
-					}else{
-						idleActuator(opened);
-					}
-				}
-				else if (!CCWlimSensorVal)
-				{ //at CCW limit
-					stepper1.setCurrentPosition(0);
-					EEPROMdata.motorPosAtCCWset = true;
-					EEPROMdata.range = FULL_SWING;
-					EEPROMdata.motorPosAtCWset = false;
-						//make actuator idle
-					if(EEPROMdata.openIsCCW){
-						idleActuator(opened); 
-					}else{
-						idleActuator(closed);
-					}
-				}
-				else
-				{
-					EEPROMdata.motorPosAtCWset = false;
-					EEPROMdata.motorPosAtCCWset = false;
-				}
-				break;
-			}
+		case man_idle: //idle - do nothing
+		case opened:   //idle - do nothing
+		case closed:   //idle - do nothing
 			break;
-		case openingCal: //calibration in first stage	
-			EEPROMdata.range = FULL_SWING;		
-			EEPROMdata.motorPosAtCCWset = false;			
-			EEPROMdata.motorPosAtCWset = false;	
+		case opening: //opening not at limit (really just moving CCW)
 			deviceTrueState = moveCCW();
-			if (deviceTrueState == opened)
-			{ //Done with stage 1 go onto closing stage
-				deviceCalStage = closingCal;
-				if (DEBUG_MESSAGES)
-				{
-					Serial.printf("[MAIN loop cal] Found open (CCW) limit (0 by def'n). Set motorPos to 0. Going to calibration closing stage.\n");
-				}
-				executeState(false);
-			}
 			break;
-		case closingCal: //calibration in second stage
-			moveCW();
-			if (deviceTrueState == closed)
-			{ //Done with stage 2 - done!
-				deviceCalStage = doneCal;
-				if (DEBUG_MESSAGES)
-				{
-					Serial.printf("[MAIN loop cal] Found close (CW) limit (%d). Calibration complete.\n", EEPROMdata.range);
+		case closing: //closing not at limit (really just moving CW)
+			deviceTrueState = moveCW();
+			break;
+		case unknown: //unknown state (bootup without stored HW limits)
+			if (!CWlimSensorVal)
+			{ //at CW limit
+				EEPROMdata.range = stepper1.currentPosition();
+				EEPROMdata.motorPosAtCWset = true;
+				EEPROMdata.motorPosAtCCWset = false;
+				//make actuator idle
+				if(EEPROMdata.openIsCCW){
+					idleActuator(closed); 
+				}else{
+					idleActuator(opened);
 				}
+			}
+			else if (!CCWlimSensorVal)
+			{ //at CCW limit
+				stepper1.setCurrentPosition(0);
+				EEPROMdata.motorPosAtCCWset = true;
+				EEPROMdata.range = FULL_SWING;
+				EEPROMdata.motorPosAtCWset = false;
+					//make actuator idle
+				if(EEPROMdata.openIsCCW){
+					idleActuator(opened); 
+				}else{
+					idleActuator(closed);
+				}
+			}
+			else
+			{
+				EEPROMdata.motorPosAtCWset = false;
+				EEPROMdata.motorPosAtCCWset = false;
 			}
 			break;
 		}
+		break;
+	case openingCal: //calibration in first stage	
+		EEPROMdata.range = FULL_SWING;		
+		EEPROMdata.motorPosAtCCWset = false;			
+		EEPROMdata.motorPosAtCWset = false;	
+		deviceTrueState = moveCCW();
+		if (deviceTrueState == opened)
+		{ //Done with stage 1 go onto closing stage
+			deviceCalStage = closingCal;
+			if (DEBUG_MESSAGES)
+			{
+				Serial.printf("[MAIN loop cal] Found open (CCW) limit (0 by def'n). Set motorPos to 0. Going to calibration closing stage.\n");
+			}
+			executeState(false);
+		}
+		break;
+	case closingCal: //calibration in second stage
+		moveCW();
+		if (deviceTrueState == closed)
+		{ //Done with stage 2 - done!
+			deviceCalStage = doneCal;
+			if (DEBUG_MESSAGES)
+			{
+				Serial.printf("[MAIN loop cal] Found close (CW) limit (%d). Calibration complete.\n", EEPROMdata.range);
+			}
+		}
+		break;
+	}
 	
 	if (DEBUG_MESSAGES)
 	{
@@ -547,11 +555,6 @@ void executeState(bool state)
 		deviceTrueState = moveCW();
 	}
 }
-
-
-//I'm here 
-//TODO - need to address gotocmd function here to goto specified place
-// - need to fix "exectue state to work with alexa"
 
 //function used to do a normal WiFi or calibration opening of the actuator
 // - this moves at constant speed to HW limits

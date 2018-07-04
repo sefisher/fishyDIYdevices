@@ -98,7 +98,6 @@ if adding elements all three need updating.
 }
 
 //parses a UDP poll reply and takes action
-//TODO - parse the response further and add new nodes to the list and drop off old nodes
 void UDPparsePollResponse(String responseIn, IPAddress remote)
 {
 	if (EEPROMdata.master )

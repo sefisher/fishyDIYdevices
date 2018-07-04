@@ -487,15 +487,17 @@ the code do the following:
                         }
                     }
                 });
+
+                // i'm here  - need to figure out how to eliminate dead nodes from the
                 //look for CP items that aren't in the JSON anylonger
                 var gone;
                 $('.CP').each(function(i,e){
                     gone = true;
                     $.each(DA, function (num, d) {
-                        if(d.deviceID == e.id) gone=false;
+                        if((('CP-' + d.deviceID) == e.id) && (d.dead == 0)) gone=false;
                     });
                     if(gone){
-                        //TODO delete the CP
+                        $('#CP-'+i).remove();
                     }
                 });
                 pollTimer = setTimeout(function () {
@@ -516,7 +518,7 @@ the code do the following:
             if (d.openIsCCW == 'true') { chckTxt = 'checked'; openLabel = 'Open is CCW';} else { chckTxt = ''; openLabel = 'Open is CW'; }
             if (d.dead == '0') {
                 var ii = d.deviceID;
-                var addDiv = "<div class='CP' id='" + ii +"'>" +
+                var addDiv = "<div class='CP' id='CP-" + ii +"'>" +
                     "<input type='hidden' id='targetIP-" + ii + "' value='" + d.IP + "'>" +
                     "<div class='CPhd' id='hd1-" + ii + "'>" + d.deviceName + "</div>" +
                     "<div class='CPhd2' id='hd2-" + ii + "'>(" + mstrTxt + d.IP + ")</div>" +

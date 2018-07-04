@@ -79,12 +79,13 @@ typedef struct fishyDevice
 	bool motorPosAtCCWset = false;
 	bool motorPosAtCWset = false;
 	String initStamp;
+	int range;
 } fishyDevice;
 
-//207 byte struct for storing personailty data in real time and for storing in EEPROM
+//struct for storing personailty data in real time and for storing in EEPROM
 //remember a character is needed for the string terminations
-//SW reports needed 212 bytes; left some margin
-#define EEPROMsz 220
+//SW reports needed 216 bytes; left some margin
+#define EEPROMsz 224
 
 struct EEPROMdata
 {
@@ -105,6 +106,7 @@ struct EEPROMdata
 	bool motorPosAtCCWset = false;			//1 byte
 	bool motorPosAtCWset = false;			//1 byte
 	int motorPos = 0; 						//4 bytes
+	int range = 0; 							//4 bytes
 } EEPROMdata;
 
 fishyDevice deviceArray[MAX_DEVICE];

@@ -75,13 +75,10 @@ void setup()
 		Serial.println("[SETUP] note " + String(sizeof(EEPROMdata.note)));
 		Serial.println("[SETUP] openIsCCW " + String(sizeof(EEPROMdata.openIsCCW)));
 		Serial.println("[SETUP] swVer " + String(sizeof(EEPROMdata.swVer)));
-		Serial.println("[SETUP] motorPosAtCCW " + String(sizeof(EEPROMdata.motorPosAtCCW)));
-		Serial.println("[SETUP] motorPosAtCW " + String(sizeof(EEPROMdata.motorPosAtCW)));
-		Serial.println("[SETUP] motorPosAtFullCCW " + String(sizeof(EEPROMdata.motorPosAtFullCCW)));
-		Serial.println("[SETUP] motorPosAtFullCW " + String(sizeof(EEPROMdata.motorPosAtFullCW)));
 		Serial.println("[SETUP] motorPosAtCCWset " + String(sizeof(EEPROMdata.motorPosAtCCWset)));
 		Serial.println("[SETUP] motorPosAtCWset " + String(sizeof(EEPROMdata.motorPosAtCWset)));
 		Serial.println("[SETUP] motorPos " + String(sizeof(EEPROMdata.motorPos)));
+		Serial.println("[SETUP] range " + String(sizeof(EEPROMdata.range)));
 	}
 
 	retrieveDataFromEEPROM();
@@ -89,7 +86,7 @@ void setup()
 	if (DEBUG_MESSAGES)
 	{
 		Serial.println("[SETUP] Found: Init string: "+String(EEPROMdata.initstr)+", Name string: "+String(EEPROMdata.namestr)+", Master: " + String(EEPROMdata.master?"True":"False")+", Group name string: "+String(EEPROMdata.groupstr)+",Type string: "+String(EEPROMdata.typestr)+",Note string: "+String(EEPROMdata.note)+", OpenIsCCW: "+String(EEPROMdata.openIsCCW?"True":"False")+", SW Version string: "+String(EEPROMdata.swVer));
-		Serial.println("[SETUP] Found motor data: {CCW,CW,FCCW,FCW,CCWset,CWset,Pos}: {" + String(EEPROMdata.motorPosAtCCW) + "," + String(EEPROMdata.motorPosAtCW)+ "," + String(EEPROMdata.motorPosAtFullCCW)+ "," + String(EEPROMdata.motorPosAtFullCW )+ "," + String(EEPROMdata.motorPosAtCCWset)+ "," + String(EEPROMdata.motorPosAtCWset)+ "," + String(EEPROMdata.motorPos)+"}");  	
+		Serial.println("[SETUP] Found motor data: {CCW,CW,FCCW,FCW,CCWset,CWset,Pos}: {" + String(EEPROMdata.motorPosAtCCW) + "," + String(EEPROMdata.motorPosAtCW)+ "," + String(EEPROMdata.motorPosAtFullCCW)+ "," + String(EEPROMdata.motorPosAtFullCW )+ "," + String(EEPROMdata.motorPosAtCCWset)+ "," + String(EEPROMdata.motorPosAtCWset)+ "," + String(EEPROMdata.motorPos)+ "," + String(EEPROMdata.range)+"}");  	
 		Serial.println("[SETUP] Compiled init string: " + String(INITIALIZE) + ". Stored init string: " + String(EEPROMdata.initstr));
 	}
 
@@ -115,7 +112,8 @@ void setup()
 		EEPROMdata.motorPosAtFullCW = FULL_SWING;		
 		EEPROMdata.motorPosAtCCWset = false;			
 		EEPROMdata.motorPosAtCWset = false;			
-		EEPROMdata.motorPos = 0; 	
+		EEPROMdata.motorPos = 0;
+		EEPROMdata.range = 0; 	
 		
 		if (MASTER_NODE)
 		{
@@ -149,7 +147,7 @@ void setup()
 	if (DEBUG_MESSAGES)
 	{
 		Serial.println("[SETUP] Personality values are: Init string: "+String(EEPROMdata.initstr)+", Name string: "+String(EEPROMdata.namestr)+", Master: " + String(EEPROMdata.master?"True":"False")+", Group name string: "+String(EEPROMdata.groupstr)+",Type string: "+String(EEPROMdata.typestr)+",Note string: "+String(EEPROMdata.note)+", OpenIsCCW: "+String(EEPROMdata.openIsCCW?"True":"False")+", SW Version string: "+String(EEPROMdata.swVer));
-		Serial.println("[SETUP] Motor data is: {CCW,CW,FCCW,FCW,CCWset,CWset,Pos}: {" + String(EEPROMdata.motorPosAtCCW) + "," + String(EEPROMdata.motorPosAtCW)+ "," + String(EEPROMdata.motorPosAtFullCCW)+ "," + String(EEPROMdata.motorPosAtFullCW)+ "," + String(EEPROMdata.motorPosAtCCWset)+ "," + String(EEPROMdata.motorPosAtCWset)+ "," + String(EEPROMdata.motorPos)+"}");  	
+		Serial.println("[SETUP] Motor data is: {CCW,CW,FCCW,FCW,CCWset,CWset,Pos,range}: {" + String(EEPROMdata.motorPosAtCCW) + "," + String(EEPROMdata.motorPosAtCW)+ "," + String(EEPROMdata.motorPosAtFullCCW)+ "," + String(EEPROMdata.motorPosAtFullCW)+ "," + String(EEPROMdata.motorPosAtCCWset)+ "," + String(EEPROMdata.motorPosAtCWset)+ "," + String(EEPROMdata.motorPos) + "," + String(EEPROMdata.range) + "}");  	
 
 	}
 

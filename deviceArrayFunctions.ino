@@ -38,6 +38,7 @@ fishyDevice makeMyFishyDevice()
 	holder.note = String(EEPROMdata.note);
 	holder.swVer = String(EEPROMdata.swVer);
 	holder.initStamp = String(EEPROMdata.initstr);
+	holder.range = EEPROMdata.range;
 
 	return holder;
 }

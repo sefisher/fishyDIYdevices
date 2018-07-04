@@ -4,7 +4,7 @@
 
 //This is for keeping track of SW version it is displayed but not otherwise used
 //LIMITED to 10 alpanumeric characters
-#define SW_VER "20180506-2"
+#define SW_VER "20180703-1"
 
 //--------------------------PERSONALITY SETTINGS-----------------------------------//
 //Put in a time/date string to define the personality variables. 
@@ -19,18 +19,18 @@ This allows a single software upload to be used for multiple devices without ove
 their "personality settings" and wiping out stored motor info. 
 */
 //String format -> "YYYYMMDDHHmm" (where HHmm is 24 hr time). 
-#define INITIALIZE "201806222200"
+#define INITIALIZE "201807032222"
 
 //PICK A UNIQUE NAME FOR EACH DEVICE USING ONLY LETTERS AND NUMBERS
 // LIMITED to 40 alpanumeric characters (abcdefghijklmnopqrstuvwxyz0123456789)
- //#define CUSTOM_DEVICE_NAME "Vent Damper 1"
+//#define CUSTOM_DEVICE_NAME "Vent Damper 1"
 // #define CUSTOM_DEVICE_NAME "Vent Damper 2"
- #define CUSTOM_DEVICE_NAME "Vent Damper 3"
+#define CUSTOM_DEVICE_NAME "Vent Damper 3"
 //#define CUSTOM_DEVICE_NAME "Actuator 1"
 
 //PICK ONLY ONE DEVICE ON THE NETWORK AS MASTER (and set this to true when you compile its code).  
 //IT WILL BE THE WEBSERVER AND CONTROLLER FOR ALL OTHER NODES.  Set false for all the others.
-// #define MASTER_NODE true
+//#define MASTER_NODE true
 #define MASTER_NODE false
 
 //FIGURE OUT WHAT DIRECTION YOU WANT TO PICK AS OPEN or CLOSE FOR YOUR DEVICE.  

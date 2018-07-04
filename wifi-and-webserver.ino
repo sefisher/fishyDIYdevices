@@ -64,16 +64,16 @@ void WiFiSetup()
 //provide a JSON structure with all the deviceArray data
 void handleJSON()
 {
-	if (EEPROMdata.master || (masterIP.toString()=="0.0.0.0"))
-	{
+	//if (EEPROMdata.master || (masterIP.toString()=="0.0.0.0"))
+	//{
 		UDPbroadcast();
 		//TODO - IF NEW JSON DEVICE NOT IN THE CONTROL THEN CTRL PANEL SHOULD BE TOLD TO REFRESH
 		httpServer.send(200, "text/html", getJSON().c_str());
-	}
-	else
-	{
-		handleNotMaster();
-	}
+	//}
+	//else
+	//{
+	//	handleNotMaster();
+	//}
 }
 
 void handleNotMaster()
@@ -111,7 +111,7 @@ if adding new data elements all these functions need updating. Current dataset (
 					"\",\"motorPosAtCCW\":\"" + String(deviceArray[i].motorPosAtCCW) + "\",\"motorPosAtCW\":\"" + String(deviceArray[i].motorPosAtCW) +
 					"\",\"motorPosAtFullCCW\":\"" + String(deviceArray[i].motorPosAtFullCCW) + "\",\"motorPosAtFullCW\":\"" + String(deviceArray[i].motorPosAtFullCW) +
 					"\",\"deviceName\":\"" + String(deviceArray[i].name) + "\",\"openIsCCW\":\"" + String(deviceArray[i].openIsCCW ? "true" : "false") +
-					"\",\"port\":\"" + String(deviceArray[i].port) + "\",\"group\":\"" + String(deviceArray[i].group) + "\",\"note\":\"" + String(deviceArray[i].note) + "\",\"swVer\":\"" + String(deviceArray[i].swVer) + "\",\"devType\":\"" + String(deviceArray[i].devType) + "\",\"initStamp\":\"" + String(deviceArray[i].initStamp) + "\"}";
+					"\",\"port\":\"" + String(deviceArray[i].port) + "\",\"group\":\"" + String(deviceArray[i].group) + "\",\"note\":\"" + String(deviceArray[i].note) + "\",\"swVer\":\"" + String(deviceArray[i].swVer) + "\",\"devType\":\"" + String(deviceArray[i].devType) + "\",\"initStamp\":\"" + String(deviceArray[i].initStamp) + "\",\"range\":\"" + String(deviceArray[i].range) + "\"}";
 		}
 	}
 	temp += "]}";

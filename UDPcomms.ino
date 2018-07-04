@@ -72,7 +72,7 @@ void UDPpollReply(IPAddress remote)
 send fishyDevice data.
 Note - this is parsed by UDPparsePollResponse and paralleled by getJSON; 
 if adding elements all three need updating.
-{ip,isCalibrated,isMaster,motorPos,motorPosAtCCW,motorPosAtCW,motorPosAtFullCCW,motorPosAtFullCW,name,openIsCCW,port,group,note,swVer,devType,initStamp}
+{ip,isCalibrated,isMaster,motorPos,motorPosAtCCW,motorPosAtCW,motorPosAtFullCCW,motorPosAtFullCW,name,openIsCCW,port,group,note,swVer,devType,iniStamp,range}
 */
 	response += "{" + holder.ip.toString() + "," + 
 			String(holder.isCalibrated ? "true" : "false") + "," +
@@ -89,7 +89,8 @@ if adding elements all three need updating.
 			String(holder.note) + "," + 
 			String(holder.swVer) + "," + 
 			String(holder.devType) + "," + 
-			String(holder.initStamp) +"}";
+			String(holder.initStamp) + "," +
+			String(holder.range) +"}";
 
 	Udp.write(response.c_str());
 	Udp.endPacket();
@@ -110,7 +111,7 @@ void UDPparsePollResponse(String responseIn, IPAddress remote)
 parse fishyDevice data.
 Note - this data set is sent by UDPparsePollResponse and getJSON; 
 it is also parsed by scripts in webresources.h if adding elements all three need updating:
-{ip,isCalibrated,isMaster,motorPos,motorPosAtCCW,motorPosAtCW,motorPosAtFullCCW,motorPosAtFullCW,name,openIsCCW,port,group,note,swVer,devType,initStamp}
+{ip,isCalibrated,isMaster,motorPos,motorPosAtCCW,motorPosAtCW,motorPosAtFullCCW,motorPosAtFullCW,name,openIsCCW,port,group,note,swVer,devType,initStamp,range}
 */
 		String response = responseIn.substring(14); //strip off "POLL RESPONSE"
 		fishyDevice holder;
@@ -263,11 +264,20 @@ it is also parsed by scripts in webresources.h if adding elements all three need
 		
 		//initStamp
 		strStrt = strStop + 1;
-		strStop = response.indexOf("}", strStrt);
+		strStop = response.indexOf(",", strStrt);
 		holder.initStamp = response.substring(strStrt, strStop); 
 		if (DEBUG_MESSAGES && UDP_PARSE_MESSAGES)
 		{
 			Serial.println("[UDPparsePollResponse] strinitStamp: " + holder.initStamp);
+		}
+
+		//range
+		strStrt = strStop + 1;
+		strStop = response.indexOf("}", strStrt);
+		holder.range = response.substring(strStrt, strStop).toInt();
+		if (DEBUG_MESSAGES && UDP_PARSE_MESSAGES)
+		{
+			Serial.println("[UDPparsePollResponse] range: " + String(holder.range));
 		}
 
 		dealWithThisNode(holder);

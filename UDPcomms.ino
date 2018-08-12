@@ -70,9 +70,10 @@ void UDPpollReply(IPAddress remote)
 
 /* 
 send fishyDevice data.
-Note - this is parsed by UDPparsePollResponse and paralleled by getJSON; 
-if adding elements all three need updating.
-{ip,isCalibrated,isMaster,motorPos,name,openIsCCW,port,group,note,swVer,devType,iniStamp,range}
+Note - this is parsed by UDPparsePollResponse and paralleled by getJSON; sometimes UDPparseConfigResponse is affected if new data needs set by the website configuration update; 
+if adding data elements all these may need updating.  This function sends data as follows (keep this list updated):
+{ip,isCalibrated,isMaster,motorPos,name,openIsCCW,port,group,note,swVer,devType,iniStamp,range,timeOut,deviceTimedOut,swapLimSW}
+
 */
 	response += "{" + holder.ip.toString() + "," + 
 			String(holder.isCalibrated ? "true" : "false") + "," +
@@ -86,7 +87,11 @@ if adding elements all three need updating.
 			String(holder.swVer) + "," + 
 			String(holder.devType) + "," + 
 			String(holder.initStamp) + "," +
-			String(holder.range) +"}";
+			String(holder.range) + "," +
+			String(holder.timeOut) + "," +
+			String(holder.deviceTimedOut ? "true" : "false") + "," +
+			String(holder.swapLimSW ? "true" : "false")+"}";
+
 
 	Udp.write(response.c_str());
 	Udp.endPacket();
@@ -104,9 +109,9 @@ void UDPparsePollResponse(String responseIn, IPAddress remote)
 	{
 /* 
 parse fishyDevice data.
-Note - this data set is sent by UDPparsePollResponse and getJSON; 
-it is also parsed by scripts in webresources.h if adding elements all three need updating:
-{ip,isCalibrated,isMaster,motorPos,name,openIsCCW,port,group,note,swVer,devType,initStamp,range}
+Note - this data set is sent by UDPparsePollResponse and getJSON; sometimes UDPparseConfigResponse is affected as well (if data is added that needs set by configuration updates)
+it is also parsed by scripts in wifi-and-webserver.ino and webresources.h if adding data elements all these may need updating.  This function sends data as follows (keep this list updated):
+{ip,isCalibrated,isMaster,motorPos,name,openIsCCW,port,group,note,swVer,devType,initStamp,range,timeOut,deviceTimedOut,swapLimSW}
 */
 		String response = responseIn.substring(14); //strip off "POLL RESPONSE"
 		fishyDevice holder;
@@ -232,11 +237,40 @@ it is also parsed by scripts in webresources.h if adding elements all three need
 
 		//range
 		strStrt = strStop + 1;
-		strStop = response.indexOf("}", strStrt);
+		strStop = response.indexOf(",", strStrt);
 		holder.range = response.substring(strStrt, strStop).toInt();
 		if (DEBUG_MESSAGES && UDP_PARSE_MESSAGES)
 		{
 			Serial.println("[UDPparsePollResponse] range: " + String(holder.range));
+		}
+
+		//timeOut
+		strStrt = strStop + 1;
+		strStop = response.indexOf(",", strStrt);
+		holder.timeOut = response.substring(strStrt, strStop).toInt();
+		if (DEBUG_MESSAGES && UDP_PARSE_MESSAGES)
+		{
+			Serial.println("[UDPparsePollResponse] timeOut: " + String(holder.timeOut));
+		}
+
+		//deviceTimedOut
+		strStrt = strStop + 1;
+		strStop = response.indexOf(",", strStrt);
+		holder.deviceTimedOut = (response.substring(strStrt, strStop) == "false") ? false : true;
+		if (DEBUG_MESSAGES && UDP_PARSE_MESSAGES)
+		{
+			Serial.print("[UDPparsePollResponse] deviceTimedOut: ");
+			Serial.println(holder.deviceTimedOut ? "true" : "false");
+		}
+
+		//swapLimSW
+		strStrt = strStop + 1;
+		strStop = response.indexOf("}", strStrt);
+		holder.swapLimSW = (response.substring(strStrt, strStop) == "false") ? false : true;
+		if (DEBUG_MESSAGES && UDP_PARSE_MESSAGES)
+		{
+			Serial.print("[UDPparsePollResponse] swapLimSW: ");
+			Serial.println(holder.swapLimSW ? "true" : "false");
 		}
 
 		dealWithThisNode(holder);

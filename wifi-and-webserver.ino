@@ -101,16 +101,21 @@ String getJSON()
 			}
 /* 
 put fishyDevice data in a string.
-Note - this is parsed by scripts in webresources.h 
-and paralleled by UDPpollReply; 
-if adding new data elements all these functions need updating. Current dataset (in order) is:
-{ip,isCalibrated,isMaster,motorPos,name,openIsCCW,port,group,note,swVer,devType,initStamp}
+Note - this is string will be parsed by scripts in webresources.h 
+and is paralleled by UDPpollReply and if configuration setting data updated by the website then UDPparseConfigResponse is affected; 
+if adding data elements all these may need updating.  This function sends data as follows (keep this list updated):
+{ip,isCalibrated,isMaster,motorPos,name,openIsCCW,port,group,note,swVer,devType,initStamp,range,timeOut,deviceTimedOut,swapLimSW}
 */
 			temp += "{\"deviceID\":\"" + String(i) + "\",\"IP\":\"" + deviceArray[i].ip.toString() + "\",\"dead\":\"" + String(deviceArray[i].dead) +
 					"\",\"isCalibrated\":\"" + String(deviceArray[i].isCalibrated ? "true" : "false") +
 					"\",\"isMaster\":\"" + String(deviceArray[i].isMaster ? "true" : "false") + "\",\"motorPos\":\"" + String(deviceArray[i].motorPos) +
 					"\",\"deviceName\":\"" + String(deviceArray[i].name) + "\",\"openIsCCW\":\"" + String(deviceArray[i].openIsCCW ? "true" : "false") +
-					"\",\"port\":\"" + String(deviceArray[i].port) + "\",\"group\":\"" + String(deviceArray[i].group) + "\",\"note\":\"" + String(deviceArray[i].note) + "\",\"swVer\":\"" + String(deviceArray[i].swVer) + "\",\"devType\":\"" + String(deviceArray[i].devType) + "\",\"initStamp\":\"" + String(deviceArray[i].initStamp) + "\",\"range\":\"" + String(deviceArray[i].range) + "\"}";
+					"\",\"port\":\"" + String(deviceArray[i].port) + "\",\"group\":\"" + String(deviceArray[i].group) + 
+					"\",\"note\":\"" + String(deviceArray[i].note) + "\",\"swVer\":\"" + String(deviceArray[i].swVer) + 
+					"\",\"devType\":\"" + String(deviceArray[i].devType) + "\",\"initStamp\":\"" + String(deviceArray[i].initStamp) + 
+					"\",\"range\":\"" + String(deviceArray[i].range) + "\",\"timeOut\":\"" + String(deviceArray[i].timeOut) + 
+					"\",\"deviceTimedOut\":\"" + String(deviceArray[i].deviceTimedOut ? "true" : "false") + 
+					"\",\"swapLimSW\":\"" + String(deviceArray[i].swapLimSW ? "true" : "false") + "\"}";
 		}
 	}
 	temp += "]}";

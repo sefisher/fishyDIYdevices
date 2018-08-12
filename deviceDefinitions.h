@@ -6,7 +6,7 @@
 //You can update code - update this number - compile - and then load SW onto all the devices without
 //modifying the personality settings as long as INITIALIZE is the same on the devices (see below)
 //LIMITED to 10 alpanumeric characters
-#define SW_VER "20180704-8"
+#define SW_VER "20180811-2"
 
 //--------------------------PERSONALITY SETTINGS-----------------------------------//
 //Put in a time/date string to define the personality variables. 
@@ -21,14 +21,14 @@ This allows a single software upload to be used for multiple devices without ove
 their "personality settings" and wiping out stored motor info. 
 */
 //String format -> "YYYYMMDDHHmm" (where HHmm is 24 hr time). 
-#define INITIALIZE "201807041111"
+#define INITIALIZE "201808112230"
 
 //PICK A UNIQUE NAME FOR EACH DEVICE USING ONLY LETTERS AND NUMBERS
 // LIMITED to 40 alpanumeric characters (abcdefghijklmnopqrstuvwxyz0123456789)
-//#define CUSTOM_DEVICE_NAME "Vent Damper 1"
-// #define CUSTOM_DEVICE_NAME "Vent Damper 2"
+#define CUSTOM_DEVICE_NAME "Vent Damper 1"
+//#define CUSTOM_DEVICE_NAME "Vent Damper 2"
 //#define CUSTOM_DEVICE_NAME "Vent Damper 3"
-#define CUSTOM_DEVICE_NAME "Actuator 1"
+//#define CUSTOM_DEVICE_NAME "Floor 2 Damper"
 
 //PICK ONLY ONE DEVICE ON THE NETWORK AS MASTER (and set this to true when you compile its code).  
 //IT WILL BE THE WEBSERVER AND CONTROLLER FOR ALL OTHER NODES.  Set false for all the others.
@@ -38,6 +38,15 @@ their "personality settings" and wiping out stored motor info.
 //FIGURE OUT WHAT DIRECTION YOU WANT TO PICK AS OPEN or CLOSE FOR YOUR DEVICE.  
 // #define OPEN_IS_CCW true
 #define OPEN_IS_CCW false
+
+//TODO -  add a control to the settings page.  Add warning that misuse can cause damage.
+//Software fix in case you miswired and swapped the hardware limit switches.  
+// #define SWAP_LIM_SW true
+#define SWAP_LIM_SW false
+
+//TODO -  add a control to the settings page.  Add warning that misuse can cause damage.
+//SET THE TIMEOUT (in seconds) FOR STOPPING THE ACTUATOR IF MOTION CONTINUES WITHOUT REACHING A HARDWARE LIMIT
+#define MOTOR_TIMEOUT 15
 
 //IF DESIRED, SPECIFY THE DEVICE TYPE (default is "2-State Actuator")
 //LIMITED to 20 alpanumeric characters 

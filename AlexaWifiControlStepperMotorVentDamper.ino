@@ -259,6 +259,14 @@ void loop()
 			if (DEBUG_MESSAGES){ Serial.println("[MAIN] Removing Dead Nodes"); }
 			cullDeadNodes();
 		}
+	} else {
+		static unsigned long lastAvoidCulling = millis();
+		if (millis() - lastAvoidCulling > 48000) //tell master you're alive to avoid being culled as a dead node every 8 minutes
+		{
+			lastAvoidCulling = millis();
+			if (DEBUG_MESSAGES){ Serial.println("[MAIN] I'm not a Dead Node - broadcasting"); }
+			UDPbroadcast();
+		}
 	}
 
 	// Since fauxmoESP 2.0 the library uses the "compatibility" mode by

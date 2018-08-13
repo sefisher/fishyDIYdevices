@@ -480,8 +480,14 @@ the code do the following:
                             if (d.isMaster == 'true') { mstrTxt = 'MASTER '; } else { mstrTxt = ''; }
                             if (d.isCalibrated == 'false') { calTxt = 'HW LIMITS ARE UNCALIBRATED<br>'; } else { calTxt = ''; }
                             if (d.openIsCCW == 'true') { chckTxt = 'checked'; } else { chckTxt = ''; }
-                            if (d.swapLimSW == 'true') { swapTxt = 'checked'; } else { swapTxt = ''; }                            
-                            if (d.deviceTimedOut == 'true') {$('#hdErr-'+ii).show();} else {$('#hdErr-'+ii).hide(); }
+                            if (d.swapLimSW == 'true') { swapTxt = 'checked'; } else { swapTxt = ''; }
+                            if (d.deviceTimedOut == 'true') {
+                                    var errPanel = $('#hdErr-'+ii)[0];
+                                    errPanel.style.display = 'block';
+                                } else {
+                                    var errPanel = $('#hdErr-'+ii)[0];
+                                    errPanel.style.display = 'none';
+                                }
                             $('#hd1-'+ii)[0].innerHTML = d.deviceName;
                             $('#hd2-'+ii)[0].innerHTML = '(' + mstrTxt + d.IP + ')';
                             $('#note-'+ii)[0].value = d.note;

@@ -543,7 +543,9 @@ void executeGoto(String cmd)
 //stops acutator where it is
 void executeStop()
 {
-	
+	//reset the motor timeout counter
+	motorRunTime = millis();
+	EEPROMdata.deviceTimedOut = false;
 	if (DEBUG_MESSAGES)
 	{
 		Serial.println("[executeStop] Stopping actuator");

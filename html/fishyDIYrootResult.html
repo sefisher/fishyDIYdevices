@@ -100,6 +100,7 @@ the code do the following:
         .CPhd,
         .CPhd2,
         .CPhd3,
+        .CPhdErr,
         .CPft {
             width: var(--cp-sz);
             color: white;
@@ -120,6 +121,9 @@ the code do the following:
         .CPhd3{
             text-align: center;
             width: 100%;
+        }
+        .CPhdErr{
+            color: red;
         }
         .sld,.sld-dis {
             position: absolute;
@@ -230,7 +234,8 @@ the code do the following:
             font-size: var(--sml-fnt);
         }
 
-        .cfgInp {
+        .cfgInp,
+        .cfgInpNum {
             width: var(--cfg-inp);
             background-color: white;
             border: none;
@@ -329,7 +334,7 @@ the code do the following:
     -------------------------------------------------------------------------------------------- -->
         
         <script>
-        var fishyNetJSON = '{"fishyDevices":[{"deviceID":"0","IP":"10.203.1.197","dead":"0","isCalibrated":"false","isMaster":"true","motorPos":"250","deviceName":"Actuator 1","openIsCCW":"true","port":"8266","group":"","note":"","swVer":"20180430-1","devType":"","initStamp":"201804301900","range":"7000"},{"deviceID":"1","IP":"10.203.1.23","dead":"0","isCalibrated":"false","isMaster":"false","motorPos":"0","deviceName":"Vent Damper 3","openIsCCW":"false","port":"8266","group":"","note":"","swVer":"20180430-1","devType":"","initStamp":"201804301900","range":"3000","timeOut":"15","deviceTimedOut":"false","swapLimSW":"false"}]}';
+        var fishyNetJSON = '{"fishyDevices":[{"deviceID":"0","IP":"10.203.1.197","dead":"0","isCalibrated":"false","isMaster":"true","motorPos":"250","deviceName":"Actuator 1","openIsCCW":"true","port":"8266","group":"","note":"","swVer":"20180430-1","devType":"","initStamp":"201804301900","range":"7000","timeOut":"20","deviceTimedOut":"false","swapLimSW":"false"},{"deviceID":"1","IP":"10.203.1.23","dead":"0","isCalibrated":"false","isMaster":"false","motorPos":"0","deviceName":"Vent Damper 3","openIsCCW":"false","port":"8266","group":"","note":"","swVer":"20180430-1","devType":"","initStamp":"201804301900","range":"3000","timeOut":"20","deviceTimedOut":"true","swapLimSW":"true"}]}';
         </script>
 
     <!-- -------------------------------------------------------------------------------------------
@@ -342,7 +347,7 @@ the code do the following:
     ---------------------- END OF PART 2, START OF PART 3 (icon (opt), etc)-----------------------
     -------------------------------------------------------------------------------------------- -->
 
-      <span>fishyControls</span></div><div class='CPhd3'><span class='swRow'><label class='sw' id='swRefresh-1'><input type='checkbox' id='swRefreshChck-1' checked onchange=refreshToggle()><span class='sldSw'></span></label><span class='swLabHdr' id='swRefreshLab-1'>AutoRefresh On</span></span></div></div>   
+      <span>fishyControls</span></div><div class='CPhd3'><span class='swRow'><label class='sw' id='swRefresh-1'><input type='checkbox' id='swRefreshChck-1' onchange=refreshToggle()><span class='sldSw'></span></label><span class='swLabHdr' id='swRefreshLab-1'>AutoRefresh Off</span></span></div></div>   
     
    <!----------------------------------------------------------------------------------------------
     ------------------------END OF PART 3, START OF PART 4 (SCRIPTS)--------------------------------
@@ -399,6 +404,11 @@ the code do the following:
             var sw = $('#swMstrChck-' + num)[0];
             if (sw.checked == true) { label.innerHTML = 'Master Node'; } else { label.innerHTML = 'Slave Node'; }
         }
+        function swSwapUpd(num) {
+            var label = $('#swSwapLab-' + num)[0];
+            var sw = $('#swSwapChck-' + num)[0];
+            if (sw.checked == true) { label.innerHTML = 'Swapped Lim Sw'; } else { label.innerHTML = 'Normal Lim Sw'; }
+        }
         function sendCmd(num, command) {
             var remIP = $('#targetIP-' + num)[0].value;
             var cmd = '';
@@ -423,8 +433,10 @@ the code do the following:
             } else if (command == 'config') {
                 var isMstr = 'false';
                 var ccwIsOpen = 'false';
+                var swapLimSW = 'false';
                 if ($('#swMstrChck-' + num)[0].checked) isMstr = 'true';
                 if ($('#swChck-' + num)[0].checked) ccwIsOpen = 'true';
+                if ($('#swSwapChck-' + num)[0].checked) swapLimSW = 'true';
                 cmd = 'config';
                 cmd += ';openIsCCW=' + ccwIsOpen;
                 cmd += ';isMaster=' + isMstr;
@@ -432,6 +444,8 @@ the code do the following:
                 cmd += ';groupName=' + encodeURIComponent($('#groupName-' + num)[0].value);
                 cmd += ';devType=' + encodeURIComponent($('#devType-' + num)[0].value);
                 cmd += ';note=' + encodeURIComponent($('#note-' + num)[0].value);
+                cmd += ';swapLimSW=' + swapLimSW;
+                cmd += ';timeOut=' + encodeURIComponent($('#timeOut-' + num)[0].value);;
             }
             var query = '/genericArgs?IPCommand=' + remIP + ';' + cmd;
             var jqxhr = $.get(query, function () {
@@ -466,9 +480,12 @@ the code do the following:
                             if (d.isMaster == 'true') { mstrTxt = 'MASTER '; } else { mstrTxt = ''; }
                             if (d.isCalibrated == 'false') { calTxt = 'HW LIMITS ARE UNCALIBRATED<br>'; } else { calTxt = ''; }
                             if (d.openIsCCW == 'true') { chckTxt = 'checked'; } else { chckTxt = ''; }
+                            if (d.swapLimSW == 'true') { swapTxt = 'checked'; } else { swapTxt = ''; }                            
+                            if (d.deviceTimedOut == 'true') {$('#hdErr-'+ii).show();} else {$('#hdErr-'+ii).hide(); }
                             $('#hd1-'+ii)[0].innerHTML = d.deviceName;
                             $('#hd2-'+ii)[0].innerHTML = '(' + mstrTxt + d.IP + ')';
                             $('#note-'+ii)[0].value = d.note;
+                            $('#timeOut-'+ii)[0].value = d.timeOut;
                             $('#devName-'+ii)[0].value = d.deviceName;
                             $('#groupName-'+ii)[0].value = d.group;
                             $('#devType-'+ii)[0].value = d.devType;
@@ -498,9 +515,11 @@ the code do the following:
                         $('#CP-'+i).remove();
                     }
                 });
-                pollTimer = setTimeout(function () {
-                    pollJSON();
-                }, 10000);
+                if($('#swRefreshChck-1')[0].checked){
+                    pollTimer = setTimeout(function () {
+                        pollJSON();
+                    }, 10000);
+                }
             });
         }
         function posPct(motPos, range, openIsCCW) {
@@ -514,12 +533,15 @@ the code do the following:
             if (d.isMaster == 'true') { mstrTxt = 'MASTER '; mstrChckTxt = 'checked'; mstrLabel = 'Master Node'; } else { mstrTxt = ''; mstrChckTxt = ''; mstrLabel = 'Slave Node'; }
             if (d.isCalibrated == 'false') { calTxt = 'HW LIMITS ARE UNCALIBRATED<br>'; } else { calTxt = ''; }
             if (d.openIsCCW == 'true') { chckTxt = 'checked'; openLabel = 'Open is CCW';} else { chckTxt = ''; openLabel = 'Open is CW'; }
+            if (d.swapLimSW == 'true') { swapTxt = 'checked'; swapLabel = 'Swapped Lim SW';} else { swapTxt = ''; swapLabel = 'Normal Lim SW'; }
+            if (d.deviceTimedOut == 'true') { dispTxt = 'inline'; timedOutTxt = 'ERROR - TIMED OUT';} else { dispTxt = 'none'; timedOutTxt = ''; }
             if (d.dead == '0') {
                 var ii = d.deviceID;
                 var addDiv = "<div class='CP' id='CP-" + ii +"'>" +
                     "<input type='hidden' id='targetIP-" + ii + "' value='" + d.IP + "'>" +
                     "<div class='CPhd' id='hd1-" + ii + "'>" + d.deviceName + "</div>" +
                     "<div class='CPhd2' id='hd2-" + ii + "'>(" + mstrTxt + d.IP + ")</div>" +
+                    "<div class='CPhdErr' id='hdErr-" + ii + " display='" + dispTxt + "'>"+ timedOutTxt +"</div>" +
                     "<div class='sldRow'>" +
                     "	<div class='sldLab'>% Open</div><input class='sld' id='pctOpenSld-" + ii + "' type='range' value='" + posPct(d.motorPos, d.range, d.openIsCCW) + "' max='100' min='0' oninput=sync(" + ii + ",'pctOpen',1)> <input class='sldVal' id='pctOpenVal-" + ii + "' type='number' value='" + posPct(d.motorPos, d.range, d.openIsCCW) + "' max='100' min='0' onchange=sync(" + ii + ",'pctOpen',2)>" +
                     "</div>" +
@@ -531,14 +553,18 @@ the code do the following:
                     "	<div class='sldRow'>" +
                     "		<div class='sldLab'>Mot Pos</div><input class='sld-dis' id='motPosSld-" + ii + "' type='range' value='" + d.motorPos + "' max='" + d.range + "' min='0' disabled> <input class='sldVal' id='motPosVal-" + ii + "' type='number' value='" + d.motorPos + "' max='" + d.range + "' min='0' disabled>" +
                     "	</div><hr>" +
+                    "	<label class='cfgInpLab' for='timeOut-" + ii + "'>Time Out:<input class='cfgInpNum' id='timeOut-" + ii + "' value='" + d.timeOut + "' maxlength='5' title='Enter a time (in seconds) to wait for the actuator to respond before stopped and displaying an error message (assuming the actuator got stuck).'></label>" +
                     "	<div class='swRow'>" +
                     "		<label class='sw' id='sw-" + ii + "'><input type='checkbox' id='swChck-" + ii + "' " + chckTxt + " onchange=openIsCCWUpd(" + ii + ")><span class='sldSw'></span></label><span class='swLab' id='swLab-" + ii + "'>" + openLabel + "</span>" +
                     "	</div>" +
                     "	<div class='swRow'>" +
                     "		<label class='sw' id='swMstr-" + ii + "'><input type='checkbox' id='swMstrChck-" + ii + "' " + mstrChckTxt + " onchange=swMstrUpd(" + ii + ")><span class='sldSw'></span></label><span class='swLab' id='swMstrLab-" + ii + "'>"+mstrLabel+"</span>" +
                     "	</div>" +
+                    "	<div class='swRow'>" +
+                    "		<label class='sw' id='swSwap-" + ii + "'><input type='checkbox' id='swSwapChck-" + ii + "' " + swapTxt + " onchange=swSwapUpd(" + ii + ")><span class='sldSw'></span></label><span class='swLab' id='swSwapLab-" + ii + "'>"+swapLabel+"</span>" +
+                    "	</div>" +
                     "	<label class='cfgInpLab' for='devName-" + ii + "'>Device Name:<input class='cfgInp' id='devName-" + ii + "' value='" + d.deviceName + "' maxlength='40'></label>" +
-                    "	<label class='cfgInpLab' for='devGroup-" + ii + "'>Group Name:<input class='cfgInp' id='groupName-" + ii + "' value='" + d.group + "' maxlength='40'></label>" +
+                    "	<label class='cfgInpLab' for='groupName-" + ii + "'>Group Name:<input class='cfgInp' id='groupName-" + ii + "' value='" + d.group + "' maxlength='40'></label>" +
                     "	<label class='cfgInpLab' for='devType-" + ii + "'>Device Type:<input class='cfgInp' id='devType-" + ii + "' value='" + d.devType + "' maxlength='20'></label>" +
                     "	<label class='cfgInpLab' >SW Version:<span class='cfgInp' id='devSWver-" + ii + "'>" + d.swVer + "</span></label>" +
                     "	<div class='btnRow'>" +
@@ -585,6 +611,16 @@ the code do the following:
                 if (!regx.test(str)) {
                     alert('Only letters, numbers, underscore, space, comma, period, and dash are allowed.');
                     $(this).val($(this).val().replace(/[^A-Za-z0-9_ .,-]/g, ''));
+                }
+            }
+        });
+        $('.cfgInpNum').keyup(function(e){     
+            var str = $.trim( $(this).val() );
+            if( str != "" ) {
+                var regx = /^[0-9]+$/;
+                if (!regx.test(str)) {
+                    alert('Only numbers are allowed.');
+                    $(this).val($(this).val().replace(/[^0-9]/g, ''));
                 }
             }
         });

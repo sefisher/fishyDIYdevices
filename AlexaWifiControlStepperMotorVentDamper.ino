@@ -79,9 +79,9 @@ void setup()
 		Serial.println("[SETUP] motorPosAtCWset " + String(sizeof(EEPROMdata.motorPosAtCWset)));
 		Serial.println("[SETUP] motorPos " + String(sizeof(EEPROMdata.motorPos)));
 		Serial.println("[SETUP] range " + String(sizeof(EEPROMdata.range)));
-		Serial.println("[SETUP] swapLimSW " + String(sizeof(EEPROMdata.swapLimSW)));
 		Serial.println("[SETUP] timeOut " + String(sizeof(EEPROMdata.timeOut)));
 		Serial.println("[SETUP] deviceTimedOut " + String(sizeof(EEPROMdata.deviceTimedOut)));
+		Serial.println("[SETUP] swapLimSW " + String(sizeof(EEPROMdata.swapLimSW)));
 	}
 
 	retrieveDataFromEEPROM();
@@ -100,6 +100,11 @@ void setup()
 		{
 			Serial.println("[SETUP] Updating...");
 		}
+
+
+//I'm HERE - I need to fix processing the MOTOR_TIMEOUT input (shows up as garbage) and need to update the web interface.
+
+
 		//store specified personality data
 		strncpy(EEPROMdata.swVer, SW_VER, 11);
 		strncpy(EEPROMdata.initstr, INITIALIZE, 13);

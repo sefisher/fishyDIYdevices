@@ -73,8 +73,8 @@ typedef struct fishyDevice
 
 //struct for storing personailty data in real time and for storing in EEPROM
 //remember a character is needed for the string terminations
-//SW reports needed 200 bytes; left some margin
-#define EEPROMsz 230
+//SW reports needed 204 bytes; left some margin
+#define EEPROMsz 204
 
 struct EEPROMdata
 {

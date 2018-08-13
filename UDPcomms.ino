@@ -339,6 +339,23 @@ void UDPparseConfigResponse(String responseIn, IPAddress remote){
 	{
 		Serial.println("[UDPparseConfigResponse] note: " + String(EEPROMdata.note));
 	}
+	//swapLimSW
+	strStrt = response.indexOf("=", strStop)+1;
+	strStop = response.indexOf(";", strStrt);
+	EEPROMdata.swapLimSW = (response.substring(strStrt, strStop) == "false") ? false : true;
+	if (DEBUG_MESSAGES && UDP_PARSE_MESSAGES)
+	{
+		Serial.print("[UDPparseConfigResponse] swapLimSW: ");
+		Serial.println(EEPROMdata.swapLimSW ? "true" : "false");
+	}
+	//timeOut
+	strStrt = response.indexOf("=", strStop)+1;
+	strStop = response.indexOf(";", strStrt);
+	EEPROMdata.timeOut = response.substring(strStrt, strStop).toInt();
+	if (DEBUG_MESSAGES && UDP_PARSE_MESSAGES)
+	{
+		Serial.println("[UDPparseConfigResponse] timeOut: " + String(EEPROMdata.timeOut));
+	}
 	//inform the master of new settings
 	UDPpollReply(masterIP);
 	//save them to EEPROM

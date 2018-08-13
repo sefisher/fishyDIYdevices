@@ -35,6 +35,9 @@ fishyDevice makeMyFishyDevice()
 	holder.swVer = String(EEPROMdata.swVer);
 	holder.initStamp = String(EEPROMdata.initstr);
 	holder.range = EEPROMdata.range;
+	holder.timeOut = EEPROMdata.timeOut;
+	holder.deviceTimedOut = EEPROMdata.deviceTimedOut;
+	holder.swapLimSW = EEPROMdata.swapLimSW;
 
 	return holder;
 }

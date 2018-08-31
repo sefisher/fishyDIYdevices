@@ -102,9 +102,6 @@ void setup()
 		}
 
 
-//I'm HERE - I need to fix processing the MOTOR_TIMEOUT input (shows up as garbage) and need to update the web interface.
-
-
 		//store specified personality data
 		strncpy(EEPROMdata.swVer, SW_VER, 11);
 		strncpy(EEPROMdata.initstr, INITIALIZE, 13);
@@ -401,8 +398,7 @@ void loop()
 
 //This function takes messages from some remote address (if from another node)
 //that are of maximum lenght MAXCMDSZ and determines what actions are required.
-//Commands can come from other nodes via UDP messages or from the web if this
-//is the MASTER node running the webserver 
+//Commands can come from other nodes via UDP messages or from the web
 void executeCommands(char inputMsg[MAXCMDSZ], IPAddress remote)
 {
 	String cmd = String(inputMsg);

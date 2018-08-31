@@ -39,10 +39,13 @@ void WiFiSetup()
 	MDNS.begin(hostName.c_str());					  //start mDNS to fishyDIYmaster.local
 	httpServer.on("/genericArgs", handleGenericArgs); //Associate the handler function to the path
 	httpServer.on("/", handleRoot);
-	httpServer.on("/SWupdater", handleSWupdater);
+	httpServer.on("/SWupdater", handleRoot);
+	httpServer.on("/ctrlPanel", handleCtrl);
 	httpServer.on("/SWupdateDevForm", HTTP_GET, handleSWupdateDevForm);
 	httpServer.on("/SWupdateDevForm", HTTP_POST, handleSWupdateDevPostDone,  handleSWupdateDevPost);
-	httpServer.on("/device.JSON", handleJSON);
+	httpServer.on("/network.JSON", handleJSON);
+	httpServer.on("/node.JSON", handleNodeJSON);
+	//httpServer.on("/styles.css",handleCSS);
 	httpServer.onNotFound(handleNotFound);
 	//httpUpdater.setup(&httpServer);
 	httpServer.begin();
@@ -68,7 +71,7 @@ void handleJSON()
 	if (EEPROMdata.master || (masterIP.toString()=="0.0.0.0"))
 	{
 		UDPbroadcast();
-		httpServer.send(200, "text/html", getJSON().c_str());
+		httpServer.send(200, "text/html", getNetworkJSON().c_str());
 
 	}
 	else
@@ -77,6 +80,13 @@ void handleJSON()
 	}
 }
 
+//provide a JSON structure with all the deviceArray data
+void handleNodeJSON()
+{
+	httpServer.send(200, "text/html", getNodeJSON().c_str());
+}
+
+//consider for DELETION******
 void handleNotMaster()
 {
 	String ipToShow = masterIP.toString();
@@ -87,7 +97,8 @@ void handleNotMaster()
 	httpServer.send(200, "text/html", response.c_str());
 }
 
-String getJSON()
+//return the JSON data for the entire network (limited data for each live node)
+String getNetworkJSON()
 {
 	String temp;
 	temp = "{\"fishyDevices\":[";
@@ -100,24 +111,45 @@ String getJSON()
 				temp += ",";
 			}
 /* 
-put fishyDevice data in a string.
+put fishyDevice data in a string for all network nodes
 Note - this is string will be parsed by scripts in webresources.h 
 and is paralleled by UDPpollReply and if configuration setting data updated by the website then UDPparseConfigResponse is affected; 
 if adding data elements all these may need updating.  This function sends data as follows (keep this list updated):
 {ip,isCalibrated,isMaster,motorPos,name,openIsCCW,port,group,note,swVer,devType,initStamp,range,timeOut,deviceTimedOut,swapLimSW}
 */
 			temp += "{\"deviceID\":\"" + String(i) + "\",\"IP\":\"" + deviceArray[i].ip.toString() + "\",\"dead\":\"" + String(deviceArray[i].dead) +
-					"\",\"isCalibrated\":\"" + String(deviceArray[i].isCalibrated ? "true" : "false") +
-					"\",\"isMaster\":\"" + String(deviceArray[i].isMaster ? "true" : "false") + "\",\"motorPos\":\"" + String(deviceArray[i].motorPos) +
-					"\",\"deviceName\":\"" + String(deviceArray[i].name) + "\",\"openIsCCW\":\"" + String(deviceArray[i].openIsCCW ? "true" : "false") +
-					"\",\"port\":\"" + String(deviceArray[i].port) + "\",\"group\":\"" + String(deviceArray[i].group) + 
-					"\",\"note\":\"" + String(deviceArray[i].note) + "\",\"swVer\":\"" + String(deviceArray[i].swVer) + 
-					"\",\"devType\":\"" + String(deviceArray[i].devType) + "\",\"initStamp\":\"" + String(deviceArray[i].initStamp) + 
-					"\",\"range\":\"" + String(deviceArray[i].range) + "\",\"timeOut\":\"" + String(deviceArray[i].timeOut) + 
-					"\",\"deviceTimedOut\":\"" + String(deviceArray[i].deviceTimedOut ? "true" : "false") + 
-					"\",\"swapLimSW\":\"" + String(deviceArray[i].swapLimSW ? "true" : "false") + "\"}";
+					"\",\"isMaster\":\"" + String(deviceArray[i].isMaster ? "true" : "false") +
+					"\",\"deviceName\":\"" + String(deviceArray[i].name) + 
+					"\",\"port\":\"" + String(deviceArray[i].port) + "\",\"group\":\"" + String(deviceArray[i].group) + "\"}";
 		}
 	}
+	temp += "]}";
+
+	return temp;
+}
+
+String getNodeJSON()
+{
+	String temp;
+	temp = "{\"fishyDevices\":[";
+	/* 
+	put this fishyDevice data in a string.
+	Note - this is string will be parsed by scripts in webresources.h 
+	and is paralleled by UDPpollReply and if configuration setting data updated by the website then UDPparseConfigResponse is affected; 
+	if adding data elements all these may need updating.  This function sends data as follows (keep this list updated):
+	{ip,motorPosAtCWset,motorPosAtCCWset,isMaster,motorPos,name,openIsCCW,port,group,note,swVer,devType,initStamp,range,timeOut,deviceTimedOut,swapLimSW}
+	*/
+	temp += "{\"IP\":\"" + WiFi.localIP().toString() +
+			"\",\"motorPosAtCWset\":\"" + String(EEPROMdata.motorPosAtCWset ? "true" : "false") +
+			"\",\"motorPosAtCCWset\":\"" + String(EEPROMdata.motorPosAtCCWset ? "true" : "false") +
+			"\",\"isMaster\":\"" + String(EEPROMdata.master ? "true" : "false") + "\",\"motorPos\":\"" + String(EEPROMdata.motorPos) +
+			"\",\"deviceName\":\"" + String(EEPROMdata.namestr) + "\",\"openIsCCW\":\"" + String(EEPROMdata.openIsCCW ? "true" : "false") + "\",\"group\":\"" + String(EEPROMdata.groupstr) + 
+			"\",\"note\":\"" + String(EEPROMdata.note) + "\",\"swVer\":\"" + String(EEPROMdata.swVer) + 
+			"\",\"devType\":\"" + String(EEPROMdata.typestr) + "\",\"initStamp\":\"" + String(EEPROMdata.initstr) + 
+			"\",\"range\":\"" + String(EEPROMdata.range) + "\",\"timeOut\":\"" + String(EEPROMdata.timeOut) + 
+			"\",\"deviceTimedOut\":\"" + String(EEPROMdata.deviceTimedOut ? "true" : "false") + 
+			"\",\"swapLimSW\":\"" + String(EEPROMdata.swapLimSW ? "true" : "false") + "\"}";
+
 	temp += "]}";
 	//if(DEBUG_MESSAGES){Serial.println("[getJSON] built: " + temp);}
 	return temp;
@@ -193,16 +225,11 @@ void handleGenericArgs()
 		handleNotMaster();
 	}
 }
+
+//this creates the iframes for all the devices in the network, if /SWupdater then it loads those forms, otherwise it loads /ctrlPanels for each iframe
 void handleRoot()
 {
-	//only process the webrequest if you are the master or if there is no master
-	if (EEPROMdata.master || (masterIP.toString()=="0.0.0.0"))
-	{
-		if (DEBUG_MESSAGES)
-		{
-			Serial.println("[handleRoot] 1: ");
-		}
-
+	
 		int szchnk = 2900;
 
 		//LARGE STRINGS - Break response into parts
@@ -213,23 +240,19 @@ void handleRoot()
 		httpServer.send(200, "text/html", "");
 
 		//Send PART1:
-		handleStrPartResp(WEBSTRPT1,szchnk);
+		handleStrPartResp(WEBROOTSTRPT1,szchnk);
+
+		//Send STYLES:
+		handleStrPartResp("<style>",szchnk);
+		handleStrPartResp(WEBSTYLESSTR,szchnk);
+		handleStrPartResp("</style>",szchnk);
 		
 		//Send JSON:
-		handleStrPartResp(String("<script>var fishyNetJSON ='" + getJSON() + "';</script>"),szchnk);
+		handleStrPartResp(String("<script>var fishyNetJSON ='" + getNetworkJSON() + "';</script>"),szchnk);
 		
 		//Send PART2:
-		handleStrPartResp(WEBSTRPT2,szchnk);
+		handleStrPartResp(WEBROOTSTRPT2,szchnk);
 
-		//Send PART3: - this is the svg which is really optional
-		handleStrPartResp(WEBSTRPT3,szchnk);
-
-		//Send PART4:
-		handleStrPartResp(WEBSTRPT4,szchnk);
-		
-		//Send PART5:
-		handleStrPartResp(WEBSTRPT5,szchnk);
-		
 		httpServer.sendContent("");
 		httpServer.client().stop();
 
@@ -237,12 +260,70 @@ void handleRoot()
 		{
 			Serial.println("[handleRoot]\n");
 		}
-	}
-	else
-	{
-		handleNotMaster();
-	}
+
 }
+
+void handleCtrl(){
+	
+		int szchnk = 2900;
+
+		//LARGE STRINGS - Break response into parts
+		httpServer.sendHeader("Cache-Control", "no-cache, no-store, must-revalidate");
+		httpServer.sendHeader("Pragma", "no-cache");
+		httpServer.sendHeader("Expires", "-1");
+		httpServer.setContentLength(CONTENT_LENGTH_UNKNOWN); 
+		httpServer.send(200, "text/html", "");
+
+		//Send PART1:
+		handleStrPartResp(WEBROOTSTRPT1,szchnk);
+		
+		//Send STYLES:
+		handleStrPartResp("<style>",szchnk);
+		handleStrPartResp(WEBSTYLESSTR,szchnk);
+		handleStrPartResp("</style>",szchnk);
+
+		//Send JSON:
+		handleStrPartResp(String("<script>var fishyNetJSON ='" + getNodeJSON() + "';</script>"),szchnk);
+		
+		//Send PART2:
+		handleStrPartResp(WEBCTRLSTRPT2,szchnk);
+
+		httpServer.sendContent("");
+		httpServer.client().stop();
+
+		if (DEBUG_MESSAGES)
+		{
+			Serial.println("[handleCtrl]\n");
+		}
+}
+
+/*
+//return the website style information
+void handleCSS()
+{
+	
+		int szchnk = 2900;
+
+		//LARGE STRINGS - Break response into parts
+		httpServer.sendHeader("Cache-Control", "no-cache, no-store, must-revalidate");
+		httpServer.sendHeader("Pragma", "no-cache");
+		httpServer.sendHeader("Expires", "-1");
+		httpServer.setContentLength(CONTENT_LENGTH_UNKNOWN); 
+		httpServer.send(200, "text/css", "");
+
+		//Send CONTENT:
+		handleStrPartResp(WEBSTYLESSTR,szchnk);
+		
+		httpServer.sendContent("");
+		httpServer.client().stop();
+
+		if (DEBUG_MESSAGES)
+		{
+			Serial.println("[handleCSS]\n");
+		}
+
+}
+*/
 
 //show the SW update form for the specifc device (function for every device webserver)
 void handleSWupdateDevForm()
@@ -322,54 +403,6 @@ void handleSWupdateDevPost()
         if (DEBUG_MESSAGES) Serial.println("Update was aborted");
       }
       delay(0);
-}
-//show the SW update webasite for all the fishyDIY devices in the network (MASTER function)
-void handleSWupdater()
-{
-	//only process the webrequest if you are the master or if there is no master
-	if (EEPROMdata.master || (masterIP.toString()=="0.0.0.0"))
-	{
-		if (DEBUG_MESSAGES)
-		{
-			Serial.println("[handleSWupdater] 1: ");
-		}
-
-		int szchnk = 2900;
-
-		//LARGE STRINGS - Break response into parts
-		httpServer.sendHeader("Cache-Control", "no-cache, no-store, must-revalidate");
-		httpServer.sendHeader("Pragma", "no-cache");
-		httpServer.sendHeader("Expires", "-1");
-		httpServer.setContentLength(CONTENT_LENGTH_UNKNOWN); 
-		httpServer.send(200, "text/html", "");
-
-		//Send PART1:
-		handleStrPartResp(WEBSTRPT1,szchnk);
-		
-		//Send JSON:
-		handleStrPartResp(String("<script>var fishyNetJSON ='" + getJSON() + "';</script>"),szchnk);
-		
-		//Send PART2ALT:
-		handleStrPartResp(WEBSTRPT2ALT,szchnk);
-
-		//Skip PART3 Send PART4ALT:
-		handleStrPartResp(WEBSTRPT4ALT,szchnk);
-		
-		//Send PART5:
-		handleStrPartResp(WEBSTRPT5,szchnk);
-		
-		httpServer.sendContent("");
-		httpServer.client().stop();
-
-		if (DEBUG_MESSAGES)
-		{
-			Serial.println("[handleSWupdater]\n");
-		}
-	}
-	else
-	{
-		handleNotMaster();
-	}
 }
 
 //send a str that is part of a webresponse and break it into chunks of szchnk

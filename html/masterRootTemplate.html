@@ -1,0 +1,156 @@
+<!--------------------------------------------------------------------------------------------------------
+This is the template file for the master web site (stored in webresources.h in parts). It relies on jquery 
+(stored in googleapis - but requires iternet access as written). It also relies on styles.css (which is embedded
+into code - see that file for its instructions).
+You also need to embedd "fishyDIYnode.html", and "fishyDIYgroup.html" into the webresources.h for handling individual
+or group processing (specific to each type of device).
+To build it in the code do the following:
+ 1) Copy the first block (PART 1).
+ 2) put it through a minifier (like https://kangax.github.io/html-minifier/) and then through a String builder
+ (like http://buildmystring.com/ with "strip out carriage returns" on) to create a single string with no tabs and one line.
+ 3) paste that into the WEBROOTSTRPT1 after "PROGMEM" in the webresources.h file.
+ 4) copy the second block (from below the JSON definition to the end).
+ 5) repeat steps 2 and 3 putting the result in WEBROOTSTRPT2 after "PROGMEM"
+ ------------------------------------------------------------------------------------------------------ -->
+
+<!-- ----------------------------------------------------------------------------------------------------
+ ----------------------------------- START OF PART 1 (HEADER): ------------------------------------------
+ ------------------------------------------------------------------------------------------------------ -->
+<!DOCTYPE html>
+<html>
+<head>
+    <title>fishDIY Device Network</title>
+    <meta name='viewport' content='width=device-width, initial-scale=1'>
+    <script src='https://ajax.googleapis.com/ajax/libs/jquery/1.12.4/jquery.min.js'></script>
+   
+   <!-- -------------------------------------------------------------------------------------------
+    --------END OF PART 1:  Do not copy the following lines - these are handled within the code. ----
+    ---------------------------------------------------------------------------------------------->
+    <link rel="stylesheet" href="styles.css">     
+    <script>
+            var fishyNetJSON ='{"fishyDevices":[{"deviceID":"0","IP":"10.203.1.197","dead":"0","isMaster":"true","deviceName":"Test Actuator 1","group":"test group 1"},{"deviceID":"1","IP":"10.203.1.123","dead":"0","isMaster":"false","deviceName":"Test Rotary Actuator 1","group":"test group 1"},{"deviceID":"2","IP":"10.203.1.145","dead":"0","isMaster":"false","deviceName":"Floor 1 Damper","group":""},{"deviceID":"3","IP":"10.203.1.127","dead":"0","isMaster":"false","deviceName":"Floor 2 Damper","group":""}]}';
+    </script>
+     <!-- -------------------------------------------------------------------------------------------
+     --------------------------  START OF PART 2    -------------------------------------------------
+     -------------------------------------------------------------------------------------------- -->
+ 
+    </head><body><div class='main' id='myBody'>   
+    <script>
+        function addDevice(d){
+            if (d.isMaster == 'true') { mstrTxt = 'MASTER'; } else { mstrTxt = ''; }
+
+            var ii = d.deviceID;
+            var addDiv = "<div class='CP' id='CP-" + ii +"'><div class='CPhd' id='hd1-" + ii + "'>" + d.IP + "<br>" + d.deviceName + "</div>";
+            if(isCtrl){
+                addDiv += "<iframe id='ctrl-" + ii + "' class='ctrl' src='http://"+d.IP+"/ctrlPanel' ></iframe><br>";
+            }
+            else
+            {
+                addDiv += "<iframe id='swUpdate-" + ii + "' class='swUpdate' src='http://"+d.IP+"/SWupdateDevForm' ></iframe><br>";
+            }
+            addDiv += "<div class='CPft' id='CPft-" + ii + "'>"+mstrTxt+"</div></div>";
+                     
+            return addDiv;
+        }
+        function refreshToggle(){
+            var label = $('#swRefreshLab-1')[0];
+            var sw = $('#swRefreshChck-1')[0];
+            if (sw.checked == true) { 
+                label.innerHTML = 'Auto-refresh On';
+                pollTimer = setInterval(function () {
+                    pollJSON();
+                }, 10000);
+            } else { 
+                label.innerHTML = 'Auto-refresh Off'; 
+                clearInterval(pollTimer);
+            }
+        }
+        
+        function pollJSON() {
+            
+            var srcStr = './network.JSON?nocache=' + (new Date()).getTime();
+            $.getJSON(srcStr, function (data) {
+                var DA = data.fishyDevices;
+                var addDiv = '';
+                var mstrTxt = '';
+                var ii;
+                $.each(DA, function (num, d) {
+                if (d.dead == '0') {
+                        ii = d.deviceID;
+                        //look for new devices in the JSON
+                        if($('#CP-' + ii)[0]==null){
+                            $(addDevice(d)).appendTo('.flex-container');
+                        }else{
+                            if (d.isMaster == 'true') { mstrTxt = 'MASTER '; } else { mstrTxt = ''; }
+                            $('#hd1-'+ii)[0].innerHTML = d.IP + "<br>" + d.deviceName;
+                            $('#CPft-'+ii)[0].innerHTML = mstrTxt;
+                        }
+                    }
+                });
+                console.log( "first success - through each DA");
+                var gone;
+                $('.CP').each(function(i,e){
+                    gone = true;
+                    $.each(DA, function (num, d) {
+                        if((('CP-' + d.deviceID) == e.id) && (d.dead == 0)) gone=false;
+                    });
+                    if(gone){
+                        $('#CP-'+i).remove();
+                    }
+                });
+            })
+            .done(function() {
+                console.log( "second success" );
+            })
+            .fail(function() {
+                console.log( "error" );
+            })
+            .always(function() {
+                console.log( "complete" );
+            });
+        }
+        var isCtrl = true;
+        function buildPage() {
+             
+             var data = JSON.parse(fishyNetJSON);
+             var DA = data.fishyDevices;
+             var items = [];
+             var addDiv = '';
+             var ii;
+             if (location.pathname.slice(1,4) == "SWu"){ 
+                 isCtrl = false; //the page is a SW update page
+                $("<div class='fishyHdr'>fishyDevice Software Update</div>").appendTo('#myBody');
+             }else{
+                $("<div class='fishyHdr'>fishyControls</div>").appendTo('#myBody'); 
+             }
+             $("<div class='CPhd3'><span class='swRow'><label class='sw' id='swRefresh-1'><input type='checkbox' checked id='swRefreshChck-1' onchange=refreshToggle()><span class='sldSw'></span></label><span class='swLabHdr' id='swRefreshLab-1'>Auto-refresh On</span></span></div></div>").appendTo('#myBody');   
+             
+            //TODO - make a funtion to parse the group names, and then make a group iframe
+             
+             $.each(DA, function (i, d) {
+                 items.push(addDevice(d));
+             });
+             $('<div/>', {
+                 'class': 'flex-container',
+                 html: items.join('')
+             }).appendTo('#myBody');
+             
+          
+         }
+         window.onload = buildPage();
+        var pollTimer;
+        if($('#swRefreshChck-1')[0].checked){
+            pollTimer = setInterval(function () {
+                pollJSON();
+            }, 10000);
+        }
+
+     </script>
+ 
+     
+     <div class='fishyFtr'><a href="/">[Controls]</a>  <a href="/SWupdater">[SW Update]</a></div></div>
+ </body>
+ </html>
+    <!-- -------------------------------------------------------------------------------------------
+    -------------------------------------- END OF PART 2 -------------------------------------------
+    -------------------------------------------------------------------------------------------- -->

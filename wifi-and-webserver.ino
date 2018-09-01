@@ -62,7 +62,7 @@ void WiFiSetup()
 //-------------------------Web Server Functions--------------------------------
 //-----------------------------------------------------------------------------
 
- String _updaterError;
+String _updaterError;
 
 //provide a JSON structure with all the deviceArray data
 void handleJSON()

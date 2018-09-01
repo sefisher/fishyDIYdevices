@@ -33,6 +33,51 @@ void UDPprocessPacket()
 	}
 }
 
+//if master announce every minute and cull nodes if silent for 10 min;
+//if not master annouce every 8 to avoid being culled
+void UDPkeepAliveAndCull()
+{
+	//announce the master every 60 seconds
+	if (EEPROMdata.master)
+	{
+		static unsigned long lastMstr = millis();
+		if (millis() - lastMstr > 60000)
+		{
+			lastMstr = millis();
+			if (DEBUG_MESSAGES){ Serial.println("[MAIN] Announcing master"); }
+			UDPannounceMaster();
+		}
+		static unsigned long lastNodeCulling = millis();
+		if (millis() - lastNodeCulling > 600000) //cull dead nodes from the list every 10 minutes
+		{
+			lastNodeCulling = millis();
+			if (DEBUG_MESSAGES){ Serial.println("[MAIN] Removing Dead Nodes"); }
+			cullDeadNodes();
+		}
+	} else {
+		static unsigned long lastAvoidCulling = millis();
+		if (millis() - lastAvoidCulling > 48000) //tell master you're alive to avoid being culled as a dead node every 8 minutes
+		{
+			lastAvoidCulling = millis();
+			if (DEBUG_MESSAGES){ Serial.println("[MAIN] I'm not a Dead Node - broadcasting"); }
+			UDPbroadcast();
+		}
+	}
+
+}
+
+//at end of setup annouce your presence
+void announceReadyOnUDP(){
+	//announce master if this is the mastr node
+	//otherwise let the master know you're here
+	if (EEPROMdata.master)
+	{
+		UDPannounceMaster();
+	}else{
+		UDPbroadcast();
+	}
+}
+
 //broadcast on subnet to see who will respond
 void UDPbroadcast()
 {

@@ -1,12 +1,12 @@
         :root {
+            --cp-sz: 300px; /* 300 assumes width as narrow as 320px, 360px is most common*/
             --big-fnt: 25px;
             --mid-fnt: 20px;
             --sml-fnt: 15px;
-            --on-col: #16234b;
+            --bg-col: #16234b;
             --drk-col: #3366cc;
+            --gry-col: #dddddd;
             --lght-col: #ffffff;
-            --gry-col: #edf3ff;
-            --cp-sz: 300px;
             --lab-sz: 90px;
             --val-sz: 65px;
             --sld-sz: 125px;
@@ -24,9 +24,9 @@
             --cfg-lab: 120;
             --cfg-inp: 180;
         }
-        a{color: white;}
+        a{color: var(--lght-col);}
         body,.main {
-            background-color: var(--gry-col);
+            background-color: var(--bg-col);
             font-family: "Lucida Sans Unicode", "Lucida Grande", sans-serif;
         }
 
@@ -51,8 +51,8 @@
             border-radius: 0 0 var(--rad-sz) var(--rad-sz);
             font-size: var(--mid-fnt);
             font-weight: bold;
-            color: white;
-            background: var(--drk-col);
+            color: var(--lght-col);
+            background-color: var(--drk-col);
             height: calc(var(--hdr-ht)/2);
             text-align: center;
         }
@@ -61,8 +61,8 @@
             border-radius: var(--rad-sz) var(--rad-sz) 0 0;
             font-size: calc(var(--hdr-ht)/3);
             font-weight: bold;
-            color: white;
-            background: var(--drk-col);
+            color: var(--lght-col);
+            background-color: var(--drk-col);
             height: var(--hdr-ht);
             vertical-align: middle;
            }
@@ -70,15 +70,16 @@
             width:100%;
             text-align: center;
         }
-        .CP {
+        .CP, .CPhdErrClear {
             width: var(--cp-sz);
             flex: 0 1 var(--cp-sz);
+            background-color: var(--lght-col);
         }
         .CPdevice {
             border-radius: 0px;
             width: calc(var(--cp-sz)-10);
             flex: 0 1 var(--cp-sz);
-            background: white;
+            background-color: var(--lght-col);
         }
         .CPhd,
         .CPhd2,
@@ -86,7 +87,7 @@
         .CPhdErr,
         .CPft {
             width: var(--cp-sz);
-            color: white;
+            color: var(--lght-col);
             background-color: var(--drk-col);
         }
         .CPhd {
@@ -107,6 +108,9 @@
         }
         .CPhdErr{
             color: red;
+        }
+        .CPhdErrClear{
+            color: var(--lght-col);
         }
         .sld,.sld-dis {
             position: absolute;
@@ -162,7 +166,7 @@
             position: absolute;
             top: 0px;
             left: calc(var(--cp-sz) - var(--val-sz) );
-            background-color: white;
+            background-color: var(--lght-col);
             border: none;
             font-size: var(--mid-fnt);
             width: 55px;
@@ -184,8 +188,8 @@
         .tglBtn {
             background-color: var(--drk-col);
             height: var(--btn-ht);
-            border: 1px solid white;
-            color: white;
+            border: 1px solid var(--lght-col);
+            color: var(--lght-col);
             text-align: center;
             text-decoration: none;
             display: inline-block;
@@ -220,7 +224,7 @@
         .cfgInp,
         .cfgInpNum {
             width: var(--cfg-inp);
-            background-color: white;
+            background-color: var(--lght-col);
             border: none;
             font-size: var(--sml-fnt);
         }
@@ -286,7 +290,7 @@
             width: 26px;
             left: 4px;
             bottom: 4px;
-            background-color: white;
+            background-color: var(--lght-col);
             -webkit-transition: .4s;
             transition: .4s;
             border-radius: 50%;
@@ -314,4 +318,62 @@
             height: 250px;
             width: var(--cp-sz);
             border: none;
+        }
+        .overlay {
+            height: 0%;
+            width: 100%;
+            position: fixed;
+            z-index: 1;
+            top: 0;
+            left: 0;
+            background-color: rgb(0,0,0);
+            background-color: rgba(0,0,0, 0.9);
+            overflow-y: hidden;
+            transition: 0.5s;
+        }
+        
+        .overlay-content {
+            position: relative;
+            top: 25%;
+            width: 100%;
+            text-align: center;
+            margin-top: 30px;
+        }
+        
+        .overlay a {
+            padding: 8px;
+            text-decoration: none;
+            font-size: 36px;
+            color: #818181;
+            display: block;
+            transition: 0.3s;
+        }
+        
+        .overlay a:hover, .overlay a:focus {
+            color:var(--light-col);
+        }
+        
+        .overlay .closebtn {
+            position: absolute;
+            right: 5px;
+            top: 5px;
+            z-index: 999;
+            cursor: pointer;
+            color: #fff;
+            border: 1px solid #AEAEAE;
+            border-radius: 30px;
+            background: #605F61;
+            font-size: 31px;
+            font-weight: bold;
+            display: inline-block;
+            line-height: 0px;
+            padding: 11px 3px;
+        }
+        
+        .modal-body{
+            position: relative;
+            top: 5px;bottom: 5px;left: 5px;right: 5px;
+            width: var(--cp-sz); height: var(--cp-sz);
+            text-align: center;
+            background-color: var(--bg-col);
         }

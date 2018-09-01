@@ -40,7 +40,7 @@ Notes:
 #include <ESP8266WebServer.h>
 #include <WiFiClient.h>
 #include <WiFiUdp.h>
-#include <WiFiManager.h> //https://github.com/tzapu/WiFiManager
+#include <WiFiManager.h> 
 #include <fauxmoESP.h>
 #include <AccelStepper.h>
 #include <EEPROM.h>
@@ -53,46 +53,47 @@ Notes:
 
 
 //this is the base setup routine called first on power up or reboot
+
 void setup()
 {
-	// Initialize serial port and clean garbage
-	if (DEBUG_MESSAGES)
-	{
-		Serial.begin(SERIAL_BAUDRATE);
-		Serial.println();
-		Serial.println();
-	}
-
-	//Setup Device Personaility and update EEPROM data as needed
-	if (DEBUG_MESSAGES)
-	{
-		Serial.println("[SETUP] The personality data needs " + String(sizeof(EEPROMdata)) + " Bytes in EEPROM.");
-		Serial.println("[SETUP] initstr " + String(sizeof(EEPROMdata.initstr)));
-		Serial.println("[SETUP] namestr " + String(sizeof(EEPROMdata.namestr)));
-		Serial.println("[SETUP] master " + String(sizeof(EEPROMdata.master)));
-		Serial.println("[SETUP] typestr " + String(sizeof(EEPROMdata.typestr)));
-		Serial.println("[SETUP] groupstr " + String(sizeof(EEPROMdata.groupstr)));
-		Serial.println("[SETUP] note " + String(sizeof(EEPROMdata.note)));
-		Serial.println("[SETUP] openIsCCW " + String(sizeof(EEPROMdata.openIsCCW)));
-		Serial.println("[SETUP] swVer " + String(sizeof(EEPROMdata.swVer)));
-		Serial.println("[SETUP] motorPosAtCCWset " + String(sizeof(EEPROMdata.motorPosAtCCWset)));
-		Serial.println("[SETUP] motorPosAtCWset " + String(sizeof(EEPROMdata.motorPosAtCWset)));
-		Serial.println("[SETUP] motorPos " + String(sizeof(EEPROMdata.motorPos)));
-		Serial.println("[SETUP] range " + String(sizeof(EEPROMdata.range)));
-		Serial.println("[SETUP] timeOut " + String(sizeof(EEPROMdata.timeOut)));
-		Serial.println("[SETUP] deviceTimedOut " + String(sizeof(EEPROMdata.deviceTimedOut)));
-		Serial.println("[SETUP] swapLimSW " + String(sizeof(EEPROMdata.swapLimSW)));
-	}
-
+	serialStart(); //if debugging turn on serial, supports all "show" functions
+	showPersonalityDataSize();
 	retrieveDataFromEEPROM();
-	
-	if (DEBUG_MESSAGES)
-	{
-		Serial.println("[SETUP] Found: Init string: "+String(EEPROMdata.initstr)+", Name string: "+String(EEPROMdata.namestr)+", Master: " + String(EEPROMdata.master?"True":"False")+", Group name string: "+String(EEPROMdata.groupstr)+",Type string: "+String(EEPROMdata.typestr)+",Note string: "+String(EEPROMdata.note)+", OpenIsCCW: "+String(EEPROMdata.openIsCCW?"True":"False") + ", SwapLimSW: "+String(EEPROMdata.swapLimSW?"True":"False") + ", SW Version string: "+String(EEPROMdata.swVer) + ", Motor Timeout "+String(EEPROMdata.timeOut)+ ", Device Timedout "+String(EEPROMdata.deviceTimedOut));
-		Serial.println("[SETUP] Found motor data: {CCWset,CWset,Pos,range}: {" + String(EEPROMdata.motorPosAtCCWset)+ "," + String(EEPROMdata.motorPosAtCWset)+ "," + String(EEPROMdata.motorPos)+ "," + String(EEPROMdata.range)+"}");  	
-		Serial.println("[SETUP] Compiled init string: " + String(INITIALIZE) + ". Stored init string: " + String(EEPROMdata.initstr));
-	}
+	showEEPROMPersonalityData();
+	initializePersonalityIfNew();
+	showEEPROMPersonalityData();	
+	motorSetup();
+	WifiFauxmoAndDeviceSetup();
+	pinSetup();
+	announceReadyOnUDP();	
+}
 
+//this is the main operating loop (MOL) that is repeatedly executed
+void loop()
+{
+	
+	checkResetOnLoop(); //reset device if flagged to
+	httpServer.handleClient();	//handle webrequests
+	UDPprocessPacket(); //process any net (UDP) traffic
+	UDPkeepAliveAndCull(); //talk on net and drop dead notes from list
+	
+	// Since fauxmoESP 2.0 the library uses the "compatibility" mode by
+	// default, this means that it uses WiFiUdp class instead of AsyncUDP.
+	// The later requires the Arduino Core for ESP8266 staging version
+	// whilst the former works fine with current stable 2.3.0 version.
+	// But, since it's not "async" anymore we have to manually poll for UDP
+	// packets
+	fauxmo.handle();
+
+	operateLimitSwitchActuator(); //run state machine for actuator with limit switches
+	showHeapAndProcessSerialInput(); //if debugging allow heap display and take serial commands
+	
+}
+
+//determine if initalization string is different than stored in EEPROM - 
+//if so load in new data from compiled code; if not just load SW version info
+//but keep stored perosnality data (software update without personality change)
+void initializePersonalityIfNew(){
 	// change EEPROMdata in RAM
 	if (String(INITIALIZE) != String(EEPROMdata.initstr))
 	{
@@ -100,7 +101,6 @@ void setup()
 		{
 			Serial.println("[SETUP] Updating...");
 		}
-
 
 		//store specified personality data
 		strncpy(EEPROMdata.swVer, SW_VER, 11);
@@ -149,13 +149,27 @@ void setup()
 		storeDataToEEPROM();
 	}
 
+}
+void showEEPROMPersonalityData()
+{	
 	if (DEBUG_MESSAGES)
 	{
-		Serial.println("[SETUP] Personality values are: Init string: "+String(EEPROMdata.initstr)+", Name string: "+String(EEPROMdata.namestr)+", Master: " + String(EEPROMdata.master?"True":"False")+", Group name string: "+String(EEPROMdata.groupstr)+",Type string: "+String(EEPROMdata.typestr)+",Note string: "+String(EEPROMdata.note)+", OpenIsCCW: "+String(EEPROMdata.openIsCCW?"True":"False")+", SwapLimSW: "+String(EEPROMdata.swapLimSW?"True":"False") + ", SW Version string: "+String(EEPROMdata.swVer)+ ", Motor Timeout "+String(EEPROMdata.timeOut)+ ", Device Timedout "+String(EEPROMdata.deviceTimedOut));
-		Serial.println("[SETUP] Motor data is: {CCWset,CWset,Pos,range}: {" + String(EEPROMdata.motorPosAtCCWset)+ "," + String(EEPROMdata.motorPosAtCWset)+ "," + String(EEPROMdata.motorPos) + "," + String(EEPROMdata.range) + "}");  	
-
+		Serial.println("[SETUP] Init string: "+String(EEPROMdata.initstr)+", Name string: "+String(EEPROMdata.namestr)+", Master: " + String(EEPROMdata.master?"True":"False")+", Group name string: "+String(EEPROMdata.groupstr)+",Type string: "+String(EEPROMdata.typestr)+",Note string: "+String(EEPROMdata.note)+", OpenIsCCW: "+String(EEPROMdata.openIsCCW?"True":"False") + ", SwapLimSW: "+String(EEPROMdata.swapLimSW?"True":"False") + ", SW Version string: "+String(EEPROMdata.swVer) + ", Motor Timeout "+String(EEPROMdata.timeOut)+ ", Device Timedout "+String(EEPROMdata.deviceTimedOut));
+		Serial.println("[SETUP] Found motor data: {CCWset,CWset,Pos,range}: {" + String(EEPROMdata.motorPosAtCCWset)+ "," + String(EEPROMdata.motorPosAtCWset)+ "," + String(EEPROMdata.motorPos)+ "," + String(EEPROMdata.range)+"}");  	
+		Serial.println("[SETUP] Compiled init string: " + String(INITIALIZE) + ". Stored init string: " + String(EEPROMdata.initstr));
 	}
+}
 
+//set pin modes
+void pinSetup(){
+	//set switch pins to use internal pull_up resistor
+	pinMode(SWpinLimitCW, INPUT_PULLUP);
+	pinMode(SWpinLimitCCW, INPUT_PULLUP);
+
+}
+
+//set up motor parameters
+void motorSetup(){
 	//stepper motor setup
 	stepper1.setMaxSpeed(MAX_SPEED);
 	stepper1.setAcceleration(ACCELERATION);
@@ -165,7 +179,11 @@ void setup()
 		//if prior HW limits set state to man_idle to prevent unknown state effects
 		deviceTrueState = man_idle;
 	}
+}
 
+
+//sets up a fauxmo device if enabled to allow control via Alexa, etc
+void WifiFauxmoAndDeviceSetup(){
 	// You can enable or disable the library at any moment
 	// Disabling it will prevent the devices from being discovered and switched
 	fauxmo.enable(false);
@@ -180,19 +198,13 @@ void setup()
 			fauxmo.addDevice(EEPROMdata.namestr);
 		}
 	}
-
-	// Device and pin setup
+	
+	// Device 
 	if (DEBUG_MESSAGES)
 	{
 		Serial.printf("[SETUP] Device: %s; deviceState: %s.\n", EEPROMdata.namestr, deviceState ? "ON" : "OFF");
 	}
 
-	// Set set of device to off
-	deviceState = LOW;
-
-	//set switch pins to use internal pull_up resistor
-	pinMode(SWpinLimitCW, INPUT_PULLUP);
-	pinMode(SWpinLimitCCW, INPUT_PULLUP);
 
 	if(FAUXMO_ENABLED){
 		// fauxmoESP 2.0.0 has changed the callback signature to add the device_id,
@@ -211,69 +223,38 @@ void setup()
 			return deviceState;
 		});
 	}
-	
-	//announce master if this is the mastr node
-	//otherwise let the master know you're here
-	if (EEPROMdata.master)
-	{
-		UDPannounceMaster();
-	}else{
-		UDPbroadcast();
-	}
+
 }
 
-//this is the main operating loop (MOL) that is repeatedly executed
-void loop()
-{
-	
-	//reset if commanded to by someone last loop
-	if(resetOnNextLoop){
-		//allow time for any commit to settle and webresponses to process before bailing
-		delay(2000);
-		resetController();
-	}
-
-	//handle webrequests
-	httpServer.handleClient();
-
-	//process any UDP traffic
-	UDPprocessPacket();
-
-	//announce the master every 60 seconds
-	if (EEPROMdata.master)
+void showHeapAndProcessSerialInput(){
+	if (DEBUG_MESSAGES)
 	{
-		static unsigned long lastMstr = millis();
-		if (millis() - lastMstr > 60000)
+		if (DEBUG_HEAP_MESSAGE)
 		{
-			lastMstr = millis();
-			if (DEBUG_MESSAGES){ Serial.println("[MAIN] Announcing master"); }
-			UDPannounceMaster();
+			static unsigned long last = millis();
+			if (millis() - last > 1000)
+			{
+				last = millis();
+				Serial.printf("[MAIN] Free heap: %d bytes\n", ESP.getFreeHeap());
+			}
 		}
-		static unsigned long lastNodeCulling = millis();
-		if (millis() - lastNodeCulling > 600000) //cull dead nodes from the list every 10 minutes
+
+		//take serial commands in
+		if (Serial.available() > 0)
 		{
-			lastNodeCulling = millis();
-			if (DEBUG_MESSAGES){ Serial.println("[MAIN] Removing Dead Nodes"); }
-			cullDeadNodes();
+			char inputMsg[MAXCMDSZ];
+			int sizeRead;
+			sizeRead = Serial.readBytesUntil('\r', inputMsg, sizeof(inputMsg));
+			if (sizeRead)
+			{
+				executeCommands(inputMsg, IPAddress(0, 0, 0, 0));
+			}
+			Serial.flush();
 		}
-	} else {
-		static unsigned long lastAvoidCulling = millis();
-		if (millis() - lastAvoidCulling > 48000) //tell master you're alive to avoid being culled as a dead node every 8 minutes
-		{
-			lastAvoidCulling = millis();
-			if (DEBUG_MESSAGES){ Serial.println("[MAIN] I'm not a Dead Node - broadcasting"); }
-			UDPbroadcast();
-		}
+		
 	}
-
-	// Since fauxmoESP 2.0 the library uses the "compatibility" mode by
-	// default, this means that it uses WiFiUdp class instead of AsyncUDP.
-	// The later requires the Arduino Core for ESP8266 staging version
-	// whilst the former works fine with current stable 2.3.0 version.
-	// But, since it's not "async" anymore we have to manually poll for UDP
-	// packets
-	fauxmo.handle();
-
+}
+void operateLimitSwitchActuator(){
 	//get CURRENT position of the switches as wired they should be 1=switch open (not at limit)
 	int CCWlimSensorVal=1;
 	int CWlimSensorVal=1;
@@ -284,6 +265,7 @@ void loop()
 		 CCWlimSensorVal = digitalRead(SWpinLimitCW);
 		 CWlimSensorVal = digitalRead(SWpinLimitCCW);
 	}
+
 	//STATE MACHINE:
 	//First -- check for a calibration in progress; if so - finish calibration.
 	//second - go through all the other actions based on deviceTrueState.
@@ -366,36 +348,47 @@ void loop()
 		}
 		break;
 	}
-	
+}
+// Initialize serial port and clean garbage
+void serialStart(){	
 	if (DEBUG_MESSAGES)
 	{
-		//take serial commands in
-		if (Serial.available() > 0)
-		{
-			char inputMsg[MAXCMDSZ];
-			int sizeRead;
-			sizeRead = Serial.readBytesUntil('\r', inputMsg, sizeof(inputMsg));
-			if (sizeRead)
-			{
-				executeCommands(inputMsg, IPAddress(0, 0, 0, 0));
-			}
-			Serial.flush();
-		}
-
-		if (DEBUG_HEAP_MESSAGE)
-		{
-			static unsigned long last = millis();
-			if (millis() - last > 1000)
-			{
-				last = millis();
-				Serial.printf("[MAIN] Free heap: %d bytes\n", ESP.getFreeHeap());
-				//print out the value of the limit switches
-				Serial.printf("[MAIN] TrueState: %d, POS: %d, CW_LIM_SET? %s,CCW_LIM_SET? %s\n", deviceTrueState, stepper1.currentPosition(), EEPROMdata.motorPosAtCCWset ? "Y" : "N", EEPROMdata.motorPosAtCWset ? "Y" : "N");
-			}
-		}
+		Serial.begin(SERIAL_BAUDRATE);
+		Serial.println();
+		Serial.println();
 	}
 }
 
+//reset if commanded to by someone last loop
+void checkResetOnLoop(){	
+	if(resetOnNextLoop){
+		//allow time for any commit to settle and webresponses to process before bailing
+		delay(2000);
+		resetController();
+	}
+}
+//Setup Device Personaility and update EEPROM data as needed
+void showPersonalityDataSize(){
+	if (DEBUG_MESSAGES)
+	{
+		Serial.println("[SETUP] The personality data needs " + String(sizeof(EEPROMdata)) + " Bytes in EEPROM.");
+		Serial.println("[SETUP] initstr " + String(sizeof(EEPROMdata.initstr)));
+		Serial.println("[SETUP] namestr " + String(sizeof(EEPROMdata.namestr)));
+		Serial.println("[SETUP] master " + String(sizeof(EEPROMdata.master)));
+		Serial.println("[SETUP] typestr " + String(sizeof(EEPROMdata.typestr)));
+		Serial.println("[SETUP] groupstr " + String(sizeof(EEPROMdata.groupstr)));
+		Serial.println("[SETUP] note " + String(sizeof(EEPROMdata.note)));
+		Serial.println("[SETUP] openIsCCW " + String(sizeof(EEPROMdata.openIsCCW)));
+		Serial.println("[SETUP] swVer " + String(sizeof(EEPROMdata.swVer)));
+		Serial.println("[SETUP] motorPosAtCCWset " + String(sizeof(EEPROMdata.motorPosAtCCWset)));
+		Serial.println("[SETUP] motorPosAtCWset " + String(sizeof(EEPROMdata.motorPosAtCWset)));
+		Serial.println("[SETUP] motorPos " + String(sizeof(EEPROMdata.motorPos)));
+		Serial.println("[SETUP] range " + String(sizeof(EEPROMdata.range)));
+		Serial.println("[SETUP] timeOut " + String(sizeof(EEPROMdata.timeOut)));
+		Serial.println("[SETUP] deviceTimedOut " + String(sizeof(EEPROMdata.deviceTimedOut)));
+		Serial.println("[SETUP] swapLimSW " + String(sizeof(EEPROMdata.swapLimSW)));
+	}
+}
 //This function takes messages from some remote address (if from another node)
 //that are of maximum lenght MAXCMDSZ and determines what actions are required.
 //Commands can come from other nodes via UDP messages or from the web

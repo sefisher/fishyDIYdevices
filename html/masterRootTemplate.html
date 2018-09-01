@@ -11,50 +11,62 @@ To build it in the code do the following:
  3) paste that into the WEBROOTSTRPT1 after "PROGMEM" in the webresources.h file.
  4) copy the second block (from below the JSON definition to the end).
  5) repeat steps 2 and 3 putting the result in WEBROOTSTRPT2 after "PROGMEM"
- ------------------------------------------------------------------------------------------------------ -->
+ ------------------------------------------------------------------------------------------------------->
 
-<!-- ----------------------------------------------------------------------------------------------------
+<!-------------------------------------------------------------------------------------------------------
  ----------------------------------- START OF PART 1 (HEADER): ------------------------------------------
- ------------------------------------------------------------------------------------------------------ -->
+ ------------------------------------------------------------------------------------------------------->
 <!DOCTYPE html>
 <html>
 <head>
     <title>fishDIY Device Network</title>
     <meta name='viewport' content='width=device-width, initial-scale=1'>
-    <script src='https://ajax.googleapis.com/ajax/libs/jquery/1.12.4/jquery.min.js'></script>
    
-   <!-- -------------------------------------------------------------------------------------------
-    --------END OF PART 1:  Do not copy the following lines - these are handled within the code. ----
-    ---------------------------------------------------------------------------------------------->
+<!------------------------------------------------------------------------------------------------------
+--------END OF PART 1:  Do not copy the following lines - these are handled within the code. -----------
+------------------------------------------------------------------------------------------------------->
     <link rel="stylesheet" href="styles.css">     
     <script>
-            var fishyNetJSON ='{"fishyDevices":[{"deviceID":"0","IP":"10.203.1.197","dead":"0","isMaster":"true","deviceName":"Test Actuator 1","group":"test group 1"},{"deviceID":"1","IP":"10.203.1.123","dead":"0","isMaster":"false","deviceName":"Test Rotary Actuator 1","group":"test group 1"},{"deviceID":"2","IP":"10.203.1.145","dead":"0","isMaster":"false","deviceName":"Floor 1 Damper","group":""},{"deviceID":"3","IP":"10.203.1.127","dead":"0","isMaster":"false","deviceName":"Floor 2 Damper","group":""}]}';
+            var fishyNetJSON ='{"fishyDevices":[{"ip":"10.203.1.197","name":"Test Actuator 1","dead":"0","typestr":"limit sw actuator","groupstr":"test group 1","statusstr":"80% Open","inError":"false","isMaster":"true"},{"ip":"10.203.1.123","name":"Test Actuator 2","dead":"0","typestr":"limit sw actuator","groupstr":"test group 1","statusstr":"Open","inError":"false","isMaster":"false"},{"ip":"10.203.1.145","name":"Test Actuator 3","dead":"0","typestr":"limit sw actuator","groupstr":"test group 1","statusstr":"Closed","inError":"false","isMaster":"false"},{"ip":"10.203.1.127","name":"Test Actuator 4","dead":"0","typestr":"limit sw actuator","groupstr":"test group 1","statusstr":"On","inError":"true","isMaster":"false"}]}';
     </script>
-     <!-- -------------------------------------------------------------------------------------------
-     --------------------------  START OF PART 2    -------------------------------------------------
-     -------------------------------------------------------------------------------------------- -->
- 
-    </head><body><div class='main' id='myBody'>   
+<!------------------------------------------------------------------------------------------------------
+----------------------------------  START OF PART 2    -------------------------------------------------
+------------------------------------------------------------------------------------------------------->
+</head>
+<body><div class='main' id='myBody'>   
     <script>
-        function addDevice(d){
-            if (d.isMaster == 'true') { mstrTxt = 'MASTER'; } else { mstrTxt = ''; }
 
-            var ii = d.deviceID;
-            var addDiv = "<div class='CP' id='CP-" + ii +"'><div class='CPhd' id='hd1-" + ii + "'>" + d.IP + "<br>" + d.deviceName + "</div>";
+        function addDevice(d){
+            var addDiv = "<div class='CPdevice' id='CP-" + d.ip + "'>";
+            addDiv += addInnerDevice(d);
+            addDiv += "</div>";      
+            return addDiv;
+        }
+        
+        function addInnerDevice(d){
+            var errTxt;
+            if (d.inError == 'true') { errTxt = 'CPhdErr'; } else { errTxt = 'CPhdErrClear'; }
+            var mstrTxt;
+            if (d.isMaster == 'true') { mstrTxt = 'MASTER:'+d.ip; } else { mstrTxt = d.ip; }
+            var addDiv = "<div class='CPhd' id='hd1-" + d.ip + "'>" + d.name + "</div>";
             if(isCtrl){
-                addDiv += "<iframe id='ctrl-" + ii + "' class='ctrl' src='http://"+d.IP+"/ctrlPanel' ></iframe><br>";
+                addDiv += "<div id='CPerr-" + d.ip + "' class='" + errTxt + "'>ERROR</div>";
+                addDiv += "<div >" + d.statusstr + "</div>";
+                addDiv += "<button id='myBtn-'+ ii +'>Open Controls</button>";
+                addDiv += "<div>Group:" + d.groupstr + "</div>";
+                addDiv += "<div>Type:" + d.typestr + "</div>";
             }
             else
             {
-                addDiv += "<iframe id='swUpdate-" + ii + "' class='swUpdate' src='http://"+d.IP+"/SWupdateDevForm' ></iframe><br>";
+                addDiv += "<iframe id='swUpdate-" + d.ip + "' class='swUpdate' src='http://"+d.ip+"/SWupdateDevForm' ></iframe><br>";
             }
-            addDiv += "<div class='CPft' id='CPft-" + ii + "'>"+mstrTxt+"</div></div>";
-                     
+            addDiv += "<div class='CPft' id='CPft-" + d.ip + "'>"+mstrTxt+"</div>";
             return addDiv;
         }
+
         function refreshToggle(){
-            var label = $('#swRefreshLab-1')[0];
-            var sw = $('#swRefreshChck-1')[0];
+            var label = document.getElementById('swRefreshLab-1');
+            var sw = document.getElementById('swRefreshChck-1');
             if (sw.checked == true) { 
                 label.innerHTML = 'Auto-refresh On';
                 pollTimer = setInterval(function () {
@@ -66,91 +78,130 @@ To build it in the code do the following:
             }
         }
         
-        function pollJSON() {
-            
-            var srcStr = './network.JSON?nocache=' + (new Date()).getTime();
-            $.getJSON(srcStr, function (data) {
-                var DA = data.fishyDevices;
-                var addDiv = '';
-                var mstrTxt = '';
-                var ii;
-                $.each(DA, function (num, d) {
-                if (d.dead == '0') {
-                        ii = d.deviceID;
-                        //look for new devices in the JSON
-                        if($('#CP-' + ii)[0]==null){
-                            $(addDevice(d)).appendTo('.flex-container');
-                        }else{
-                            if (d.isMaster == 'true') { mstrTxt = 'MASTER '; } else { mstrTxt = ''; }
-                            $('#hd1-'+ii)[0].innerHTML = d.IP + "<br>" + d.deviceName;
-                            $('#CPft-'+ii)[0].innerHTML = mstrTxt;
-                        }
+        function loadJSON(path, success, error)
+            {
+            var xhr = new XMLHttpRequest();
+            xhr.onreadystatechange = function()
+            {
+                if (xhr.readyState === XMLHttpRequest.DONE) {
+                    if (xhr.status === 200) {
+                        if (success)
+                            success(JSON.parse(xhr.responseText));
+                    } else {
+                        if (error)
+                            error(xhr);
                     }
-                });
-                console.log( "first success - through each DA");
-                var gone;
-                $('.CP').each(function(i,e){
-                    gone = true;
-                    $.each(DA, function (num, d) {
-                        if((('CP-' + d.deviceID) == e.id) && (d.dead == 0)) gone=false;
-                    });
-                    if(gone){
-                        $('#CP-'+i).remove();
-                    }
-                });
-            })
-            .done(function() {
-                console.log( "second success" );
-            })
-            .fail(function() {
-                console.log( "error" );
-            })
-            .always(function() {
-                console.log( "complete" );
-            });
+                }
+            };
+            xhr.open("GET", path, true);
+            xhr.send();
         }
+
+        function pollJSON() {
+            var srcStr = './network.JSON?nocache=' + (new Date()).getTime();
+            loadJSON(srcStr, 
+                //load success function
+                function (data) {
+                    var DA = data.fishyDevices;
+                    var addDiv = '';
+                    var mstrTxt = '&nbsp;';
+                    var errTxt = 'none';
+                    var cpnode;
+                    Array.prototype.forEach.call(DA, 
+                        function (d,num) {
+                            cpnode=document.getElementById('CP-'+d.ip);
+                            if (d.dead == '0') {
+                                //look for new devices in the JSON
+                                if(cpnode==null){
+                                    var newDiv = document.createElement("DIV");
+                                    newDiv.id='CP-'+d.ip;
+                                    newDiv.className = 'CPdevice';
+                                    cpnode = document.getElementById('flex-container').appendChild(newDiv);
+                                }
+                                cpnode.innerHTML = addInnerDevice(d);    
+                            }else{
+                                if(cpnode!=null){
+                                    document.getElementById('flex-container').removeChild(cpnode);
+                                }    
+                            }
+                        }
+                    );
+                    var gone;
+                    var elements = document.querySelectorAll('.CPdevice');
+                    Array.prototype.forEach.call(elements, 
+                        function(e, num){
+                            gone = true;
+                            Array.prototype.forEach.call(DA, 
+                                function (d,num) {
+                                    if((('CP-' + d.ip) == e.id) && (d.dead == 0)) gone=false;
+                                }
+                            );
+                            if(gone){
+                                document.getElementById('flex-container').removeChild(e);
+                            }
+                        }
+                    );
+                    console.log( "loadJSON and page update success");
+                },
+                //load failure function
+                function(xhr){
+                    console.log("Error with loadJSON")
+                }
+            );
+        }
+
         var isCtrl = true;
         function buildPage() {
-             
              var data = JSON.parse(fishyNetJSON);
              var DA = data.fishyDevices;
              var items = [];
              var addDiv = '';
              var ii;
+             var theBody = document.getElementById('myBody');
+             var newdiv = document.createElement('DIV');
+             newdiv.className = 'fishyHdr';
+             theBody.appendChild(newdiv);
              if (location.pathname.slice(1,4) == "SWu"){ 
                  isCtrl = false; //the page is a SW update page
-                $("<div class='fishyHdr'>fishyDevice Software Update</div>").appendTo('#myBody');
+                 newdiv.innerHTML = 'fishyDevice Software Update';
              }else{
-                $("<div class='fishyHdr'>fishyControls</div>").appendTo('#myBody'); 
+                newdiv.innerHTML = 'fishyDevice Controls';
              }
-             $("<div class='CPhd3'><span class='swRow'><label class='sw' id='swRefresh-1'><input type='checkbox' checked id='swRefreshChck-1' onchange=refreshToggle()><span class='sldSw'></span></label><span class='swLabHdr' id='swRefreshLab-1'>Auto-refresh On</span></span></div></div>").appendTo('#myBody');   
-             
+             newdiv = document.createElement('DIV');
+             newdiv.className = 'CPhd3';
+             theBody.appendChild(newdiv);
+             if(isCtrl){
+                 newdiv.innerHTML = "<span class='swRow'><label class='sw' id='swRefresh-1'><input type='checkbox' checked id='swRefreshChck-1' onchange=refreshToggle()><span class='sldSw'></span></label><span class='swLabHdr' id='swRefreshLab-1'>Auto-refresh On</span></span>";
+             }
             //TODO - make a funtion to parse the group names, and then make a group iframe
              
-             $.each(DA, function (i, d) {
-                 items.push(addDevice(d));
-             });
-             $('<div/>', {
-                 'class': 'flex-container',
-                 html: items.join('')
-             }).appendTo('#myBody');
-             
-          
+            Array.prototype.forEach.call(DA, 
+                function (d,num) {
+                    items.push(addDevice(d));
+                }
+            );
+            newdiv = document.createElement('DIV');
+            newdiv.className = 'flex-container';
+            newdiv.id = 'flex-container';
+            newdiv.innerHTML = items.join('');
+            theBody.appendChild(newdiv);
+                         
          }
-         window.onload = buildPage();
+        window.onload = buildPage();
         var pollTimer;
-        if($('#swRefreshChck-1')[0].checked){
-            pollTimer = setInterval(function () {
-                pollJSON();
-            }, 10000);
+        if(isCtrl){
+            if(document.getElementById('swRefreshChck-1').checked){
+                pollTimer = setInterval(function () {
+                    pollJSON();
+                }, 10000);
+            }
         }
 
      </script>
- 
      
      <div class='fishyFtr'><a href="/">[Controls]</a>  <a href="/SWupdater">[SW Update]</a></div></div>
  </body>
  </html>
-    <!-- -------------------------------------------------------------------------------------------
-    -------------------------------------- END OF PART 2 -------------------------------------------
-    -------------------------------------------------------------------------------------------- -->
+<!------------------------------------------------------------------------------------------------------
+---------------------------------------------- END OF PART 2 -------------------------------------------
+------------------------------------------------------------------------------------------------------->

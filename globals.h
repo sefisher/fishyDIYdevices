@@ -50,25 +50,14 @@ trueState deviceTrueState = unknown; //used to track motor and gear actual (not 
 typedef struct fishyDevice
 {
 	IPAddress ip;
-	String name = "Default";
-	int port = 8266;
-	bool isCalibrated = false;
-	int motorPos = 0;
-	bool openIsCCW = true;
+	String name = "";
+	bool inErrorState = false; //captures timeout, not being calibrated, and any device specifc errors
+	String typestr = "";				
+	String groupstr = "";				
+	String statusString = 0;
 	bool isMaster;
 	bool dead = true;
-	String group = "";
-	String note = "";
-	String swVer = "";
-	String devType = "";
-	bool motorPosAtCCWset = false;
-	bool motorPosAtCWset = false;
-	String initStamp;
-	int range;
 	unsigned long timeStamp=0;	//used to track when device updates were made last to cull dead nodes
-	int timeOut; //actuator timeout limit for continuing motion without reaching a stop
-	bool deviceTimedOut = false; //if times out then set flag to true
-	bool swapLimSW = false; //used to swap hardware limit switches is CCW and CW switches were miswired
 } fishyDevice;
 
 //struct for storing personailty data in real time and for storing in EEPROM

@@ -75,11 +75,14 @@
             flex: 0 1 var(--cp-sz);
             background-color: var(--lght-col);
         }
-        .CPdevice {
+        .CPdevice,.CPdetails {
             border-radius: 0px;
-            width: calc(var(--cp-sz)-10);
+            width: var(--cp-sz);
             flex: 0 1 var(--cp-sz);
             background-color: var(--lght-col);
+        }
+        .CPdetails {
+            font-size: var(--sml-fnt);
         }
         .CPhd,
         .CPhd2,
@@ -100,7 +103,7 @@
         }
         .CPft {
             border-radius: 0px 0px var(--rad-sz) var(--rad-sz);
-            font-size: var(--big-fnt);
+            font-size: var(--mid-fnt);
         }
         .CPhd3{
             text-align: center;
@@ -319,6 +322,7 @@
             width: var(--cp-sz);
             border: none;
         }
+        
         .overlay {
             height: 0%;
             width: 100%;
@@ -350,7 +354,7 @@
         }
         
         .overlay a:hover, .overlay a:focus {
-            color:var(--light-col);
+            color: #f1f1f1;
         }
         
         .overlay .closebtn {
@@ -372,8 +376,17 @@
         
         .modal-body{
             position: relative;
-            top: 5px;bottom: 5px;left: 5px;right: 5px;
-            width: var(--cp-sz); height: var(--cp-sz);
+            top: 5%;bottom: 5%;left: 5%;right: 5%;
+            width: 90%;height: 90%;
             text-align: center;
-            background-color: var(--bg-col);
+            background-color: rgb(255,255,255);
+        }
+        @media screen and (max-height: 450px) {
+          .overlay {overflow-y: auto;}
+          .overlay a {font-size: 20px}
+          .overlay .closebtn {
+            font-size: 40px;
+            top: 15px;
+            right: 35px;
+          }
         }

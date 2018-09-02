@@ -33,9 +33,10 @@ To build it in the code do the following:
 ----------------------------------  START OF PART 2    -------------------------------------------------
 ------------------------------------------------------------------------------------------------------->
 </head>
-<body><div class='main' id='myBody'>   
+<body>
+    <div class='main' id='myBody'>   
     <script>
-
+        
         function addDevice(d){
             var addDiv = "<div class='CPdevice' id='CP-" + d.ip + "'>";
             addDiv += addInnerDevice(d);
@@ -52,9 +53,9 @@ To build it in the code do the following:
             if(isCtrl){
                 addDiv += "<div id='CPerr-" + d.ip + "' class='" + errTxt + "'>ERROR</div>";
                 addDiv += "<div >" + d.statusstr + "</div>";
-                addDiv += "<button id='myBtn-'+ ii +'>Open Controls</button>";
-                addDiv += "<div>Group:" + d.groupstr + "</div>";
-                addDiv += "<div>Type:" + d.typestr + "</div>";
+                addDiv += "<button class='CPbutton' onclick=openModal('"+d.ip+"'); id='myBtn-" + d.ip + "'>Open Controls</button>";
+                addDiv += "<div class='CPdetails' >Group:" + d.groupstr + "</div>";
+                addDiv += "<div class='CPdetails' >Type:" + d.typestr + "</div>";
             }
             else
             {
@@ -196,10 +197,32 @@ To build it in the code do the following:
                 }, 10000);
             }
         }
-
      </script>
-     
-     <div class='fishyFtr'><a href="/">[Controls]</a>  <a href="/SWupdater">[SW Update]</a></div></div>
+     <div class='fishyFtr'><a href="/">[Controls]</a>  <a href="/SWupdater">[SW Update]</a></div>
+    </div>
+    <!-- The Modal -->
+    <div id='myModal' class='overlay'>
+        <!-- Close button for overlay modal panel. -->
+        <a href='javascript:void(0)' class='closebtn' onclick='closeModal()'>&times;</a>
+        <!-- Modal Content-->
+        <div id='myIframeDiv' class='modal-body'><iframe width=100% height=100% src=''></iframe></div>
+    </div>
+    <script>
+    // Get the modal
+    var modal = document.getElementById('myModal');
+    // When the user clicks the X
+    function closeModal() {
+        modal.style.height = "0%";
+    }
+    // Get the <span> element that closes the modal
+    var span = document.getElementsByClassName('close')[0];
+    
+    // Function to open the modal and iframe
+    function openModal(targetIP) {
+        document.getElementById('myIframeDiv').innerHTML = "<iframe width=100% height=100% src='http://" + targetIP    + "/control/'></iframe>";
+        modal.style.height = '100%';  
+    }
+    </script>
  </body>
  </html>
 <!------------------------------------------------------------------------------------------------------

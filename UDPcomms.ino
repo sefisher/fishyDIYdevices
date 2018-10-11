@@ -116,27 +116,15 @@ void UDPpollReply(IPAddress remote)
 /* 
 send fishyDevice data.
 Note - this is parsed by UDPparsePollResponse and paralleled by getJSON; sometimes UDPparseConfigResponse is affected if new data needs set by the website configuration update; 
-if adding data elements all these may need updating.  This function sends data as follows (keep this list updated):
-{ip,isCalibrated,isMaster,motorPos,name,openIsCCW,port,group,note,swVer,devType,iniStamp,range,timeOut,deviceTimedOut,swapLimSW}
-
+if adding data elements all these may need updating.  This function sends data as follows (keep this list updated):{ip,name,typestr,groupstr,statusstr,inError,isMaster}
 */
-	response += "{" + holder.ip.toString() + "," + 
-			String(holder.isCalibrated ? "true" : "false") + "," +
-			String(holder.isMaster ? "true" : "false") + "," + 
-			String(holder.motorPos) + "," + 
+	response += "{" + holder.ip.toString() + "," +
 			String(holder.name) + ","  +  
-			String(holder.openIsCCW ? "true" : "false") + "," + 
-			String(holder.port) + "," + 
-			String(holder.group) + "," +
-			String(holder.note) + "," + 
-			String(holder.swVer) + "," + 
-			String(holder.devType) + "," + 
-			String(holder.initStamp) + "," +
-			String(holder.range) + "," +
-			String(holder.timeOut) + "," +
-			String(holder.deviceTimedOut ? "true" : "false") + "," +
-			String(holder.swapLimSW ? "true" : "false")+"}";
-
+			String(holder.typestr) + "," + 
+			String(holder.groupstr) + "," +
+			String(holder.statusstr) + "," +
+			String(holder.inError ? "true" : "false") + "," +
+			String(holder.isMaster ? "true" : "false") + "}";  
 
 	Udp.write(response.c_str());
 	Udp.endPacket();
@@ -155,8 +143,7 @@ void UDPparsePollResponse(String responseIn, IPAddress remote)
 /* 
 parse fishyDevice data.
 Note - this data set is sent by UDPparsePollResponse and getJSON; sometimes UDPparseConfigResponse is affected as well (if data is added that needs set by configuration updates)
-it is also parsed by scripts in wifi-and-webserver.ino and webresources.h if adding data elements all these may need updating.  This function sends data as follows (keep this list updated):
-{ip,isCalibrated,isMaster,motorPos,name,openIsCCW,port,group,note,swVer,devType,initStamp,range,timeOut,deviceTimedOut,swapLimSW}
+it is also parsed by scripts in wifi-and-webserver.ino and webresources.h if adding data elements all these may need updating.  This function sends data as follows (keep this list updated):{ip,name,typestr,groupstr,statusstr,inError,isMaster}
 */
 		String response = responseIn.substring(14); //strip off "POLL RESPONSE"
 		fishyDevice holder;
@@ -178,14 +165,51 @@ it is also parsed by scripts in wifi-and-webserver.ino and webresources.h if add
 			Serial.println("[UDPparsePollResponse] strIP: " + holder.ip.toString());
 		}
 
-		//isCalibrated
+		//name
 		strStrt = strStop + 1;
 		strStop = response.indexOf(",", strStrt);
-		holder.isCalibrated = (response.substring(strStrt, strStop) == "false") ? false : true;
+		holder.name = response.substring(strStrt, strStop);
 		if (DEBUG_MESSAGES && UDP_PARSE_MESSAGES)
 		{
-			Serial.print("[UDPparsePollResponse] isCalibrated: ");
-			Serial.println(holder.isCalibrated ? "true" : "false");
+			Serial.println("[UDPparsePollResponse] strName: " + holder.name);
+		}
+
+		
+		//typestr
+		strStrt = strStop + 1;
+		strStop = response.indexOf(",", strStrt);
+		holder.typestr = response.substring(strStrt, strStop); 
+		if (DEBUG_MESSAGES && UDP_PARSE_MESSAGES)
+		{
+			Serial.println("[UDPparsePollResponse] typestr: " + holder.typestr);
+		}
+	
+		//groupstr
+		strStrt = strStop + 1;
+		strStop = response.indexOf(",", strStrt);
+		holder.groupstr = response.substring(strStrt, strStop); 
+		if (DEBUG_MESSAGES && UDP_PARSE_MESSAGES)
+		{
+			Serial.println("[UDPparsePollResponse] groupstr: " + holder.groupstr);
+		}
+
+		//statusstr
+		strStrt = strStop + 1;
+		strStop = response.indexOf(",", strStrt);
+		holder.statusstr = response.substring(strStrt, strStop); 
+		if (DEBUG_MESSAGES && UDP_PARSE_MESSAGES)
+		{
+			Serial.println("[UDPparsePollResponse] statusstr: " + holder.statusstr);
+		}
+
+		//inError
+		strStrt = strStop + 1;
+		strStop = response.indexOf(",", strStrt);
+		holder.inError = (response.substring(strStrt, strStop) == "false") ? false : true;
+		if (DEBUG_MESSAGES && UDP_PARSE_MESSAGES)
+		{
+			Serial.print("[UDPparsePollResponse] inError: ");
+			Serial.println(holder.inError ? "true" : "false");
 		}
 
 		//isMaster
@@ -198,130 +222,11 @@ it is also parsed by scripts in wifi-and-webserver.ino and webresources.h if add
 			Serial.println(holder.isMaster ? "true" : "false");
 		}
 
-		//motorPos
-		strStrt = strStop + 1;
-		strStop = response.indexOf(",", strStrt);
-		holder.motorPos = response.substring(strStrt, strStop).toInt();
-		if (DEBUG_MESSAGES && UDP_PARSE_MESSAGES)
-		{
-			Serial.println("[UDPparsePollResponse] motorPos: " + String(holder.motorPos));
-		}
-
-		//name
-		strStrt = strStop + 1;
-		strStop = response.indexOf(",", strStrt);
-		holder.name = response.substring(strStrt, strStop);
-		if (DEBUG_MESSAGES && UDP_PARSE_MESSAGES)
-		{
-			Serial.println("[UDPparsePollResponse] strName: " + holder.name);
-		}
-
-		//openIsCCW
-		strStrt = strStop + 1;
-		strStop = response.indexOf(",", strStrt);
-		holder.openIsCCW = (response.substring(strStrt, strStop) == "false") ? false : true;
-		if (DEBUG_MESSAGES && UDP_PARSE_MESSAGES)
-		{
-			Serial.print("[UDPparsePollResponse] openIsCCW: ");
-			Serial.println(holder.openIsCCW ? "true" : "false");
-		}
-
-		//port
-		strStrt = strStop + 1;
-		strStop = response.indexOf(",", strStrt);
-		holder.port = response.substring(strStrt, strStop).toInt(); 
-		if (DEBUG_MESSAGES && UDP_PARSE_MESSAGES)
-		{
-			Serial.println("[UDPparsePollResponse] strPort: " + String(holder.port));
-		}
-
-		//group
-		strStrt = strStop + 1;
-		strStop = response.indexOf(",", strStrt);
-		holder.group = response.substring(strStrt, strStop); 
-		if (DEBUG_MESSAGES && UDP_PARSE_MESSAGES)
-		{
-			Serial.println("[UDPparsePollResponse] strGroup: " + holder.group);
-		}
-
-		//note
-		strStrt = strStop + 1;
-		strStop = response.indexOf(",", strStrt);
-		holder.note = response.substring(strStrt, strStop);
-		if (DEBUG_MESSAGES && UDP_PARSE_MESSAGES)
-		{
-			Serial.println("[UDPparsePollResponse] strnote: " + holder.note);
-		}
-
-		//swVer
-		strStrt = strStop + 1;
-		strStop = response.indexOf(",", strStrt);
-		holder.swVer = response.substring(strStrt, strStop); 
-		if (DEBUG_MESSAGES && UDP_PARSE_MESSAGES)
-		{
-			Serial.println("[UDPparsePollResponse] strswVer: " + holder.swVer);
-		}
-
-		//devType
-		strStrt = strStop + 1;
-		strStop = response.indexOf(",", strStrt);
-		holder.devType = response.substring(strStrt, strStop); 
-		if (DEBUG_MESSAGES && UDP_PARSE_MESSAGES)
-		{
-			Serial.println("[UDPparsePollResponse] strdevType: " + holder.devType);
-		}
-		
-		//initStamp
-		strStrt = strStop + 1;
-		strStop = response.indexOf(",", strStrt);
-		holder.initStamp = response.substring(strStrt, strStop); 
-		if (DEBUG_MESSAGES && UDP_PARSE_MESSAGES)
-		{
-			Serial.println("[UDPparsePollResponse] strinitStamp: " + holder.initStamp);
-		}
-
-		//range
-		strStrt = strStop + 1;
-		strStop = response.indexOf(",", strStrt);
-		holder.range = response.substring(strStrt, strStop).toInt();
-		if (DEBUG_MESSAGES && UDP_PARSE_MESSAGES)
-		{
-			Serial.println("[UDPparsePollResponse] range: " + String(holder.range));
-		}
-
-		//timeOut
-		strStrt = strStop + 1;
-		strStop = response.indexOf(",", strStrt);
-		holder.timeOut = response.substring(strStrt, strStop).toInt();
-		if (DEBUG_MESSAGES && UDP_PARSE_MESSAGES)
-		{
-			Serial.println("[UDPparsePollResponse] timeOut: " + String(holder.timeOut));
-		}
-
-		//deviceTimedOut
-		strStrt = strStop + 1;
-		strStop = response.indexOf(",", strStrt);
-		holder.deviceTimedOut = (response.substring(strStrt, strStop) == "false") ? false : true;
-		if (DEBUG_MESSAGES && UDP_PARSE_MESSAGES)
-		{
-			Serial.print("[UDPparsePollResponse] deviceTimedOut: ");
-			Serial.println(holder.deviceTimedOut ? "true" : "false");
-		}
-
-		//swapLimSW
-		strStrt = strStop + 1;
-		strStop = response.indexOf("}", strStrt);
-		holder.swapLimSW = (response.substring(strStrt, strStop) == "false") ? false : true;
-		if (DEBUG_MESSAGES && UDP_PARSE_MESSAGES)
-		{
-			Serial.print("[UDPparsePollResponse] swapLimSW: ");
-			Serial.println(holder.swapLimSW ? "true" : "false");
-		}
-
 		dealWithThisNode(holder);
 	}
 }
 
+//configuration response from web/udp for updating device config
 void UDPparseConfigResponse(String responseIn, IPAddress remote){
 	String response = responseIn.substring(7); //strip off "CONFIG"
 	int strStrt, strStop;

@@ -6,7 +6,7 @@
 //You can update code - update this number - compile - and then load SW onto all the devices without
 //modifying the personality settings as long as INITIALIZE is the same on the devices (see below)
 //LIMITED to 10 alpanumeric characters
-#define SW_VER "20180818-2"
+#define SW_VER "20180923-1"
 
 //--------------------------PERSONALITY SETTINGS-----------------------------------//
 //Put in a time/date string to define the personality variables. 
@@ -21,20 +21,22 @@ This allows a single software upload to be used for multiple devices without ove
 their "personality settings" and wiping out stored motor info. 
 */
 //String format -> "YYYYMMDDHHmm" (where HHmm is 24 hr time). 
-#define INITIALIZE "201808121800"
+#define INITIALIZE "201809231300"
 
 //PICK A UNIQUE NAME FOR EACH DEVICE USING ONLY LETTERS AND NUMBERS
 // LIMITED to 40 alpanumeric characters (abcdefghijklmnopqrstuvwxyz0123456789)
-//#define CUSTOM_DEVICE_NAME "Vent Damper 1"
-//#define CUSTOM_DEVICE_NAME "Vent Damper 2"
-//#define CUSTOM_DEVICE_NAME "Vent Damper 3"
+// #define CUSTOM_DEVICE_NAME "Direct Rotating Test" 
+#define CUSTOM_DEVICE_NAME "Test Device 3"
+//#define CUSTOM_DEVICE_NAME "Test Device 2"
+//#define CUSTOM_DEVICE_NAME "Floor 4 Damper"
+//#define CUSTOM_DEVICE_NAME "Floor 3 Damper"
 //#define CUSTOM_DEVICE_NAME "Floor 2 Damper"
-#define CUSTOM_DEVICE_NAME "Floor 1 Damper"
+//#define CUSTOM_DEVICE_NAME "Floor 1 Damper"
 
 //PICK ONLY ONE DEVICE ON THE NETWORK AS MASTER (and set this to true when you compile its code).  
 //IT WILL BE THE WEBSERVER AND CONTROLLER FOR ALL OTHER NODES.  Set false for all the others.
-//#define MASTER_NODE true
-#define MASTER_NODE false
+#define MASTER_NODE true
+// #define MASTER_NODE false
 
 //FIGURE OUT WHAT DIRECTION YOU WANT TO PICK AS OPEN or CLOSE FOR YOUR DEVICE.  
 //#define OPEN_IS_CCW true
@@ -42,7 +44,7 @@ their "personality settings" and wiping out stored motor info.
 
 //Software fix in case you miswired and swapped the hardware limit switches.  
 #define SWAP_LIM_SW true
-//#define SWAP_LIM_SW false
+// #define SWAP_LIM_SW false
 
 //SET THE TIMEOUT (in seconds) FOR STOPPING THE ACTUATOR IF MOTION CONTINUES WITHOUT REACHING A HARDWARE LIMIT
 #define MOTOR_TIMEOUT 60
@@ -51,7 +53,7 @@ their "personality settings" and wiping out stored motor info.
 //LIMITED to 20 alpanumeric characters 
 //The note is displayed on the control panel for the device.
 //TODO - use this option
-#define CUSTOM_DEVICE_TYPE "2-State Actuator"
+#define CUSTOM_DEVICE_TYPE "Test Actuator"
 
 //IF DESIRED, PICK A GROUP NAME FOR EACH DEVICE USING ONLY LETTERS/NUMBERS
 //LIMITED to 40 alpanumeric characters 
@@ -81,7 +83,7 @@ their "personality settings" and wiping out stored motor info.
 
 //Test switches for Serial output text (set to false to disable debug messages) and WiFi Functions
 #define DEBUG_MESSAGES true //debugging for device problems (movement, switches, etc)
-#define DEBUG_UDP_MESSAGES true //debugging for network comms (MASTER - SLAVE issues with nodes on the network)
+#define DEBUG_UDP_MESSAGES false //debugging for network comms (MASTER - SLAVE issues with nodes on the network)
 #define UDP_PARSE_MESSAGES false //debugging for parsing messages - used after you've changed the message structures
 #define DEBUG_HEAP_MESSAGE false //just tracking the heap size for memory leak issues or overloaded nodeMCUs
 #define DEBUG_WiFiOFF false //turn to true to test without wifi (limited testing)

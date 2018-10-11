@@ -7,38 +7,25 @@
 //for webserver
 fishyDevice makeMyFishyDevice()
 {
+	bool isCalibrated = false;
+	
 	fishyDevice holder;
+	
 	//fill with current data
 	holder.dead = false;
+	holder.timeStamp = millis();
 	holder.ip = WiFi.localIP();
 	if (EEPROMdata.motorPosAtCCWset && EEPROMdata.motorPosAtCWset)
-	{
-		holder.isCalibrated = true;
-	}
-	else
-	{
-		holder.isCalibrated = false;
-	}
+	{isCalibrated = true;}else{isCalibrated = false;}
 	holder.isMaster = EEPROMdata.master;
-	//if idle then use EEPROMdata, if moving then use real current position
-	if((deviceTrueState == opened) || (deviceTrueState == closed) || (deviceTrueState == man_idle) || (deviceTrueState == unknown)){
-		holder.motorPos = EEPROMdata.motorPos;
+	if(EEPROMdata.timeOut || !(isCalibrated)){
+		holder.inError = true;
 	}else{
-		holder.motorPos = stepper1.currentPosition();
+		holder.inError = false;
 	}
 	holder.name = String(EEPROMdata.namestr);
-	holder.port = UDP_LOCAL_PORT;
-	holder.openIsCCW = EEPROMdata.openIsCCW;
-	holder.devType = String(EEPROMdata.typestr);
-	holder.group = String(EEPROMdata.groupstr);
-	holder.note = String(EEPROMdata.note);
-	holder.swVer = String(EEPROMdata.swVer);
-	holder.initStamp = String(EEPROMdata.initstr);
-	holder.range = EEPROMdata.range;
-	holder.timeOut = EEPROMdata.timeOut;
-	holder.deviceTimedOut = EEPROMdata.deviceTimedOut;
-	holder.swapLimSW = EEPROMdata.swapLimSW;
-
+	holder.typestr = String(EEPROMdata.typestr);
+	holder.groupstr = String(EEPROMdata.groupstr);
 	return holder;
 }
 

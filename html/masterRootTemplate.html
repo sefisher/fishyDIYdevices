@@ -1,9 +1,6 @@
 <!--------------------------------------------------------------------------------------------------------
-This is the template file for the master web site (stored in webresources.h in parts). It relies on jquery 
-(stored in googleapis - but requires iternet access as written). It also relies on styles.css (which is embedded
-into code - see that file for its instructions).
-You also need to embedd "fishyDIYnode.html", and "fishyDIYgroup.html" into the webresources.h for handling individual
-or group processing (specific to each type of device).
+This is the template file for the master web site (stored in webresources.h in parts). It relies on styles.css (which is embedded into code - see that file for its instructions if you update styles.css).
+If updated, you also need to embedd "fishyDIYdeviceCtrlTemplate.html" into the webresources.h for handling individual or group processing (specific to each type of device).
 To build it in the code do the following:
  1) Copy the first block (PART 1).
  2) put it through a minifier (like https://kangax.github.io/html-minifier/) and then through a String builder
@@ -21,20 +18,18 @@ To build it in the code do the following:
 <head>
     <title>fishDIY Device Network</title>
     <meta name='viewport' content='width=device-width, initial-scale=1'>
-   
 <!------------------------------------------------------------------------------------------------------
 --------END OF PART 1:  Do not copy the following lines - these are handled within the code. -----------
+--------NOTE: this file updates from a network.JSON file stored in its directory during testing.-------- 
 ------------------------------------------------------------------------------------------------------->
     <link rel="stylesheet" href="styles.css">     
     <script>
-            var fishyNetJSON ='{"fishyDevices":[{"ip":"10.203.1.197","name":"Test Actuator 1","dead":"0","typestr":"limit sw actuator","groupstr":"test group 1","statusstr":"80% Open","inError":"false","isMaster":"true"},{"ip":"10.203.1.123","name":"Test Actuator 2","dead":"0","typestr":"limit sw actuator","groupstr":"test group 1","statusstr":"Open","inError":"false","isMaster":"false"},{"ip":"10.203.1.145","name":"Test Actuator 3","dead":"0","typestr":"limit sw actuator","groupstr":"test group 1","statusstr":"Closed","inError":"false","isMaster":"false"},{"ip":"10.203.1.127","name":"Test Actuator 4","dead":"0","typestr":"limit sw actuator","groupstr":"test group 1","statusstr":"On","inError":"true","isMaster":"false"}]}';
+            var fishyNetJSON ='{"fishyDevices":[{"ip":"10.203.1.197","name":"Test Actuator 1","dead":"0","typestr":"limit sw actuator","groupstr":"test group 1","statusstr":"80% Open","inError":"false","isMaster":"true"},{"ip":"10.203.1.123","name":"Test Actuator 2","dead":"0","typestr":"limit sw actuator","groupstr":"test group 1","statusstr":"Open","inError":"false","isMaster":"false"},{"ip":"10.203.1.145","name":"Test Actuator 3","dead":"0","typestr":"limit sw actuator","groupstr":"test group 1","statusstr":"Closed","inError":"false","isMaster":"false"},{"ip":"10.203.1.127","name":"Test Actuator 4","dead":"0","typestr":"limit sw actuator","groupstr":"test group 1","statusstr":"On","inError":"true","isMaster":"false"},{"ip":"10.203.1.134","name":"Test Actuator 5","dead":"0","typestr":"limit sw actuator","groupstr":"test group 1","statusstr":"On","inError":"true","isMaster":"false"}]}';
     </script>
 <!------------------------------------------------------------------------------------------------------
 ----------------------------------  START OF PART 2    -------------------------------------------------
 ------------------------------------------------------------------------------------------------------->
-</head>
-<body>
-    <div class='main' id='myBody'>   
+</head><body><div class='main' id='myBody'>   
     <script>
         
         function addDevice(d){
@@ -53,7 +48,7 @@ To build it in the code do the following:
             if(isCtrl){
                 addDiv += "<div id='CPerr-" + d.ip + "' class='" + errTxt + "'>ERROR</div>";
                 addDiv += "<div >" + d.statusstr + "</div>";
-                addDiv += "<button class='CPbutton' onclick=openModal('"+d.ip+"'); id='myBtn-" + d.ip + "'>Open Controls</button>";
+                addDiv += "<button class='CPbutton' onclick='openModal(\"" + d.ip + "\")'; id='myBtn-" + d.ip + "'>Open Controls</button>";
                 addDiv += "<div class='CPdetails' >Group:" + d.groupstr + "</div>";
                 addDiv += "<div class='CPdetails' >Type:" + d.typestr + "</div>";
             }
@@ -174,7 +169,9 @@ To build it in the code do the following:
              if(isCtrl){
                  newdiv.innerHTML = "<span class='swRow'><label class='sw' id='swRefresh-1'><input type='checkbox' checked id='swRefreshChck-1' onchange=refreshToggle()><span class='sldSw'></span></label><span class='swLabHdr' id='swRefreshLab-1'>Auto-refresh On</span></span>";
              }
-            //TODO - make a funtion to parse the group names, and then make a group iframe
+            
+             //TODO - make a funtion to parse the group names, and then make a group iframe
+             // alternatively add a "group" control option for group labelled devices
              
             Array.prototype.forEach.call(DA, 
                 function (d,num) {
@@ -198,14 +195,16 @@ To build it in the code do the following:
             }
         }
      </script>
-     <div class='fishyFtr'><a href="/">[Controls]</a>  <a href="/SWupdater">[SW Update]</a></div>
+    <div class='fishyFtr'><a href="/">[Controls]</a>  <a href="/SWupdater">[SW Update]</a></div>
     </div>
     <!-- The Modal -->
     <div id='myModal' class='overlay'>
         <!-- Close button for overlay modal panel. -->
-        <a href='javascript:void(0)' class='closebtn' onclick='closeModal()'>&times;</a>
+        <a href='javascript:void(0)' class='closebtn' onclick='closeModal()'>
+        <div class="background"><div class="line1"></div><div class="line2"></div>
+        </div></a>
         <!-- Modal Content-->
-        <div id='myIframeDiv' class='modal-body'><iframe width=100% height=100% src=''></iframe></div>
+        <div id='myIframeDiv' class='modal-body'><iframe id='myIframe' class='iframeBody' width=100% height=100% src=''></iframe></div>
     </div>
     <script>
     // Get the modal
@@ -213,13 +212,19 @@ To build it in the code do the following:
     // When the user clicks the X
     function closeModal() {
         modal.style.height = "0%";
+        document.getElementById('myIframe').src='';
     }
     // Get the <span> element that closes the modal
     var span = document.getElementsByClassName('close')[0];
     
     // Function to open the modal and iframe
     function openModal(targetIP) {
-        document.getElementById('myIframeDiv').innerHTML = "<iframe width=100% height=100% src='http://" + targetIP    + "/control/'></iframe>";
+        //TEST CODE - TODO - remove this
+        if(document.domain=="localhost"){
+            document.getElementById('myIframeDiv').innerHTML = "<iframe class='iframeBody' width=100% height=100% src='http://localhost/test/fishyDIYdeviceCtrlTemplate.html'></iframe>";
+        }else{
+            document.getElementById('myIframeDiv').innerHTML = "<iframe class='iframeBody' width=100% height=100% src='http://" + targetIP    + "/control'></iframe>";
+        }
         modal.style.height = '100%';  
     }
     </script>

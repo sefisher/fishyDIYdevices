@@ -5,10 +5,17 @@
 #define MAXCMDSZ 300  
 
 //make the webserver and web updater
-ESP8266WebServer httpServer(80);	 //for master node web server
-//customHTTPUpdateServer httpUpdater; //for processing software updates
-WiFiUDP Udp;						 //for UDP traffic between nodes
-WiFiManager WiFiManager;			 //for managing Wifi
+//ESP8266WebServer httpServer(80);	 				//for master node web server
+AsyncWebServer httpServer(80);						//for master node web server
+// AsyncDNSServer dns;										//supports AsyncWifiManager
+DNSServer dns;										//supports AsyncWifiManager
+//customHTTPUpdateServer httpUpdater; 				//for processing software updates
+WiFiUDP Udp;						 				//for UDP traffic between nodes
+// AsyncUDP Udp;										//for UDP traffic between nodes
+//WiFiManager WiFiManager;			 				//for managing Wifi
+//AsyncWiFiManager WiFiManager(&httpServer,&dns);	    //for managing Wifi
+WebSocketsServer webSocket = WebSocketsServer(81);  //for websocket comms
+
 
 //-------------------------------------------------------------------------------------------
 
@@ -51,13 +58,14 @@ typedef struct fishyDevice
 {
 	IPAddress ip;
 	String name = "";
-	bool inErrorState = false; //captures timeout, not being calibrated, and any device specifc errors
 	String typestr = "";				
 	String groupstr = "";				
-	String statusString = 0;
+	String statusstr = "";
+	bool inError = false; //captures timeout, not being calibrated, and any device specifc errors
 	bool isMaster;
 	bool dead = true;
 	unsigned long timeStamp=0;	//used to track when device updates were made last to cull dead nodes
+
 } fishyDevice;
 
 //struct for storing personailty data in real time and for storing in EEPROM

@@ -23,33 +23,39 @@ To make this work in your home you need to:
 	and reload it for each device. The USB port should remain accessible
 	in your fully assembled device for that purpose).
 
-
-CREDITS:
-Thanks for all the coders posting online to make this possible; these are a few key references:
-fauxmoESP - https://bitbucket.org/xoseperez/fauxmoesp
-AccelStepper - http://www.airspayce.com/mikem/arduino/AccelStepper/index.html
-WiFiManager -  //https://github.com/tzapu/WiFiManager
-
 Notes:
 - Use ESPfauxmo board version 2.3.0; newer versions don't seem to be discoverable via updated Alexa devices
 */
+#define ESP8266 //tell libraries this is an ESP8266 (vice ESP32)
+//#define USE_EADNS //use ESPAsyncDNSserver library instread of DNSserver
+#define USE_WIFIMANAGER false
+#define SSID "cubsnet"
+#define PASS "daBears85"
 
+
+//Libraries
 #include <Arduino.h>
-#include <ESP8266WiFi.h>
+#include <ESP8266WiFi.h>  //https://github.com/esp8266/Arduino
 #include <ESP8266mDNS.h>
-#include <ESP8266WebServer.h>
-#include <WiFiClient.h>
-#include <WiFiUdp.h>
-#include <WiFiManager.h> 
+//#include <ESP8266WebServer.h>
+#include <ESPAsyncWebServer.h>
+#include <ESPAsyncWiFiManager.h>
+#include <ESPAsyncTCP.h>
+#include <WebSocketsServer.h>
+//#include <Hash.h>
+//#include <WiFiClient.h>
+//#include <WiFiUdp.h>
+//#include <WiFiManager.h> 
 #include <fauxmoESP.h>
 #include <AccelStepper.h>
 #include <EEPROM.h>
 #include <StreamString.h>
 
-#include "deviceDefinitions.h"
-#include "motorDefinitions.h"
-#include "globals.h"
-#include "webresources.h"
+//custom definitions
+#include "deviceDefinitions.h"  //
+#include "motorDefinitions.h"	//
+#include "globals.h"			// global variables
+#include "webresources.h"		// strings for device served webpages
 
 
 //this is the base setup routine called first on power up or reboot
@@ -71,9 +77,10 @@ void setup()
 //this is the main operating loop (MOL) that is repeatedly executed
 void loop()
 {
-	
+	dns.processNextRequest();
 	checkResetOnLoop(); //reset device if flagged to
-	httpServer.handleClient();	//handle webrequests
+	webSocket.loop(); //handle webSocket
+	//httpServer.handleClient(); //handle webrequests
 	UDPprocessPacket(); //process any net (UDP) traffic
 	UDPkeepAliveAndCull(); //talk on net and drop dead notes from list
 	
@@ -87,7 +94,6 @@ void loop()
 
 	operateLimitSwitchActuator(); //run state machine for actuator with limit switches
 	showHeapAndProcessSerialInput(); //if debugging allow heap display and take serial commands
-	
 }
 
 //determine if initalization string is different than stored in EEPROM - 
@@ -150,6 +156,7 @@ void initializePersonalityIfNew(){
 	}
 
 }
+
 void showEEPROMPersonalityData()
 {	
 	if (DEBUG_MESSAGES)
@@ -165,7 +172,6 @@ void pinSetup(){
 	//set switch pins to use internal pull_up resistor
 	pinMode(SWpinLimitCW, INPUT_PULLUP);
 	pinMode(SWpinLimitCCW, INPUT_PULLUP);
-
 }
 
 //set up motor parameters
@@ -283,9 +289,11 @@ void operateLimitSwitchActuator(){
 			break;
 		case opening: //opening not at limit (really just moving CCW)
 			deviceTrueState = moveCCW();
+			updateClients("Moving CCW");
 			break;
 		case closing: //closing not at limit (really just moving CW)
 			deviceTrueState = moveCW();
+			updateClients("Moving CW");
 			break;
 		case unknown: //unknown state (bootup without stored HW limits)
 			if (!CWlimSensorVal)
@@ -325,6 +333,7 @@ void operateLimitSwitchActuator(){
 		EEPROMdata.range = FULL_SWING;		
 		EEPROMdata.motorPosAtCCWset = false;			
 		EEPROMdata.motorPosAtCWset = false;	
+		updateClients("Calibrating - CCW");
 		deviceTrueState = moveCCW();
 		if (deviceTrueState == opened)
 		{ //Done with stage 1 go onto closing stage
@@ -337,6 +346,7 @@ void operateLimitSwitchActuator(){
 		}
 		break;
 	case closingCal: //calibration in second stage
+		updateClients("Calibrating - CW");
 		moveCW();
 		if (deviceTrueState == closed)
 		{ //Done with stage 2 - done!
@@ -402,24 +412,37 @@ void executeCommands(char inputMsg[MAXCMDSZ], IPAddress remote)
 		{
 			Serial.println("[executeCommands] Commanded OPEN");
 		}
+		updateClients("Open Received");
 		executeState(true); //WiFi "true" is open (going CCW to stop for OpenisCCW=true)
 	}
 	else if (cmd.startsWith("close"))
 	{
-		Serial.println("[executeCommands] Commanded CLOSE");
+		if (DEBUG_MESSAGES)
+		{
+			Serial.println("[executeCommands] Commanded CLOSE");
+		}
+		updateClients("Close Received");
 		executeState(false); //WiFi "false" is close (going CW to stop for OpenisCCW=true)
 	}
 	else if (cmd.startsWith("stop"))
 	{
-		Serial.println("[executeCommands] Commanded STOP");
+		if (DEBUG_MESSAGES)
+		{
+			Serial.println("[executeCommands] Commanded STOP");
+		}
+		updateClients("Stop Received");
 		executeStop();
 	}
 	else if (cmd.startsWith("goto"))
 	{ 
-		Serial.println("[executeCommands] Commanded GOTO (" + cmd + ")");
+		if (DEBUG_MESSAGES)
+		{
+			Serial.println("[executeCommands] Commanded GOTO (" + cmd + ")");
+		}
+		updateClients("Goto (" + cmd + ") Received");
 		executeGoto(cmd); 
 	}
-	else if (cmd.startsWith("hi"))
+	else if (cmd.startsWith("hi")||cmd.startsWith("hello"))
 	{
 		if (DEBUG_MESSAGES)
 		{
@@ -432,7 +455,8 @@ void executeCommands(char inputMsg[MAXCMDSZ], IPAddress remote)
 		{
 			Serial.println("[executeCommands] Commanded RESET_WIFI");
 		}
-		
+		updateClients("Resetting WiFi");
+		AsyncWiFiManager WiFiManager(&httpServer,&dns);
 		WiFiManager.resetSettings();
 		resetOnNextLoop = true;
 		delay(2000);
@@ -443,6 +467,7 @@ void executeCommands(char inputMsg[MAXCMDSZ], IPAddress remote)
 		{
 			Serial.println("[executeCommands] Commanded RESET");
 		}
+		updateClients("Rebooting Device");
 		resetOnNextLoop=true;
 	}
 	else if (cmd.startsWith("calibrate"))
@@ -457,6 +482,7 @@ void executeCommands(char inputMsg[MAXCMDSZ], IPAddress remote)
 		{
 			Serial.printf("[executeCommands] Going to calibration opening stage.\n");
 		}
+		updateClients("Calibrating");
 		executeState(true);
 	}
 	else if (cmd.startsWith("anyfishydev_there"))
@@ -497,6 +523,7 @@ void executeCommands(char inputMsg[MAXCMDSZ], IPAddress remote)
 		{
 			Serial.println("[executeCommands] Commanded CONFIG");
 		}
+		//TODO - this is the only use of the function - may want to move and group under device specific commands.
 		UDPparseConfigResponse(String(inputMsg), remote); //want the original case for this
 	}
 	else
@@ -848,7 +875,7 @@ String paddedH3Name(String name)
 	return newName;
 }
 //return motor position as a [%] of allowed range
-String motPosStr(int intPadded, fishyDevice device)
+/* String motPosStr(int intPadded, fishyDevice device)
 {
 	int relPos = device.motorPos;
 	//int range = device.motorPosAtCW - device.motorPosAtCCW;
@@ -860,7 +887,7 @@ String motPosStr(int intPadded, fishyDevice device)
 	}
 	else
 		return paddedInt(intPadded, 0);
-}
+} */
 
 String threeDigits(int i)
 {

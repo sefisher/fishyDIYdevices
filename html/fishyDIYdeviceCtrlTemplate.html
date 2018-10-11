@@ -6,7 +6,7 @@ To build this template file intp the code after updating it do the following:
  1) copy the PART 2 (from below this comment to the next comment where the JSON is defined).
  2) put it through a minifier (like https://kangax.github.io/html-minifier/) and then through a String builder
  (like http://buildmystring.com/ with "strip out carriage returns" on) to create a single string with no tabs and one line.
- 3) paste that into the WEBCTRLSTR After "PROGMEM" in the webresources.h file.
+ 3) paste that into the WEBCTRLSTRPT2 After "PROGMEM" in the webresources.h file.
  4) copy the second block (from below the JSON definition to the end).
 
  ------------------------------------------------------------------------------------------------------ -->
@@ -19,7 +19,6 @@ To build this template file intp the code after updating it do the following:
  <head>
      <title>fishDIY Device Network</title>
      <meta name='viewport' content='width=device-width, initial-scale=1'>
-     <script src='https://ajax.googleapis.com/ajax/libs/jquery/1.12.4/jquery.min.js'></script>
     
     <!-- -------------------------------------------------------------------------------------------
      --------END OF PART 1:  Do not copy the following lines - these are handled within the code. ----
@@ -32,10 +31,76 @@ To build this template file intp the code after updating it do the following:
     <!-- -------------------------------------------------------------------------------------------
     --------------------------  START OF PART 2:   ----------------------------------
     -------------------------------------------------------------------------------------------- -->
-
     </head><body><div class='main' id='myBody'>
-
     <script>
+        var websock;
+        function start() {
+            
+            //websock = new WebSocket('ws://10.203.1.23:81/');
+            websock = new WebSocket('ws://' + window.location.hostname + ':81/');
+            
+            websock.onopen = function(evt) { console.log('websock open'); };
+            websock.onclose = function(evt) { console.log('websock close'); };
+            websock.onerror = function(evt) { console.log(evt); };
+            websock.onmessage = function(evt) {
+                console.log(evt);
+            
+            /*TODO:
+                take evt, pull out text from device
+                separate the message from the node JSON ('MSG:'+message+"~*~*DAT:"+JSONstring)
+                display the message somehow (just acknowledging a command, perhaps flash green)
+                update the device using JSON
+            */
+                var payload = evt.data;
+                var msgText; //extract after MSG: and before ~*~*
+                var nodeJSONtext; //extract after ~*~*DAT:
+                processJSON(nodeJSONtext);
+                
+                /*var e1 = document.getElementById('ledstatus1');
+                var e2 = document.getElementById('ledstatus2');
+                var e3 = document.getElementById('ledstatus3');
+                var e4 = document.getElementById('swstatus1');
+                var e5 = document.getElementById('connectionstatus');
+                if (evt.data === 'ledon1') {
+                e1.style.color = 'red';
+                }
+                else if (evt.data === 'ledoff1') {
+                e1.style.color = 'black';
+                }    
+                else if (evt.data === 'ledon2') {
+                e2.style.color = 'green';
+                }
+                else if (evt.data === 'ledoff2') {
+                e2.style.color = 'black';
+                }    
+                else if (evt.data === 'ledon3') {
+                e3.style.color = 'yellow';
+                }
+                else if (evt.data === 'ledoff3') {
+                e3.style.color = 'black';
+                }
+                else if (evt.data === 'swclosed1') {
+                e4.style.color = 'green';
+                e4.innerHTML = '<b>SW 1 CLOSED</b>';
+                }
+                else if (evt.data === 'swopen1') {
+                e4.style.color = 'black';
+                e4.innerHTML = '<b>SW 1 OPEN</b>';
+                }
+                else if (evt.data === 'CONNECTED') {
+                e5.style.color = 'green';
+                e5.innerHTML = '<b>CONNECTED</b>';
+                }
+                else if (evt.data === 'DISCONNECTED') {
+                e5.style.color = 'red';
+                e5.innerHTML = '<b>DISCONNECTED</b>';
+                }else {
+                console.log('unknown event');
+                }
+                */
+            };
+        }
+
         function toggleCfg(num) {
             var btn = document.getElementById('cfgBtn-' + num);
             var pnl = document.getElementById('cfgPnl-' + num);
@@ -47,6 +112,7 @@ To build this template file intp the code after updating it do the following:
                 btn.value = '[-] Hide Settings Panel';
             }
         }
+        
         function sync(num, name, what) {
             var sliderID = name + 'Sld-' + num;
             var valID = name + 'Val-' + num;
@@ -63,24 +129,28 @@ To build this template file intp the code after updating it do the following:
                 if(name=='pctOpen'){btn.value='Go ' + val.value + '% Open';}
             }
         }
+        
         function openIsCCWUpd(num) {
             var label = document.getElementById('swLab-' + num);
             var sw = document.getElementById('swChck-' + num);
             if (sw.checked == true) { label.innerHTML = 'Open is CCW'; } else { label.innerHTML = 'Open is CW'; }
         }
+        
         function swMstrUpd(num) {
             var label = document.getElementById('swMstrLab-' + num);
             var sw = document.getElementById('swMstrChck-' + num);
             if (sw.checked == true) { label.innerHTML = 'Master Node'; } else { label.innerHTML = 'Slave Node'; }
         }
+        
         function swSwapUpd(num) {
             var label = document.getElementById('swSwapLab-' + num);
             var sw = document.getElementById('swSwapChck-' + num);
             if (sw.checked == true) { label.innerHTML = 'Swapped Lim Sw'; } else { label.innerHTML = 'Normal Lim Sw'; }
         }
+        
         function sendCmd(num, command) {
             //TODO - see if this is needed in new setup
-            var remIP = document.getElementById('targetIP-' + num).value;
+            //var remIP = document.getElementById('targetIP-' + num).value;
             var cmd = '';
             if (command == 'O') {
                 cmd = 'open';
@@ -117,19 +187,23 @@ To build this template file intp the code after updating it do the following:
                 cmd += ';swapLimSW=' + swapLimSW;
                 cmd += ';timeOut=' + encodeURIComponent(document.getElementById('timeOut-' + num).value);;
             }
-            var query = '/genericArgs?IPCommand=' + remIP + ';' + cmd;
-            var jqxhr = httpGetAsync(query, function () {
-                document.getElementById('hd1-'+num).css("color","lime");
-                document.getElementById('updCfgBtn-'+num).css("background-color","lime"); 
-                var tmr = setTimeout(function () {
+            //document.getElementById('flex-container').style.transitionDuration = 1000;
+            //document.getElementById('flex-container').style.animationDuration = 1000;
+            document.getElementById('flex-container').style.transition = ".5s";
+            document.getElementById('flex-container').style.backgroundColor = "var(--bg-col-ack)";
+            document.body.style.transition  = ".5s";
+            document.body.style.backgroundColor = "var(--bg-col-ack)";
+            
+            var tmr = setTimeout(function () {
                     returnColor(num);
-                    pollJSON();
-                }, 1000);
-            });
+                   }, 1000);
+            websock.send(cmd);
+
         }
+        
         function returnColor(num){
-            document.getElementById('hd1-'+num).css("color","white");
-            document.getElementById('updCfgBtn-'+num).css("background-color","yellow"); 
+            document.body.style.backgroundColor = "var(--bg-col)";
+            document.getElementById('flex-container').style.backgroundColor = "var(--bg-col)";
         }
         
         //replaces jquery .get function
@@ -162,15 +236,15 @@ To build this template file intp the code after updating it do the following:
             xhr.open("GET", path, true);
             xhr.send();
         }
-        
-        //TODO - I'M HERE making this into a single device update; need to do the same to the add device
-        function pollJSON() {
-            var srcStr = './node.JSON?nocache=' + (new Date()).getTime();
-            loadJSON(srcStr, 
-                //load success function
-                function (data) {
-                    var DA = data.fishyDevices;
-                    var addDiv = '';
+
+        function processJSON(JSONstr){
+            var data = JSON.parse(JSONstr);
+            var DA = data.fishyDevices;
+            doStuffWithJSON(DA);
+        }
+
+        function doStuffWithJSON(DA){
+            var addDiv = '';
                     var mstrTxt = '';
                     var calTxt = '';
                     var chckTxt = '';
@@ -209,9 +283,18 @@ To build this template file intp the code after updating it do the following:
                             document.getElementById('HWlim-' + ii).innerHTML = "CCW = " + "0" + " CW = " + d.range;  
                         }
                     );
+        }
+        function pollJSON() {
+            var srcStr = './node.JSON?nocache=' + (new Date()).getTime();
+            loadJSON(srcStr, 
+                //load success function
+                function (data) {
+                    var DA = data.fishyDevices;
+                    doStuffWithJSON(DA);
                 }
             );
         }
+
         function posPct(motPos, range, openIsCCW) {
             if(range==0) return 0;
             var ret = Math.round(100 * ((motPos ) / (range)));
@@ -219,12 +302,12 @@ To build this template file intp the code after updating it do the following:
             if(openIsCCW=='true') ret = 100-ret;
             return ret;
         }
-        //alert('Only letters, numbers, underscore, space, comma, period, and dash are allowed.');
+        //('Only letters, numbers, underscore, space, comma, period, and dash are allowed.');
         function blockSpecialChar(e) {
             var k = e.keyCode;
             return ((k > 64 && k < 91) || (k > 96 && k < 123) || k == 8 || k == 16 || k == 95  || k == 32 || (k > 43 && k < 47)  || (k >= 48 && k <= 57));
         }
-        //alert('Only numbers are allowed.');
+        //('Only numbers are allowed.');
         function numberCharOnly(e) {
             var k = e.keyCode;
             return (k == 8 || k == 16 || (k >= 48 && k <= 57));
@@ -294,11 +377,14 @@ To build this template file intp the code after updating it do the following:
             newdiv.id = 'flex-container';
             newdiv.innerHTML = addDevice(d);
             theBody.appendChild(newdiv);
+            start();
             }
+            
+        //TODO - add listener that will detect a document hight change to 0 - then close the websocket. 
+        //      - or add a change to the master to destroy the modal page rather than just close the iframe to zero.
         window.onload = buildPage();
+
        
-
-
     </script>
 
 </div>

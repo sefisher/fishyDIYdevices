@@ -6,7 +6,7 @@
 //You can update code - update this number - compile - and then load SW onto all the devices without
 //modifying the personality settings as long as INITIALIZE is the same on the devices (see below)
 //LIMITED to 10 alpanumeric characters
-#define SW_VER "20180923-1"
+#define SW_VER "20181014-1"
 
 //--------------------------PERSONALITY SETTINGS-----------------------------------//
 //Put in a time/date string to define the personality variables. 
@@ -21,7 +21,7 @@ This allows a single software upload to be used for multiple devices without ove
 their "personality settings" and wiping out stored motor info. 
 */
 //String format -> "YYYYMMDDHHmm" (where HHmm is 24 hr time). 
-#define INITIALIZE "201809231300"
+#define INITIALIZE "201810131511"
 
 //PICK A UNIQUE NAME FOR EACH DEVICE USING ONLY LETTERS AND NUMBERS
 // LIMITED to 40 alpanumeric characters (abcdefghijklmnopqrstuvwxyz0123456789)
@@ -78,12 +78,17 @@ their "personality settings" and wiping out stored motor info.
 #define SERIAL_BAUDRATE 115200
 #define UDP_LOCAL_PORT 8266
 
+//For webpage sizing - MAX_WEB_CHAR defines max size of the buffer for posting webpages (max 
+//size of any single page); SZCHNK sizes chunks for sending at a time. Both limited to manage memory.
+#define MAX_WEB_CHAR 12000
+#define SZCHNK 5000
+
 //For the MASTER NODE (webserver node) this sets the number of devices it can manage on the net
 #define MAX_DEVICE 24
 
 //Test switches for Serial output text (set to false to disable debug messages) and WiFi Functions
 #define DEBUG_MESSAGES true //debugging for device problems (movement, switches, etc)
-#define DEBUG_UDP_MESSAGES false //debugging for network comms (MASTER - SLAVE issues with nodes on the network)
+#define DEBUG_UDP_MESSAGES true //debugging for network comms (MASTER - SLAVE issues with nodes on the network)
 #define UDP_PARSE_MESSAGES false //debugging for parsing messages - used after you've changed the message structures
 #define DEBUG_HEAP_MESSAGE false //just tracking the heap size for memory leak issues or overloaded nodeMCUs
 #define DEBUG_WiFiOFF false //turn to true to test without wifi (limited testing)

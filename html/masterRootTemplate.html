@@ -18,11 +18,12 @@ To build it in the code do the following:
 <head>
     <title>fishDIY Device Network</title>
     <meta name='viewport' content='width=device-width, initial-scale=1'>
+    <link rel="stylesheet" href="/styles.css"> 
+    <link rel="stylesheet" href="styles.css"> <!-- note this points to a file location on the local test server; it is intentionally placed here -->
 <!------------------------------------------------------------------------------------------------------
 --------END OF PART 1:  Do not copy the following lines - these are handled within the code. -----------
 --------NOTE: this file updates from a network.JSON file stored in its directory during testing.-------- 
-------------------------------------------------------------------------------------------------------->
-    <link rel="stylesheet" href="styles.css">     
+------------------------------------------------------------------------------------------------------
     <script>
             var fishyNetJSON ='{"fishyDevices":[{"ip":"10.203.1.197","name":"Test Actuator 1","dead":"0","typestr":"limit sw actuator","groupstr":"test group 1","statusstr":"80% Open","inError":"false","isMaster":"true"},{"ip":"10.203.1.123","name":"Test Actuator 2","dead":"0","typestr":"limit sw actuator","groupstr":"test group 1","statusstr":"Open","inError":"false","isMaster":"false"},{"ip":"10.203.1.145","name":"Test Actuator 3","dead":"0","typestr":"limit sw actuator","groupstr":"test group 1","statusstr":"Closed","inError":"false","isMaster":"false"},{"ip":"10.203.1.127","name":"Test Actuator 4","dead":"0","typestr":"limit sw actuator","groupstr":"test group 1","statusstr":"On","inError":"true","isMaster":"false"},{"ip":"10.203.1.134","name":"Test Actuator 5","dead":"0","typestr":"limit sw actuator","groupstr":"test group 1","statusstr":"On","inError":"true","isMaster":"false"}]}';
     </script>
@@ -54,7 +55,7 @@ To build it in the code do the following:
             }
             else
             {
-                addDiv += "<iframe id='swUpdate-" + d.ip + "' class='swUpdate' src='http://"+d.ip+"/SWupdateDevForm' ></iframe><br>";
+                addDiv += "<iframe id='swUpdate-" + d.ip + "' class='swUpdate' src='http://"+d.ip+"/SWupdateGetForm' ></iframe><br>";
             }
             addDiv += "<div class='CPft' id='CPft-" + d.ip + "'>"+mstrTxt+"</div>";
             return addDiv;
@@ -148,8 +149,9 @@ To build it in the code do the following:
 
         var isCtrl = true;
         function buildPage() {
-             var data = JSON.parse(fishyNetJSON);
-             var DA = data.fishyDevices;
+             //var data = JSON.parse(fishyNetJSON);
+             var srcStr = './network.JSON?nocache=' + (new Date()).getTime();
+             var DA;
              var items = [];
              var addDiv = '';
              var ii;
@@ -172,19 +174,24 @@ To build it in the code do the following:
             
              //TODO - make a funtion to parse the group names, and then make a group iframe
              // alternatively add a "group" control option for group labelled devices
-             
-            Array.prototype.forEach.call(DA, 
-                function (d,num) {
-                    items.push(addDevice(d));
+             loadJSON(srcStr, 
+                //load success function
+                function (data) {
+                    DA = data.fishyDevices;
+                    Array.prototype.forEach.call(DA, 
+                        function (d,num) {
+                            items.push(addDevice(d));
+                        }
+                    );
+                    newdiv = document.createElement('DIV');
+                    newdiv.className = 'flex-container';
+                    newdiv.id = 'flex-container';
+                    newdiv.innerHTML = items.join('');
+                    theBody.appendChild(newdiv);
                 }
-            );
-            newdiv = document.createElement('DIV');
-            newdiv.className = 'flex-container';
-            newdiv.id = 'flex-container';
-            newdiv.innerHTML = items.join('');
-            theBody.appendChild(newdiv);
-                         
-         }
+            );            
+        }
+        
         window.onload = buildPage();
         var pollTimer;
         if(isCtrl){
@@ -194,7 +201,7 @@ To build it in the code do the following:
                 }, 10000);
             }
         }
-     </script>
+    </script>
     <div class='fishyFtr'><a href="/">[Controls]</a>  <a href="/SWupdater">[SW Update]</a></div>
     </div>
     <!-- The Modal -->

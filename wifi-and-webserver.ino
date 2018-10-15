@@ -10,7 +10,6 @@ void WiFiSetup()
 		//WiFiManager.resetSettings();
 		//------------------------------------------------------------------------------
 
-
 		//if SSID and Password haven't been saved from before this opens an AP from the device
 		//allowing you to connect to the device from a phone/computer by joining its "network"
 		//from your wifi list - the name of the network will be the device name.
@@ -25,7 +24,7 @@ void WiFiSetup()
 		}	
 	}else{
 		WiFi.mode(WIFI_STA);
-		WiFi.begin(SSID, PASS);
+		WiFi.begin(SSID_CUSTOM, PASS_CUSTOM);
 		if (WiFi.waitForConnectResult() != WL_CONNECTED) {
 			Serial.println("WiFi Failed");
 			while(1) {
@@ -65,10 +64,13 @@ void WiFiSetup()
 	httpServer.on("/SWupdater", handleRoot);
 	httpServer.on("/control", handleCtrl);
 	httpServer.on("/SWupdateDevForm", HTTP_GET, handleSWupdateDevForm);
-	httpServer.on("/SWupdateDevForm", HTTP_POST, handleSWupdateDevPostDone,  handleSWupdateDevPost);
+	httpServer.on("/SWupdateGetForm", HTTP_GET, handleSWupdateDevForm);
+	httpServer.on("/SWupdatePostForm", HTTP_POST, handleSWupdateDevPostDone,  handleSWupdateDevPost);
+	//httpServer.on("/SWupdateDone", handleSWupdateDone);
 	httpServer.on("/network.JSON", handleNetworkJSON);
 	httpServer.on("/node.JSON", handleNodeJSON);
-	//httpServer.on("/styles.css",handleCSS);
+	httpServer.on("/styles.css",handleCSS);
+	httpServer.on("/test",handleTest);
 	httpServer.onNotFound(handleNotFound);
 	//httpUpdater.setup(&httpServer);
 	httpServer.begin();
@@ -190,12 +192,12 @@ void webSocketEvent(uint8_t num, WStype_t type, uint8_t * payload, size_t length
 //send a message to the web clients via webSocket
 void updateClients(String message){
 	String text="MSG:"+message+"~*~*DAT:"+getNodeJSON();
-	webSocket.broadcastTXT(text, strlen(text));
+	webSocket.broadcastTXT(text.c_str(), strlen(text.c_str()));
 }
 //-----------------------------------------------------------------------------
 //-------------------------Web Server Functions--------------------------------
 //-----------------------------------------------------------------------------
-#define SZCHNK 5000
+
 String _updaterError;
 
 //Web Server - provide a JSON structure with all the deviceArray data
@@ -349,7 +351,7 @@ void handleGenericArgs(AsyncWebServerRequest *request)
 				}
 			}
 		}
-		request->send(200, "text/html", message); //Response to the HTTP request
+		request->send(200, "text/html", message.c_str()); //Response to the HTTP request
 	}
 	else
 	{
@@ -360,116 +362,25 @@ void handleGenericArgs(AsyncWebServerRequest *request)
 //this creates the iframes for all the devices in the network, if /SWupdater then it loads those forms, otherwise it loads /ctrlPanels for each iframe
 void handleRoot(AsyncWebServerRequest *request)
 {
-	
-		String responseStr;
-		responseStr = String(WEBROOTSTRPT1) + "<style>" + String(WEBSTYLESSTR) + String("</style><script>var fishyNetJSON ='" + getNetworkJSON() + "';</script>") + String(WEBROOTSTRPT2);
+		
 		if (DEBUG_MESSAGES)
 		{
-			Serial.println("[handleRoot]");
-			Serial.println(responseStr);
+			Serial.println("\n[handleRoot]\n");
+			Serial.println(String(WEBROOTSTRNEW));
 		}
-
-		request->send(200, "text/html", responseStr);
-		
+		request->send_P(200,"text/html",WEBROOTSTRNEW);
 }
 
-
-// //this creates the iframes for all the devices in the network, if /SWupdater then it loads those forms, otherwise it loads /ctrlPanels for each iframe
-// void handleRoot(AsyncWebServerRequest *request)
-// {
-	
-// 		//LARGE STRINGS - Break response into parts
-// 		httpServer.sendHeader("Cache-Control", "no-cache, no-store, must-revalidate");
-// 		httpServer.sendHeader("Pragma", "no-cache");
-// 		httpServer.sendHeader("Expires", "-1");
-// 		httpServer.setContentLength(CONTENT_LENGTH_UNKNOWN); 
-// 		httpServer.send(200, "text/html", "");
-
-// 		//Send PART1:
-// 		handleStrPartResp(WEBROOTSTRPT1,SZCHNK);
-
-// 		//Send STYLES:
-// 		handleStrPartResp("<style>",SZCHNK);
-// 		handleStrPartResp(WEBSTYLESSTR,SZCHNK);
-// 		handleStrPartResp("</style>",SZCHNK);
-		
-// 		//Send JSON:
-// 		handleStrPartResp(String("<script>var fishyNetJSON ='" + getNetworkJSON() + "';</script>"),SZCHNK);
-		
-// 		//Send PART2:
-// 		handleStrPartResp(WEBROOTSTRPT2,SZCHNK);
-
-// 		httpServer.sendContent("");
-// 		httpServer.client().stop();
-
-// 		if (DEBUG_MESSAGES)
-// 		{
-// 			Serial.println("[handleRoot]\n");
-// 		}
-
-// }
 
 void handleCtrl(AsyncWebServerRequest *request){
-	AsyncResponseStream *response = request->beginResponseStream("text/html");
-	response->addHeader("Server","ESP Async Web Server");
 	
-	response->print(String(WEBROOTSTRPT1));
-	response->print("<style>");
-	response->print(String(WEBSTYLESSTR));
-	response->print("</style><script>var fishyNetJSON ='");
-	response->print(getNodeJSON());
-	response->print("';</script>");
-	response->print(String(WEBCTRLSTRPT2));
-	
-	response->print("<br>\n");
-		
-	if (DEBUG_MESSAGES)
+		if (DEBUG_MESSAGES)
 		{
-			Serial.println("[handleCtrl]\n");
-			Serial.print("1");
-			Serial.println(String(WEBROOTSTRPT1));
-			Serial.print("2 <style>");
-			Serial.println(String(WEBSTYLESSTR));
-			Serial.print("3");
-			Serial.println(String("</style><script>var fishyNetJSON ='" + getNodeJSON() + "';</script>")); 
-			Serial.print("4");
-			Serial.println(String(WEBCTRLSTRPT2));
-			Serial.println();
+			Serial.println("\n[handleCtrl]\n");
+			Serial.println(String(WEBCTRLSTRNEW));
 		}
-
-	request->send(response);
+		request->send_P(200,"text/html",WEBCTRLSTRNEW);
 }
-// void handleCtrl(AsyncWebServerRequest *request){
-
-// 		//LARGE STRINGS - Break response into parts
-// 		httpServer.sendHeader("Cache-Control", "no-cache, no-store, must-revalidate");
-// 		httpServer.sendHeader("Pragma", "no-cache");
-// 		httpServer.sendHeader("Expires", "-1");
-// 		httpServer.setContentLength(CONTENT_LENGTH_UNKNOWN); 
-// 		httpServer.send(200, "text/html", "");
-
-// 		//Send PART1:
-// 		handleStrPartResp(WEBROOTSTRPT1,SZCHNK);
-		
-// 		//Send STYLES:
-// 		handleStrPartResp("<style>",SZCHNK);
-// 		handleStrPartResp(WEBSTYLESSTR,SZCHNK);
-// 		handleStrPartResp("</style>",SZCHNK);
-
-// 		//Send JSON:
-// 		handleStrPartResp(String("<script>var fishyNetJSON ='" + getNodeJSON() + "';</script>"),SZCHNK);
-		
-// 		//Send PART2:
-// 		handleStrPartResp(WEBCTRLSTRPT2,SZCHNK);
-
-// 		httpServer.sendContent("");
-// 		httpServer.client().stop();
-
-// 		if (DEBUG_MESSAGES)
-// 		{
-// 			Serial.println("[handleCtrl]\n");
-// 		}
-// }
 
 //show the SW update form for the specifc device (function for every device webserver)
 void handleSWupdateDevForm(AsyncWebServerRequest *request)
@@ -479,22 +390,36 @@ void handleSWupdateDevForm(AsyncWebServerRequest *request)
  	String WEBSTR_SWUPDATE_DEVICE_INFO = "Type: " + String(EEPROMdata.typestr) + "<br>Software Version:" + String(EEPROMdata.swVer) + "<br>Initialization String:" + String(EEPROMdata.initstr) + "<br>";
 
 	String responseStr;
-		responseStr = String(WEBSTR_SWUPDATE_PT1) + String(WEBSTR_SWUPDATE_DEVICE_INFO) +  String(WEBSTR_SWUPDATE_PT2);
-	request->send(200, "text/plain", responseStr.c_str());
+	responseStr = String(WEBSTR_SWUPDATE_PT1) + String(WEBSTR_SWUPDATE_DEVICE_INFO) +  String(WEBSTR_SWUPDATE_PT2);
+	if (DEBUG_MESSAGES){Serial.println(responseStr);}
+	request->send(200, "text/html", responseStr.c_str());
 
+}
+
+//show the SW update form for the specifc device (function for every device webserver)
+void handleCSS(AsyncWebServerRequest *request)
+{
+ 	if (DEBUG_MESSAGES){Serial.println("\n[handleCSS]\n");Serial.println(String(WEBSTYLESSTR));}
+	request->send_P(200, "text/css", WEBSTYLESSTR);
+}
+
+void handleTest(AsyncWebServerRequest *request)
+{
+ 	if (DEBUG_MESSAGES){Serial.println("\n[handleTest]Test HTML\n");}
+	request->send(200, "text/html", "<!doctype html><head><link rel=\"stylesheet\" type=\"text/css\" href=\"/styles.css\"><title>fishDIY Device Network Test</title><meta content=\"width=device-width,initial-scale=1\"name=viewport></head><body><div>TEST</div></body></html>");
 }
 
 void setUpdaterError()
 {
-  if (DEBUG_MESSAGES) Update.printError(Serial);
-  StreamString str;
-  Update.printError(str);
-  _updaterError = str.c_str();
+	if (DEBUG_MESSAGES) Update.printError(Serial);
+	StreamString str;
+	Update.printError(str);
+	_updaterError = str.c_str();
 }
 
 void handleSWupdateDevPost(AsyncWebServerRequest *request, String filename, size_t index, uint8_t *data, size_t len, bool final){
     if(!index){
-      Serial.printf("Update Start: %s\n", filename.c_str());
+      if (DEBUG_MESSAGES) Serial.printf("Update Start: %s\n", filename.c_str());
       Update.runAsync(true);
       if(!Update.begin((ESP.getFreeSketchSpace() - 0x1000) & 0xFFFFF000)){
         Update.printError(Serial);
@@ -506,11 +431,11 @@ void handleSWupdateDevPost(AsyncWebServerRequest *request, String filename, size
       }
     }
     if(final){
-      if(Update.end(true)){
-        Serial.printf("Update Success: %uB\n", index+len);
-      } else {
-        Update.printError(Serial);
-      }
+		if(Update.end(true)){
+	        if (DEBUG_MESSAGES) Serial.printf("Update Successful: %uB\n", index+len);
+      	} else {
+        	Update.printError(Serial);
+      	}
     }
   }
 
@@ -519,10 +444,8 @@ void handleSWupdateDevPostDone(AsyncWebServerRequest *request)
  	if (Update.hasError()) {
         request->send(200, F("text/html"), String(F("Update error: ")) + _updaterError);
     } else {
-		//request->addHeader("Connection", "close");
-        request->send(200, "text/plain", WEBSTR_SWUPDATE_SUCCESS);
-        delay(100);
-
+		if (DEBUG_MESSAGES) Serial.println("Got into Update Post Done. Delay and Restarting.");
+		delay(100);
         ESP.restart();
     }
 }

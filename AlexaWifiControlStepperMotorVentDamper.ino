@@ -28,9 +28,10 @@ Notes:
 */
 #define ESP8266 //tell libraries this is an ESP8266 (vice ESP32)
 //#define USE_EADNS //use ESPAsyncDNSserver library instread of DNSserver
-#define USE_WIFIMANAGER false
-#define SSID "cubsnet"
-#define PASS "daBears85"
+#define USE_WIFIMANAGER true
+//TODO - TEST CODE ELIMINATE:
+// #define SSID_CUSTOM "---INSERT SSID"
+// #define PASS_CUSTOM "---INSERT PASS"
 
 
 //Libraries

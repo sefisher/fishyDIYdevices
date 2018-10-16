@@ -37,11 +37,11 @@ void UDPprocessPacket()
 //if not master annouce every 8 to avoid being culled
 void UDPkeepAliveAndCull()
 {
-	//announce the master every 60 seconds
+	//announce the master every 2 minutes
 	if (EEPROMdata.master)
 	{
 		static unsigned long lastMstr = millis();
-		if (millis() - lastMstr > 60000)
+		if (millis() - lastMstr > 120000)
 		{
 			lastMstr = millis();
 			if (DEBUG_MESSAGES){ Serial.println("[MAIN] Announcing master"); }
@@ -214,7 +214,7 @@ it is also parsed by scripts in wifi-and-webserver.ino and webresources.h if add
 
 		//isMaster
 		strStrt = strStop + 1;
-		strStop = response.indexOf(",", strStrt);
+		strStop = response.indexOf("}", strStrt);
 		holder.isMaster = (response.substring(strStrt, strStop) == "false") ? false : true;
 		if (DEBUG_MESSAGES && UDP_PARSE_MESSAGES)
 		{

@@ -3,10 +3,10 @@ This is the template file for the control panel for each device (stored in webre
 is what will likely get updated the most (along with the styles). Style data is kept in styles.css 
 (which is embedded into webresources.h into a string and served if a clinet requests /styles.css).
 To build this template file intp the code after updating it do the following:
- 1) copy the PART 2 (from below this comment to the next comment where the JSON is defined).
+ 1) copy the HTML (from below this comment to the next comment where the JSON is defined).
  2) put it through a minifier (like https://kangax.github.io/html-minifier/) and then through a String builder
  (like http://buildmystring.com/ with "strip out carriage returns" on) to create a single string with no tabs and one line.
- 3) paste that into the WEBCTRLSTRPT2 After "PROGMEM" in the webresources.h file.
+ 3) paste that into the WEBCTRLSTRNEW After "PROGMEM" in the webresources.h file.
  4) copy the second block (from below the JSON definition to the end).
 
  ------------------------------------------------------------------------------------------------------ -->
@@ -21,6 +21,17 @@ To build this template file intp the code after updating it do the following:
     </head><body><div class='main' id='myBody'>
     <script>
         var websock;
+        //extract after MSG: and before ~*~*
+        function getMsg(data){
+            var start = data.indexOf("MSG:") + 4;
+            var end = data.indexOf("~*~*");
+            return data.substring(start,end);
+        }
+        //extract after ~*~*DAT:
+        function getNodeJSONtext(data){
+            var start = data.indexOf("~*~*DAT:")+8;
+            return data.substring(start,data.length);
+        }
         function start() {
             
             //websock = new WebSocket('ws://10.203.1.23:81/');
@@ -30,18 +41,25 @@ To build this template file intp the code after updating it do the following:
             websock.onclose = function(evt) { console.log('websock close'); };
             websock.onerror = function(evt) { console.log(evt); };
             websock.onmessage = function(evt) {
-                console.log(evt);
+                //console.log(evt);
             
-            /*TODO:
-                take evt, pull out text from device
-                separate the message from the node JSON ('MSG:'+message+"~*~*DAT:"+JSONstring)
-                display the message somehow (just acknowledging a command, perhaps flash green)
-                update the device using JSON
-            */
+
                 var payload = evt.data;
-                var msgText; //extract after MSG: and before ~*~*
-                var nodeJSONtext; //extract after ~*~*DAT:
-                processJSON(nodeJSONtext);
+                if(payload.indexOf("~*~*")<0){
+                    if(payload.indexOf("{fishyDevices")==0){
+                        processJSON(payload);
+                    }else{
+                        console.log(payload);
+                    }
+                }else{
+                    var msgText = getMsg(payload); 
+                    var nodeJSONtext = getNodeJSONtext(payload); 
+                    processJSON(nodeJSONtext);
+                    /*TODO:
+                    acknowledge the message somehow (just acknowledging a command, perhaps flash green)
+                    update the device using JSON
+                    */
+                }
                 
                 /*var e1 = document.getElementById('ledstatus1');
                 var e2 = document.getElementById('ledstatus2');

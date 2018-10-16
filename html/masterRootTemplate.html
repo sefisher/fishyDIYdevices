@@ -2,17 +2,13 @@
 This is the template file for the master web site (stored in webresources.h in parts). It relies on styles.css (which is embedded into code - see that file for its instructions if you update styles.css).
 If updated, you also need to embedd "fishyDIYdeviceCtrlTemplate.html" into the webresources.h for handling individual or group processing (specific to each type of device).
 To build it in the code do the following:
- 1) Copy the first block (PART 1).
- 2) put it through a minifier (like https://kangax.github.io/html-minifier/) and then through a String builder
+ 1) Copy the HTML code below this comment.
+ 2) Put it through a minifier (like https://kangax.github.io/html-minifier/) and then through a String builder
  (like http://buildmystring.com/ with "strip out carriage returns" on) to create a single string with no tabs and one line.
- 3) paste that into the WEBROOTSTRPT1 after "PROGMEM" in the webresources.h file.
- 4) copy the second block (from below the JSON definition to the end).
- 5) repeat steps 2 and 3 putting the result in WEBROOTSTRPT2 after "PROGMEM"
+ 3) Paste that output into the WEBROOTSTRNEW after "PROGMEM" in the webresources.h file.
+
  ------------------------------------------------------------------------------------------------------->
 
-<!-------------------------------------------------------------------------------------------------------
- ----------------------------------- START OF PART 1 (HEADER): ------------------------------------------
- ------------------------------------------------------------------------------------------------------->
 <!DOCTYPE html>
 <html>
 <head>
@@ -20,16 +16,7 @@ To build it in the code do the following:
     <meta name='viewport' content='width=device-width, initial-scale=1'>
     <link rel="stylesheet" href="/styles.css"> 
     <link rel="stylesheet" href="styles.css"> <!-- note this points to a file location on the local test server; it is intentionally placed here -->
-<!------------------------------------------------------------------------------------------------------
---------END OF PART 1:  Do not copy the following lines - these are handled within the code. -----------
---------NOTE: this file updates from a network.JSON file stored in its directory during testing.-------- 
-------------------------------------------------------------------------------------------------------
-    <script>
-            var fishyNetJSON ='{"fishyDevices":[{"ip":"10.203.1.197","name":"Test Actuator 1","dead":"0","typestr":"limit sw actuator","groupstr":"test group 1","statusstr":"80% Open","inError":"false","isMaster":"true"},{"ip":"10.203.1.123","name":"Test Actuator 2","dead":"0","typestr":"limit sw actuator","groupstr":"test group 1","statusstr":"Open","inError":"false","isMaster":"false"},{"ip":"10.203.1.145","name":"Test Actuator 3","dead":"0","typestr":"limit sw actuator","groupstr":"test group 1","statusstr":"Closed","inError":"false","isMaster":"false"},{"ip":"10.203.1.127","name":"Test Actuator 4","dead":"0","typestr":"limit sw actuator","groupstr":"test group 1","statusstr":"On","inError":"true","isMaster":"false"},{"ip":"10.203.1.134","name":"Test Actuator 5","dead":"0","typestr":"limit sw actuator","groupstr":"test group 1","statusstr":"On","inError":"true","isMaster":"false"}]}';
-    </script>
-<!------------------------------------------------------------------------------------------------------
-----------------------------------  START OF PART 2    -------------------------------------------------
-------------------------------------------------------------------------------------------------------->
+
 </head><body><div class='main' id='myBody'>   
     <script>
         
@@ -228,15 +215,12 @@ To build it in the code do the following:
     function openModal(targetIP) {
         //TEST CODE - TODO - remove this
         if(document.domain=="localhost"){
-            document.getElementById('myIframeDiv').innerHTML = "<iframe class='iframeBody' width=100% height=100% src='http://localhost/test/fishyDIYdeviceCtrlTemplate.html'></iframe>";
+            document.getElementById('myIframeDiv').innerHTML = "<iframe  id='myIframe' class='iframeBody' width=100% height=100% src='http://localhost/test/fishyDIYdeviceCtrlTemplate.html'></iframe>";
         }else{
-            document.getElementById('myIframeDiv').innerHTML = "<iframe class='iframeBody' width=100% height=100% src='http://" + targetIP    + "/control'></iframe>";
+            document.getElementById('myIframeDiv').innerHTML = "<iframe  id='myIframe' class='iframeBody' width=100% height=100% src='http://" + targetIP    + "/control'></iframe>";
         }
         modal.style.height = '100%';  
     }
     </script>
  </body>
  </html>
-<!------------------------------------------------------------------------------------------------------
----------------------------------------------- END OF PART 2 -------------------------------------------
-------------------------------------------------------------------------------------------------------->

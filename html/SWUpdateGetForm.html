@@ -64,7 +64,7 @@ function showLoader(){
     document.getElementById("loader").style.display="block";
     document.getElementById("formDiv").style.display="none";
     document.getElementById("SWinfoDiv").style.display="none";
-    setTimeout("location.href = '/SWupdateGetForm';", 7000);
+    setTimeout("location.href = '/SWupdateGetForm';", 8000);
 }
 
 function _(el) {
@@ -92,7 +92,7 @@ function progressHandler(event) {
   _("loaded_n_total").innerHTML = "Uploaded " + event.loaded + " bytes of " + event.total;
   var percent = (event.loaded / event.total) * 100;
   _("progressBar").value = Math.round(percent);
-  _("status").innerHTML = Math.round(percent) + "% uploaded... please wait";
+  _("status").innerHTML = Math.round(percent) + "% uploaded...";
   if(_("progressBar").value  == 100){
     _("status").innerHTML = "Done. Rebooting.";
     showLoader();
@@ -101,7 +101,7 @@ function progressHandler(event) {
 
 function completeHandler(event) {
   _("status").innerHTML = event.target.responseText;
-  _("progressBar").value = 0; //wil clear progress bar after successful upload
+  _("progressBar").value = 0; //will clear progress bar after successful upload
 }
 
 function errorHandler(event) {
@@ -114,11 +114,12 @@ function abortHandler(event) {
 
 </script>
 </head>
-<body><div id="SWinfoDiv">
+<body><div id=loader style=display:none></div>
+<div id="SWinfoDiv">
 <!--PART 1 END -->
 <p>dynamic content on SW version</p>
 <!--PART 2 START-->  
-</div><div id=loader style=display:none></div>
+</div>
 <div id=formDiv>
 <hr>
   <form id="upload_form" enctype="multipart/form-data" method="post">

@@ -2,6 +2,11 @@
 //-------deviceArray funtions---------------------------
 //-------------------------------------------------------------------------
 
+//TODO-convert these array functions over to just storing the limited amount of info required for the MASTER pages (ip,name,typestr,groupstr,statusstr,inError,isMaster)
+// - make sure the EEPROMdata is used for all internal things
+// - create a status message (which will be device specific - so name the function TWOSTATE_[function] for consistency)
+//
+
 //return a fishyDevice with this devices status in it.
 //used primarily to add device data to array of device data Stored
 //for webserver
@@ -15,20 +20,30 @@ fishyDevice makeMyFishyDevice()
 	holder.dead = false;
 	holder.timeStamp = millis();
 	holder.ip = WiFi.localIP();
+	
 	if (EEPROMdata.motorPosAtCCWset && EEPROMdata.motorPosAtCWset)
 	{isCalibrated = true;}else{isCalibrated = false;}
+	
 	holder.isMaster = EEPROMdata.master;
+	
 	if(EEPROMdata.timeOut || !(isCalibrated)){
 		holder.inError = true;
 	}else{
 		holder.inError = false;
 	}
+	
 	holder.name = String(EEPROMdata.namestr);
 	holder.typestr = String(EEPROMdata.typestr);
 	holder.groupstr = String(EEPROMdata.groupstr);
+	holder.statusstr = getStatusString(EEPROMdata.typestr);
 	return holder;
 }
 
+//CUSTOM DEVICE FUNCTION 
+//THIS IS A FUNCTION FOR A 2-State Actuator
+char* getStatusString(char* type){
+ //TODO - put in status response message; then process status response message in controlwebpage websocket
+}
 //take an address for a node and figure out what to do with it
 //return the index on success or -1 on fail
 int dealWithThisNode(fishyDevice netDevice)

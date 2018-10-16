@@ -59,7 +59,10 @@ void WiFiSetup()
 		hostName = "fishyDIYNode" + String(WiFi.localIP()[3]);
 	}
 	MDNS.begin(hostName.c_str());					  //start mDNS to fishyDIYmaster.local
+
+	//TODO - look at deleting this (and all references) once websocks are fully tested
 	httpServer.on("/genericArgs", handleGenericArgs); //Associate the handler function to the path
+	
 	httpServer.on("/", handleRoot);
 	httpServer.on("/SWupdater", handleRoot);
 	httpServer.on("/control", handleCtrl);
@@ -70,7 +73,7 @@ void WiFiSetup()
 	httpServer.on("/network.JSON", handleNetworkJSON);
 	httpServer.on("/node.JSON", handleNodeJSON);
 	httpServer.on("/styles.css",handleCSS);
-	httpServer.on("/test",handleTest);
+	//httpServer.on("/test",handleTest);
 	httpServer.onNotFound(handleNotFound);
 	//httpUpdater.setup(&httpServer);
 	httpServer.begin();
@@ -385,7 +388,6 @@ void handleCtrl(AsyncWebServerRequest *request){
 //show the SW update form for the specifc device (function for every device webserver)
 void handleSWupdateDevForm(AsyncWebServerRequest *request)
 {
-  	//ESP8266WebServer *_server = &httpServer;
   	//build the device info string
  	String WEBSTR_SWUPDATE_DEVICE_INFO = "Type: " + String(EEPROMdata.typestr) + "<br>Software Version:" + String(EEPROMdata.swVer) + "<br>Initialization String:" + String(EEPROMdata.initstr) + "<br>";
 
@@ -393,7 +395,6 @@ void handleSWupdateDevForm(AsyncWebServerRequest *request)
 	responseStr = String(WEBSTR_SWUPDATE_PT1) + String(WEBSTR_SWUPDATE_DEVICE_INFO) +  String(WEBSTR_SWUPDATE_PT2);
 	if (DEBUG_MESSAGES){Serial.println(responseStr);}
 	request->send(200, "text/html", responseStr.c_str());
-
 }
 
 //show the SW update form for the specifc device (function for every device webserver)
@@ -403,19 +404,21 @@ void handleCSS(AsyncWebServerRequest *request)
 	request->send_P(200, "text/css", WEBSTYLESSTR);
 }
 
-void handleTest(AsyncWebServerRequest *request)
-{
- 	if (DEBUG_MESSAGES){Serial.println("\n[handleTest]Test HTML\n");}
-	request->send(200, "text/html", "<!doctype html><head><link rel=\"stylesheet\" type=\"text/css\" href=\"/styles.css\"><title>fishDIY Device Network Test</title><meta content=\"width=device-width,initial-scale=1\"name=viewport></head><body><div>TEST</div></body></html>");
-}
+// //TODO - delete this once done with testing
+// void handleTest(AsyncWebServerRequest *request)
+// {
+//  	if (DEBUG_MESSAGES){Serial.println("\n[handleTest]Test HTML\n");}
+// 	request->send(200, "text/html", "<!doctype html><head><link rel=\"stylesheet\" type=\"text/css\" href=\"/styles.css\"><title>fishDIY Device Network Test</title><meta content=\"width=device-width,initial-scale=1\"name=viewport></head><body><div>TEST</div></body></html>");
+// }
 
-void setUpdaterError()
-{
-	if (DEBUG_MESSAGES) Update.printError(Serial);
-	StreamString str;
-	Update.printError(str);
-	_updaterError = str.c_str();
-}
+// //TODO - delete if not referenced
+// void setUpdaterError()
+// {
+// 	if (DEBUG_MESSAGES) Update.printError(Serial);
+// 	StreamString str;
+// 	Update.printError(str);
+// 	_updaterError = str.c_str();
+// }
 
 void handleSWupdateDevPost(AsyncWebServerRequest *request, String filename, size_t index, uint8_t *data, size_t len, bool final){
     if(!index){
@@ -449,60 +452,6 @@ void handleSWupdateDevPostDone(AsyncWebServerRequest *request)
         ESP.restart();
     }
 }
-
-// void handleSWupdateDevPost(AsyncWebServerRequest *request)
-// {
-// 	 HTTPUpload& upload = httpServer.upload();
-
-//       if(upload.status == UPLOAD_FILE_START){
-
-//         WiFiUDP::stopAll();
-//         if (DEBUG_MESSAGES)
-//           Serial.printf("Update: %s\n", upload.filename.c_str());
-//         uint32_t maxSketchSpace = (ESP.getFreeSketchSpace() - 0x1000) & 0xFFFFF000;
-//         if(!Update.begin(maxSketchSpace)){//start with max available size
-//           setUpdaterError();
-//         }
-//       } else if( upload.status == UPLOAD_FILE_WRITE && !_updaterError.length()){
-//         if (DEBUG_MESSAGES) Serial.printf(".");
-//         if(Update.write(upload.buf, upload.currentSize) != upload.currentSize){
-//           setUpdaterError();
-//         }
-//       } else if(upload.status == UPLOAD_FILE_END && !_updaterError.length()){
-//         if(Update.end(true)){ //true to set the size to the current progress
-//           if (DEBUG_MESSAGES) Serial.printf("Update Was Successful: %u\nRebooting...\n", upload.totalSize);
-//         } else {
-//           setUpdaterError();
-//         }
-//         if (DEBUG_MESSAGES) Serial.setDebugOutput(false);
-//       } else if(upload.status == UPLOAD_FILE_ABORTED){
-//         Update.end();
-//         if (DEBUG_MESSAGES) Serial.println("Update was aborted");
-//       }
-//       delay(0);
-// }
-
-//send a str that is part of a webresponse and break it into chunks of SZCHNK
-// void handleStrPartResp(String str,int sizeChunk){
-// 	int strt = 0;
-// 	int stp = 0;
-// 	int len = str.length();
-// 	if (DEBUG_MESSAGES)	{Serial.println("[handleRoot] PT1 str.len: " + String(len));}
-// 	while (stp < len)
-// 	{
-// 		strt = stp;
-// 		stp = strt + sizeChunk;
-// 		if (stp > len)
-// 		{
-// 			stp = len;
-// 		}
-// 		httpServer.sendContent(str.substring(strt, stp).c_str());
-// 		if (DEBUG_MESSAGES)
-// 		{
-// 			Serial.println(str.substring(strt, stp));
-// 		}
-// 	}
-// }
 
 //web server response to other
 void handleNotFound(AsyncWebServerRequest *request)

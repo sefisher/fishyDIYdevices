@@ -105,14 +105,10 @@ void UDPannounceMaster()
 //put out this devices data on the net
 void UDPpollReply(IPAddress remote)
 {
-
 	fishyDevice holder; //temp
 	holder = makeMyFishyDevice();
-
 	String response = "POLL_RESPONSE ";
-
 	Udp.beginPacket(remote, UDP_LOCAL_PORT);
-
 /* 
 send fishyDevice data.
 Note - this is parsed by UDPparsePollResponse and paralleled by getJSON; sometimes UDPparseConfigResponse is affected if new data needs set by the website configuration update; 

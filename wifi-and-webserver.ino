@@ -27,7 +27,9 @@ void WiFiSetup()
 		WiFi.begin(SSID_CUSTOM, PASS_CUSTOM);
 		if (WiFi.waitForConnectResult() != WL_CONNECTED) {
 			Serial.println("WiFi Failed");
+			
 			while(1) {
+				fastBlinks(2);
 				delay(1000);
 			}
 		}
@@ -190,12 +192,20 @@ void webSocketEvent(uint8_t num, WStype_t type, uint8_t * payload, size_t length
   }
 }
 
-//TODO test this function
+//TODO test this function - I'm here
 //todo - format a string with the infomation about the device plus any message
 //send a message to the web clients via webSocket
 void updateClients(String message){
+	static unsigned long lastUpdate = millis();
 	String text="MSG:"+message+"~*~*DAT:"+getNodeJSON();
-	webSocket.broadcastTXT(text.c_str(), strlen(text.c_str()));
+	
+	if (millis() - lastUpdate > 1000)
+	{
+		lastUpdate = millis();
+		Serial.println(text);
+		webSocket.broadcastTXT(text.c_str(), strlen(text.c_str()));
+	}
+	//webSocket.broadcastTXT(text.c_str(), strlen(text.c_str()));
 }
 //-----------------------------------------------------------------------------
 //-------------------------Web Server Functions--------------------------------

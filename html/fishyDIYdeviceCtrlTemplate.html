@@ -34,7 +34,7 @@ To build this template file intp the code after updating it do the following:
         }
         function start() {
             
-            //websock = new WebSocket('ws://10.203.1.23:81/');
+            //websock = new WebSocket('ws://10.203.1.33:81/');
             websock = new WebSocket('ws://' + window.location.hostname + ':81/');
             
             websock.onopen = function(evt) { console.log('websock open'); };
@@ -53,6 +53,7 @@ To build this template file intp the code after updating it do the following:
                     }
                 }else{
                     var msgText = getMsg(payload); 
+                    console.log(msgText);
                     var nodeJSONtext = getNodeJSONtext(payload); 
                     processJSON(nodeJSONtext);
                     /*TODO:

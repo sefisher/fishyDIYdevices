@@ -15,7 +15,7 @@ fishyDevice makeMyFishyDevice()
 	bool isCalibrated = false;
 	
 	fishyDevice holder;
-	
+		
 	//fill with current data
 	holder.dead = false;
 	holder.timeStamp = millis();
@@ -35,15 +35,11 @@ fishyDevice makeMyFishyDevice()
 	holder.name = String(EEPROMdata.namestr);
 	holder.typestr = String(EEPROMdata.typestr);
 	holder.groupstr = String(EEPROMdata.groupstr);
-	holder.statusstr = getStatusString(EEPROMdata.typestr);
+	holder.statusstr = getStatusString();
+
 	return holder;
 }
 
-//CUSTOM DEVICE FUNCTION 
-//THIS IS A FUNCTION FOR A 2-State Actuator
-char* getStatusString(char* type){
- //TODO - put in status response message; then process status response message in controlwebpage websocket
-}
 //take an address for a node and figure out what to do with it
 //return the index on success or -1 on fail
 int dealWithThisNode(fishyDevice netDevice)

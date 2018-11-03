@@ -1,7 +1,18 @@
 //=====================================================================================================================
 //BEGIN CUSTOM DEVICE FUNCTIONS - EXTERNAL
 //THIS IS A FUNCTION FOR A 2-State Actuator
-//EXT functions are void {operateDevice(),deviceSetup(),executeCommands(char inputMsg[MAXCMDSZ], IPAddress remote)),executeState(bool state)}
+//EXT functions are:
+// char* getStatusString(char* type)
+// void {operateDevice(),deviceSetup(),executeCommands(char inputMsg[MAXCMDSZ], IPAddress remote)),executeState(bool state)}
+
+//CUSTOM DEVICE FUNCTION - EXTERNAL (SAME FUNCTION CALLED BY ALL DEVICES)
+//THIS IS A FUNCTION FOR A 2-State Actuator
+//generates a status message to be delivered for this devices state to the summary webpage for all the devices by the MASTER webserver
+char* getStatusString(){
+ //TODO - put in status response message; then process status response message in controlwebpage websocket
+ char statusStr[100] = "This is a status message which should tell you what is going on with a device.";
+ return statusStr;
+}
 
 //CUSTOM DEVICE FUNCTION - EXTERNAL (SAME NAME CALLED IN ALL DEVICES)
 //THIS IS A FUNCTION FOR A 2-State Actuator
@@ -167,7 +178,7 @@ void executeCommands(char inputMsg[MAXCMDSZ], IPAddress remote)
 void executeState(bool state)
 {
 	//reset the motor timeout counter
-	motorRunTime = millis();
+	deviceResponseTime = millis();
 	EEPROMdata.deviceTimedOut = false;
 	//ensure motor output is enabled
 	stepper1.enableOutputs();
@@ -337,7 +348,7 @@ void operateLimitSwitchActuator(){
 void executeGoto(String cmd)
 {
 	//reset the motor timeout counter
-	motorRunTime = millis();
+	deviceResponseTime = millis();
 	EEPROMdata.deviceTimedOut = false;
 	//ensure motor output is enabled
 	stepper1.enableOutputs();
@@ -361,7 +372,7 @@ void executeGoto(String cmd)
 void executeStop()
 {
 	//reset the motor timeout counter
-	motorRunTime = millis();
+	deviceResponseTime = millis();
 	EEPROMdata.deviceTimedOut = false;
 	if (DEBUG_MESSAGES)
 	{
@@ -410,7 +421,7 @@ trueState moveCCW()
 			if((stepper1.currentPosition()==targetPos)){
 				newState = idleActuator(man_idle);
 			}
-			if((millis()-motorRunTime)>EEPROMdata.timeOut*1000){
+			if((millis()-deviceResponseTime)>EEPROMdata.timeOut*1000){
 				EEPROMdata.deviceTimedOut = true;
 				newState = idleActuator(man_idle);
 			}
@@ -421,7 +432,7 @@ trueState moveCCW()
 			}
 			stepper1.runSpeed();
 			//see if timedout
-			if(((millis()-motorRunTime)>EEPROMdata.timeOut*1000)){
+			if(((millis()-deviceResponseTime)>EEPROMdata.timeOut*1000)){
 				EEPROMdata.deviceTimedOut = true;
 				newState = idleActuator(man_idle);
 			}
@@ -469,7 +480,7 @@ trueState moveCW()
 			if((stepper1.currentPosition()==targetPos)){
 				newState = idleActuator(man_idle);
 			}
-			if((millis()-motorRunTime)>EEPROMdata.timeOut*1000){
+			if((millis()-deviceResponseTime)>EEPROMdata.timeOut*1000){
 				EEPROMdata.deviceTimedOut = true;
 				newState = idleActuator(man_idle);
 			}
@@ -480,7 +491,7 @@ trueState moveCW()
 			}
 			stepper1.runSpeed();
 			//see if timedout
-			if(((millis()-motorRunTime)>EEPROMdata.timeOut*1000)){
+			if(((millis()-deviceResponseTime)>EEPROMdata.timeOut*1000)){
 				EEPROMdata.deviceTimedOut = true;
 				newState = idleActuator(man_idle);
 			}

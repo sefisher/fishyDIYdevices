@@ -1,8 +1,8 @@
 /*
+TODO - update this advice when the program is completed
+
 You shouldn't have to edit this code in this file.  See deviceDefinitions.h
 for the customization variables.
-
-TODO - update this when the setup is on first use
 
 This file is is setup to work with a NodeMCU 1.0 module (ESP-12E).
 If you have a variant with a different PIN-arrangement you may need
@@ -35,7 +35,7 @@ Notes:
 #include <ESPAsyncWebServer.h>
 #include <ESPAsyncWiFiManager.h>
 #include <ESPAsyncTCP.h>
-#include <WebSocketsServer.h>
+#include <WebSocketsServer.h> //for ASYNC websockets - go into webSockets.h and uncomment #define WEBSOCKETS_NETWORK_TYPE NETWORK_ESP8266_ASYNC - comment out other #define WEBSOCKETS_NETWORK_TYPE lines
 #include <fauxmoESP.h>
 #include <AccelStepper.h>
 #include <EEPROM.h>
@@ -53,7 +53,9 @@ Notes:
 #include "globals.h"			// global variables
 #include "webresources.h"		// strings for device served webpages
 
-
+//TEST - TODO remove
+int count;
+unsigned long tmrs[]={0,0,0,0,0,0,0,0};
 //this is the base setup routine called first on power up or reboot
 void setup()
 {
@@ -66,17 +68,29 @@ void setup()
 	WifiFauxmoAndDeviceSetup();
 	deviceSetup();
 	announceReadyOnUDP();	
+	count=0;
 }
+
 
 //this is the main operating loop (MOL) that is repeatedly executed
 void loop()
 {
+	unsigned long lastMillis;
+	if(DEBUG_TIMING){count=count+1;lastMillis = millis();}
 	dns.processNextRequest();
+	if(DEBUG_TIMING) {tmrs[0]=tmrs[0] + (millis()-lastMillis);lastMillis = millis();}
 	checkResetOnLoop(); //reset device if flagged to
-	webSocket.loop(); //handle webSocket
-	//httpServer.handleClient(); //handle webrequests
+
+
+//i'm here - websocket.loop is really slow; trying to see why and make sure the async version isn't working
+
+	if(DEBUG_TIMING) {tmrs[1]=tmrs[1] + (millis()-lastMillis); lastMillis = millis();}
+	//webSocket.loop(); //handle webSocket
+	if(DEBUG_TIMING) {tmrs[2]=tmrs[2] + (millis()-lastMillis); lastMillis = millis();}
 	UDPprocessPacket(); //process any net (UDP) traffic
+	if(DEBUG_TIMING) {tmrs[3]=tmrs[3] + (millis()-lastMillis); lastMillis = millis();}
 	UDPkeepAliveAndCull(); //talk on net and drop dead notes from list
+	if(DEBUG_TIMING) {tmrs[4]=tmrs[4] + (millis()-lastMillis); lastMillis = millis();}
 	
 	// Since fauxmoESP 2.0 the library uses the "compatibility" mode by
 	// default, this means that it uses WiFiUdp class instead of AsyncUDP.
@@ -85,9 +99,16 @@ void loop()
 	// But, since it's not "async" anymore we have to manually poll for UDP
 	// packets
 	fauxmo.handle();
-
+	if(DEBUG_TIMING) {tmrs[5]=tmrs[5] + (millis()-lastMillis); lastMillis = millis();}
+	
 	operateDevice(); //run state machine for device
+	if(DEBUG_TIMING) {tmrs[6]=tmrs[6] + (millis()-lastMillis); lastMillis = millis();}
 	showHeapAndProcessSerialInput(); //if debugging allow heap display and take serial commands
+	if(DEBUG_TIMING) 
+	{
+		tmrs[7]=tmrs[7] + (millis()-lastMillis); lastMillis = millis();
+		if (count%100000==0) {Serial.println();for(int iii=0;iii<8;iii++){Serial.printf("%d) delta: %lu\n",iii,tmrs[iii]);}}
+	}
 }
 
 //determine if initalization string is different than stored in EEPROM - 
@@ -233,7 +254,7 @@ void showHeapAndProcessSerialInput(){
 }
 // Initialize serial port and clean garbage
 void serialStart(){	
-	if (DEBUG_MESSAGES)
+	if (DEBUG_MESSAGES||DEBUG_TIMING)
 	{
 		Serial.begin(SERIAL_BAUDRATE);
 		Serial.println();

@@ -6,7 +6,7 @@
 //You can update code - update this number - compile - and then load SW onto all the devices without
 //modifying the personality settings as long as INITIALIZE is the same on the devices (see below)
 //LIMITED to 10 alpanumeric characters
-#define SW_VER "20181014-1"
+#define SW_VER "20181103-1"
 
 //--------------------------PERSONALITY SETTINGS-----------------------------------//
 //Put in a time/date string to define the personality variables. 
@@ -26,10 +26,10 @@ their "personality settings" and wiping out stored motor info.
 //PICK A UNIQUE NAME FOR EACH DEVICE USING ONLY LETTERS AND NUMBERS
 // LIMITED to 40 alpanumeric characters (abcdefghijklmnopqrstuvwxyz0123456789)
 // #define CUSTOM_DEVICE_NAME "Direct Rotating Test" 
-#define CUSTOM_DEVICE_NAME "Test Device 3"
+//#define CUSTOM_DEVICE_NAME "Test Device 3"
 //#define CUSTOM_DEVICE_NAME "Test Device 2"
 //#define CUSTOM_DEVICE_NAME "Floor 4 Damper"
-//#define CUSTOM_DEVICE_NAME "Floor 3 Damper"
+#define CUSTOM_DEVICE_NAME "Floor 3 Damper"
 //#define CUSTOM_DEVICE_NAME "Floor 2 Damper"
 //#define CUSTOM_DEVICE_NAME "Floor 1 Damper"
 
@@ -70,10 +70,10 @@ their "personality settings" and wiping out stored motor info.
 
 #define ESP8266 //tell libraries this is an ESP8266 (vice ESP32)
 //#define USE_EADNS //use ESPAsyncDNSserver library instread of DNSserver
-#define USE_WIFIMANAGER true
+//#define USE_WIFIMANAGER true
 //IF ABOVE SET TO FALSE THEN INSERT SSID AND PASSWORD BELOW:
-#define SSID_CUSTOM "---INSERT SSID"
-#define PASS_CUSTOM "---INSERT PASS"
+//#define SSID_CUSTOM "---INSERT SSID"
+//#define PASS_CUSTOM "---INSERT PASS"
 
 //SET THIS TO TRUE IF YOU WANT A SIMPLE "TURN ON, TURN OFF" COMMAND CAPABILITY FOR 
 //CONTROLLING THE DEVICE THROUGH AMAZON ECHO (ALEXA) OR A SMART HOME HUB (LIKE SMARTTHINGS).
@@ -91,9 +91,10 @@ their "personality settings" and wiping out stored motor info.
 
 //Test switches for Serial output text (set to false to disable debug messages) and WiFi Functions
 #define DEBUG_MESSAGES true //debugging for device problems (movement, switches, etc)
-#define DEBUG_UDP_MESSAGES true //debugging for network comms (MASTER - SLAVE issues with nodes on the network)
-#define UDP_PARSE_MESSAGES true //debugging for parsing messages - used after you've changed the message structures
-#define DEBUG_HEAP_MESSAGE false //just tracking the heap size for memory leak issues or overloaded nodeMCUs
+#define DEBUG_UDP_MESSAGES false //debugging for network comms (MASTER - SLAVE issues with nodes on the network)
+#define UDP_PARSE_MESSAGES false //debugging for parsing messages - used after you've changed the message structures
+#define DEBUG_HEAP_MESSAGE true //just tracking the heap size for memory leak issues or overloaded nodeMCUs
 #define DEBUG_WiFiOFF false //turn to true to test without wifi (limited testing)
+#define DEBUG_TIMING true
 //-----------------------------------------------------------------------------------
 //-----------------------------------------------------------------------------------

@@ -1,9 +1,9 @@
+//THIS FILE HAS CUSTOM GLOBAL VARIABLES, EXTERNAL, AND INTERNAL FUNCTIONS FOR 2-STATE-ACTUATORS
+
 //=====================================================================================================================
-//BEGIN CUSTOM DEVICE FUNCTIONS - EXTERNAL
-//THIS IS A FUNCTION FOR A 2-State Actuator
-//EXT functions are:
-// char* getStatusString(char* type)
-// void {operateDevice(),deviceSetup(),executeCommands(char inputMsg[MAXCMDSZ], IPAddress remote)),executeState(bool state)}
+//BEGIN CUSTOM DEVICE FUNCTIONS - EXTERNAL - For 2-state-actuator 
+//COMMON EXT functions are:
+// void {operateDevice(),deviceSetup(),executeCommands(char inputMsg[MAXCMDSZ], IPAddress remote)),executeState(bool state),UDPparseConfigResponse(String responseIn, IPAddress remote)}
 
 //CUSTOM DEVICE FUNCTION - EXTERNAL (SAME FUNCTION CALLED BY ALL DEVICES)
 //THIS IS A FUNCTION FOR A 2-State Actuator
@@ -161,13 +161,100 @@ void executeCommands(char inputMsg[MAXCMDSZ], IPAddress remote)
 		{
 			Serial.println("[executeCommands] Commanded CONFIG");
 		}
-		//TODO - this is the only use of the function - may want to move and group under device specific commands.
 		UDPparseConfigResponse(String(inputMsg), remote); //want the original case for this
 	}
 	else
 	{
 		Serial.printf("[executeCommands] Input: %s is not a recognized command.\n", inputMsg);
 	}
+}
+
+//CUSTOM DEVICE FUNCTION - EXTERNAL (SAME FUNCTION CALLED BY ALL DEVICES)
+//THIS IS A FUNCTION FOR A 2-State Actuator
+//configuration response from web/udp - this preforms a configuration update to the device and stores it in EEPROM
+void UDPparseConfigResponse(String responseIn, IPAddress remote){
+	String response = responseIn.substring(7); //strip off "CONFIG"
+	int strStrt, strStop;
+
+/*
+		parseString in this order: {openIsCCW, isMaster, devName, groupName, devType, note}
+*/
+
+	if (DEBUG_MESSAGES && UDP_PARSE_MESSAGES)
+	{
+		Serial.println("[UDPparseConfigResponse] Got this: " + responseIn);
+	}	
+	//openIsCCW
+	strStrt = response.indexOf("=", strStop)+1;
+	strStop = response.indexOf(";", strStrt);
+	EEPROMdata.openIsCCW = (response.substring(strStrt, strStop) == "false") ? false : true;
+	if (DEBUG_MESSAGES && UDP_PARSE_MESSAGES)
+	{
+		Serial.print("[UDPparseConfigResponse] openIsCCW: ");
+		Serial.println(EEPROMdata.openIsCCW ? "true" : "false");
+	}
+	//isMaster
+	strStrt = response.indexOf("=", strStop)+1;
+	strStop = response.indexOf(";", strStrt);
+	EEPROMdata.master = (response.substring(strStrt, strStop) == "false") ? false : true;
+	if (DEBUG_MESSAGES && UDP_PARSE_MESSAGES)
+	{
+		Serial.print("[UDPparseConfigResponse] isMaster: ");
+		Serial.println(EEPROMdata.master ? "true" : "false");
+	}
+	//devName
+	strStrt = response.indexOf("=", strStop)+1;
+	strStop = response.indexOf(";", strStrt);
+	strncpy(EEPROMdata.namestr, response.substring(strStrt, strStop).c_str(), 41);
+	if (DEBUG_MESSAGES && UDP_PARSE_MESSAGES)
+	{
+		Serial.println("[UDPparseConfigResponse] devName: " + String(EEPROMdata.namestr));
+	}
+	//groupName
+	strStrt = response.indexOf("=", strStop)+1;
+	strStop = response.indexOf(";", strStrt);
+	strncpy(EEPROMdata.groupstr, response.substring(strStrt, strStop).c_str(), 41);
+	if (DEBUG_MESSAGES && UDP_PARSE_MESSAGES)
+	{
+		Serial.println("[UDPparseConfigResponse] groupName: " + String(EEPROMdata.groupstr));
+	}
+	//devType
+	strStrt = response.indexOf("=", strStop)+1;
+	strStop = response.indexOf(";", strStrt);
+	strncpy(EEPROMdata.typestr, response.substring(strStrt, strStop).c_str(), 21);
+	if (DEBUG_MESSAGES && UDP_PARSE_MESSAGES)
+	{
+		Serial.println("[UDPparseConfigResponse] devType: " + String(EEPROMdata.typestr));
+	}
+	//note
+	strStrt = response.indexOf("=", strStop)+1;
+	strStop = response.indexOf(";", strStrt);
+	strncpy(EEPROMdata.note, response.substring(strStrt, strStop).c_str(), 56);
+	if (DEBUG_MESSAGES && UDP_PARSE_MESSAGES)
+	{
+		Serial.println("[UDPparseConfigResponse] note: " + String(EEPROMdata.note));
+	}
+	//swapLimSW
+	strStrt = response.indexOf("=", strStop)+1;
+	strStop = response.indexOf(";", strStrt);
+	EEPROMdata.swapLimSW = (response.substring(strStrt, strStop) == "false") ? false : true;
+	if (DEBUG_MESSAGES && UDP_PARSE_MESSAGES)
+	{
+		Serial.print("[UDPparseConfigResponse] swapLimSW: ");
+		Serial.println(EEPROMdata.swapLimSW ? "true" : "false");
+	}
+	//timeOut
+	strStrt = response.indexOf("=", strStop)+1;
+	strStop = response.indexOf(";", strStrt);
+	EEPROMdata.timeOut = response.substring(strStrt, strStop).toInt();
+	if (DEBUG_MESSAGES && UDP_PARSE_MESSAGES)
+	{
+		Serial.println("[UDPparseConfigResponse] timeOut: " + String(EEPROMdata.timeOut));
+	}
+	//inform the master of new settings
+	UDPpollReply(masterIP);
+	//save them to EEPROM
+	storeDataToEEPROM();
 }
 
 
@@ -532,6 +619,7 @@ trueState idleActuator(trueState idleState)
 	EEPROMdata.motorPos = int(stepper1.currentPosition());
 	storeDataToEEPROM();
 	UDPpollReply(masterIP); //tell the Master Node the new info
+	updateClients("Done. Actuator Idle.");
 	return idleState;
 }
 //CUSTOM DEVICE FUNCTION - INTERNAL

@@ -8,20 +8,24 @@ To build this template file intp the code after updating it do the following:
  (like http://buildmystring.com/ with "strip out carriage returns" on) to create a single string with no tabs and one line.
  3) paste that into the WEBCTRLSTRNEW After "PROGMEM" in the webresources.h file.
  4) copy the second block (from below the JSON definition to the end).
-
  ------------------------------------------------------------------------------------------------------ -->
  <!DOCTYPE html>
  <html>
  <head>
      <title>fishDIY Device Network</title>
      <meta name='viewport' content='width=device-width, initial-scale=1'>
-     <link rel="stylesheet" href="/styles.css">
-     <link rel="stylesheet" href="styles.css"> <!-- note this points to a file location on the local test server; it is intentionally placed here -->  
     
-    </head><body><div class='main' id='myBody'>
+     <link rel="stylesheet" href="/styles.css">
+     <link rel="stylesheet" href="styles.css"> <!-- intentionally left for testing -->
+    
+    </head>
+    <body><div class='main' id='myBody'>
     <script>
         var websock;
-        //extract after MSG: and before ~*~*
+        function showDetails(){
+            alert(infoText);
+        }
+        //extract after MSG:and before ~*~*
         function getMsg(data){
             var start = data.indexOf("MSG:") + 4;
             var end = data.indexOf("~*~*");
@@ -34,6 +38,7 @@ To build this template file intp the code after updating it do the following:
         }
         function start() {
             
+            // TEST - turn off when not testing
             //websock = new WebSocket('ws://10.203.1.33:81/');
             websock = new WebSocket('ws://' + window.location.hostname + ':81/');
             
@@ -41,122 +46,60 @@ To build this template file intp the code after updating it do the following:
             websock.onclose = function(evt) { console.log('websock close'); };
             websock.onerror = function(evt) { console.log(evt); };
             websock.onmessage = function(evt) {
-                //console.log(evt);
-            
-
-                var payload = evt.data;
-                if(payload.indexOf("~*~*")<0){
-                    if(payload.indexOf("{fishyDevices")==0){
-                        processJSON(payload);
-                    }else{
-                        console.log(payload);
-                    }
+  
+            var payload = evt.data;
+            if(payload.indexOf("~*~*")<0){
+                if(payload.indexOf('{"fishyDevices"')==0){
+                    processJSON(payload);
                 }else{
-                    var msgText = getMsg(payload); 
-                    console.log(msgText);
-                    var nodeJSONtext = getNodeJSONtext(payload); 
-                    processJSON(nodeJSONtext);
-                    /*TODO:
-                    acknowledge the message somehow (just acknowledging a command, perhaps flash green)
-                    update the device using JSON
-                    */
+                    console.log(payload);
                 }
+            }else{
+                var msgText = getMsg(payload); 
+                console.log(msgText);
+                setOtherTxt(msgText);
+                var nodeJSONtext = getNodeJSONtext(payload); 
+                console.log(nodeJSONtext);
+                processJSON(nodeJSONtext);
                 
-                /*var e1 = document.getElementById('ledstatus1');
-                var e2 = document.getElementById('ledstatus2');
-                var e3 = document.getElementById('ledstatus3');
-                var e4 = document.getElementById('swstatus1');
-                var e5 = document.getElementById('connectionstatus');
-                if (evt.data === 'ledon1') {
-                e1.style.color = 'red';
-                }
-                else if (evt.data === 'ledoff1') {
-                e1.style.color = 'black';
-                }    
-                else if (evt.data === 'ledon2') {
-                e2.style.color = 'green';
-                }
-                else if (evt.data === 'ledoff2') {
-                e2.style.color = 'black';
-                }    
-                else if (evt.data === 'ledon3') {
-                e3.style.color = 'yellow';
-                }
-                else if (evt.data === 'ledoff3') {
-                e3.style.color = 'black';
-                }
-                else if (evt.data === 'swclosed1') {
-                e4.style.color = 'green';
-                e4.innerHTML = '<b>SW 1 CLOSED</b>';
-                }
-                else if (evt.data === 'swopen1') {
-                e4.style.color = 'black';
-                e4.innerHTML = '<b>SW 1 OPEN</b>';
-                }
-                else if (evt.data === 'CONNECTED') {
-                e5.style.color = 'green';
-                e5.innerHTML = '<b>CONNECTED</b>';
-                }
-                else if (evt.data === 'DISCONNECTED') {
-                e5.style.color = 'red';
-                e5.innerHTML = '<b>DISCONNECTED</b>';
-                }else {
-                console.log('unknown event');
-                }
-                */
+            }
             };
         }
-
-        function toggleCfg(num) {
-            var btn = document.getElementById('cfgBtn-' + num);
-            var pnl = document.getElementById('cfgPnl-' + num);
-            if (pnl.style.display == 'block') {
-                pnl.style.display = 'none';
-                btn.value = '[+] Show Settings Panel';
-            } else {
-                pnl.style.display = 'block';
-                btn.value = '[-] Hide Settings Panel';
-            }
+        function setMainTxt(text){
+            document.getElementById("mainTxt").innerHTML = "Postion: " + text + "% Open";
+        }
+        function setOtherTxt(text){
+            document.getElementById("otherTxt").innerHTML = text;
+        }
+        function syncPO() {
+            var slider = document.getElementById('pctOpenSld');
+            var btn = document.getElementById('pobtntxt');
+            btn.innerHTML='<p class=\"buttonTxt\">' + slider.value + '%</p>';
         }
         
-        function sync(num, name, what) {
-            var sliderID = name + 'Sld-' + num;
-            var valID = name + 'Val-' + num;
-            var slider = document.getElementById(sliderID);
-            var val = document.getElementById(valID);
-            if(name=='pctOpen'){
-                var btn = document.getElementById('pobtn-' + num);
-            }
-            if (what == 1) {
-                val.value = slider.value;
-                if(name=='pctOpen'){btn.value='Go ' + slider.value + '% Open';}
-            } else {
-                slider.value = val.value;
-                if(name=='pctOpen'){btn.value='Go ' + val.value + '% Open';}
-            }
-        }
-        
-        function openIsCCWUpd(num) {
-            var label = document.getElementById('swLab-' + num);
-            var sw = document.getElementById('swChck-' + num);
+        function openIsCCWUpd() {
+            var label = document.getElementById('swLab');
+            var sw = document.getElementById('swChck');
             if (sw.checked == true) { label.innerHTML = 'Open is CCW'; } else { label.innerHTML = 'Open is CW'; }
         }
         
-        function swMstrUpd(num) {
-            var label = document.getElementById('swMstrLab-' + num);
-            var sw = document.getElementById('swMstrChck-' + num);
+        function swMstrUpd() {
+            var label = document.getElementById('swMstrLab');
+            var sw = document.getElementById('swMstrChck');
             if (sw.checked == true) { label.innerHTML = 'Master Node'; } else { label.innerHTML = 'Slave Node'; }
         }
         
-        function swSwapUpd(num) {
-            var label = document.getElementById('swSwapLab-' + num);
-            var sw = document.getElementById('swSwapChck-' + num);
+        function swSwapUpd() {
+            var label = document.getElementById('swSwapLab');
+            var sw = document.getElementById('swSwapChck');
             if (sw.checked == true) { label.innerHTML = 'Swapped Lim Sw'; } else { label.innerHTML = 'Normal Lim Sw'; }
         }
         
-        function sendCmd(num, command) {
-            //TODO - see if this is needed in new setup
-            //var remIP = document.getElementById('targetIP-' + num).value;
+        function sendCmd(command) {
+            if (websock.readyState != 1){
+                alert("This control panel is no longer connected to the device.  Please close this window and reopen the control panel.");
+                return 0;
+            }
             var cmd = '';
             if (command == 'O') {
                 cmd = 'open';
@@ -173,48 +116,37 @@ To build this template file intp the code after updating it do the following:
             } else if (command == 'G') {
                 var pos;
                 cmd = 'goto';
-                pos = document.getElementById('pctOpenVal-' + num).value;
+                pos = document.getElementById('pctOpenSld').value;
                 while (pos.length < 3) pos = '0' + pos;
                 cmd += pos;
             } else if (command == 'config') {
                 var isMstr = 'false';
                 var ccwIsOpen = 'false';
                 var swapLimSW = 'false';
-                if (document.getElementById('swMstrChck-' + num).checked) isMstr = 'true';
-                if (document.getElementById('swChck-' + num).checked) ccwIsOpen = 'true';
-                if (document.getElementById('swSwapChck-' + num).checked) swapLimSW = 'true';
+                if (document.getElementById('swMstrChck').checked) isMstr = 'true';
+                if (document.getElementById('swChck').checked) ccwIsOpen = 'true';
+                if (document.getElementById('swSwapChck').checked) swapLimSW = 'true';
                 cmd = 'config';
                 cmd += ';openIsCCW=' + ccwIsOpen;
                 cmd += ';isMaster=' + isMstr;
-                cmd += ';devName=' + document.getElementById('devName-' + num).value;
-                cmd += ';groupName=' + document.getElementById('groupName-' + num).value;
-                cmd += ';devType=' + document.getElementById('devType-' + num).value;
-                cmd += ';note=' + document.getElementById('note-' + num).value;
+                cmd += ';devName=' + document.getElementById('devName').value;
+                cmd += ';groupName=' + document.getElementById('groupName').value;
+                cmd += ';devType=' + document.getElementById('devType').value;
+                cmd += ';note=' + document.getElementById('devNote').value;
                 cmd += ';swapLimSW=' + swapLimSW;
-                cmd += ';timeOut=' + document.getElementById('timeOut-' + num).value;
-                 // cmd += ';devName=' + encodeURIComponent(document.getElementById('devName-' + num).value);
-                // cmd += ';groupName=' + encodeURIComponent(document.getElementById('groupName-' + num).value);
-                // cmd += ';devType=' + encodeURIComponent(document.getElementById('devType-' + num).value);
-                // cmd += ';note=' + encodeURIComponent(document.getElementById('note-' + num).value);
-                // cmd += ';swapLimSW=' + swapLimSW;
-                // cmd += ';timeOut=' + encodeURIComponent(document.getElementById('timeOut-' + num).value);;
+                cmd += ';timeOut=' + document.getElementById('timeOut').value;
             }
-            
-            // TODO - move some of this (transitions) to styles.css
-            document.getElementById('flex-container').style.transition = ".5s";
-            document.getElementById('flex-container').style.backgroundColor = "var(--bg-col-ack)";
-            document.body.style.transition  = ".5s";
             document.body.style.backgroundColor = "var(--bg-col-ack)";
             
-            var tmr = setTimeout(function () {
-                    returnColor(num);
+            /*var tmr = setTimeout(function () {
+                    returnColor();
                    }, 1000);
+            */
             websock.send(cmd);
         }
         
-        function returnColor(num){
+        function returnColor(){
             document.body.style.backgroundColor = "var(--bg-col)";
-            document.getElementById('flex-container').style.backgroundColor = "var(--bg-col)";
         }
         
         //replaces jquery .get function
@@ -229,84 +161,49 @@ To build this template file intp the code after updating it do the following:
             xmlHttp.send(null);
         }
         
-        function loadJSON(path, success, error)
-        {
-            var xhr = new XMLHttpRequest();
-            xhr.onreadystatechange = function()
-            {
-                if (xhr.readyState === XMLHttpRequest.DONE) {
-                    if (xhr.status === 200) {
-                        if (success)
-                            success(JSON.parse(xhr.responseText));
-                    } else {
-                        if (error)
-                            error(xhr);
-                    }
-                }
-            };
-            xhr.open("GET", path, true);
-            xhr.send();
-        }
-
         function processJSON(JSONstr){
             var data = JSON.parse(JSONstr);
-            var DA = data.fishyDevices;
-            doStuffWithJSON(DA);
+            doStuffWithJSON(data.fishyDevices);
         }
 
         function doStuffWithJSON(DA){
+           
             var addDiv = '';
-                    var mstrTxt = '';
-                    var calTxt = '';
-                    var chckTxt = '';
-                    var ii;
-                    Array.prototype.forEach.call(DA, 
-                        function (d,num) {
-                            ii = 999;
-                            //look for new devices in the JSON
-                            if (d.isMaster == 'true') { mstrTxt = 'MASTER '; } else { mstrTxt = ''; }
-                            if (d.motorPosAtCWset == 'true' && d.motorPosAtCCWset == 'true') { calTxt = ''; } else { calTxt = 'HW LIMITS ARE UNCALIBRATED<br>'; }
-                            if (d.openIsCCW == 'true') { chckTxt = 'checked'; } else { chckTxt = ''; }
-                            if (d.swapLimSW == 'true') { swapTxt = 'checked'; } else { swapTxt = ''; }
-                            if (d.deviceTimedOut == 'true') {
-                                    var errPanel = document.getElementById('hdErr-'+ii);
-                                    errPanel.style.display = 'block';
-                                } else {
-                                    var errPanel = document.getElementById('hdErr-'+ii);
-                                    errPanel.style.display = 'none';
-                                }
-                            document.getElementById('note-'+ii).value = d.note;
-                            document.getElementById('timeOut-'+ii).value = d.timeOut;
-                            document.getElementById('devName-'+ii).value = d.deviceName;
-                            document.getElementById('groupName-'+ii).value = d.group;
-                            document.getElementById('devType-'+ii).value = d.devType;
-                            document.getElementById('devSWver-'+ii).innerHTML = d.swVer;
-                            document.getElementById('pctOpenVal-' + ii).value = posPct(d.motorPos,d.range, d.openIsCCW);
-                            document.getElementById('pctOpenSld-' + ii).value = posPct(d.motorPos, d.range, d.openIsCCW);
-                            document.getElementById('pobtn-' + ii).value='Go ' + posPct(d.motorPos, d.range, d.openIsCCW) + '% Open';
-                            document.getElementById('motPosVal-' + ii).value = d.motorPos;
-                            document.getElementById('motPosVal-' + ii).min = "0";
-                            document.getElementById('motPosVal-' + ii).max = d.range;
-                            document.getElementById('motPosSld-' + ii).value = d.motorPos;
-                            document.getElementById('motPosSld-' + ii).min = "0";
-                            document.getElementById('motPosSld-' + ii).max = d.range;
-                            document.getElementById('calTxt-' + ii).innerHTML = calTxt;
-                            document.getElementById('HWlim-' + ii).innerHTML = "CCW = " + "0" + " CW = " + d.range;  
-                        }
-                    );
+            var mstrTxt = '';
+            var calTxt = '';
+            var chckTxt = '';
+            var inErr=false;
+            var errTxt = '';
+            d=DA[0];
+            
+            returnColor();
+            
+            if (d.isMaster == 'true') { mstrTxt = ' (MASTER)'; } else { mstrTxt = ''; }
+            if (d.openIsCCW == 'true') { chckTxt = 'checked'; } else { chckTxt = ''; }
+            if (d.swapLimSW == 'true') { swapTxt = 'checked'; } else { swapTxt = ''; }
+            if (d.motorPosAtCWset == 'true' && d.motorPosAtCCWset == 'true') { calTxt = ''; } else { inErr=true;errTxt='UNCALIBRATED\n'; calTxt = '**HARDWARE LIMITS ARE UNCALIBRATED**\n(AUTOCAL IS RECOMMENDED)\n';}
+            if (d.deviceTimedOut == 'true') {inErr=true;errTxt=errTxt + 'ERROR - DEVICE TIMED OUT\n';}
+
+            infoText = 'NAME: ' + d.deviceName + '\n' +
+                       'IP ADDRESS: ' + d.ip + mstrTxt + '\n' +
+                       'MOTOR POSITION: ' + d.motorPos + '\n' +
+                       'MOTOR HARDWARE LIMITS: CCW=0 CW= ' + d.range + '\n' +
+                       'SOFTWARE VERSION: ' + d.swVer + '\n' +
+                       'INIT STR: ' + d.initStamp + '\n\n\n' + calTxt + '\n' + errTxt;
+            if(inErr){
+                document.getElementById("info-icon").className="info-icon-blink";
+            }else{
+                document.getElementById("info-icon").className="info-icon";
+            }
+            setMainTxt(posPct(d.motorPos,d.range,d.openIsCCW));
+            document.getElementById('devIP').value = d.ip + mstrTxt;
+            document.getElementById('devNote').value = d.note;
+            document.getElementById('timeOut').value = d.timeOut;
+            document.getElementById('devName').value = d.deviceName;
+            document.getElementById('groupName').value = d.group;
+            document.getElementById('devType').value = d.devType;
+           
         }
-        
-        // function pollJSON(onBuild) {
-        //     var srcStr = './node.JSON?nocache=' + (new Date()).getTime();
-        //     loadJSON(srcStr, 
-        //         //load success function
-        //         function (data) {
-        //             var DA = data.fishyDevices;
-        //             if(onBuild){return DA[0];}
-        //             else {doStuffWithJSON(DA);}
-        //         }
-        //     );
-        // }
         
         function posPct(motPos, range, openIsCCW) {
             if(range==0) return 0;
@@ -325,86 +222,52 @@ To build this template file intp the code after updating it do the following:
             var k = e.keyCode;
             return (k == 8 || k == 16 || (k >= 48 && k <= 57));
         }
-        //This is adding a 2 position actuator with limit switches
-        function addDevice(d){
-            if (d.isMaster == 'true') { mstrTxt = 'MASTER '; mstrChckTxt = 'checked'; mstrLabel = 'Master Node'; } else { mstrTxt = ''; mstrChckTxt = ''; mstrLabel = 'Slave Node'; }
-            if (d.motorPosAtCWset == 'true' && d.motorPosAtCCWset == 'true') { calTxt = ''; } else { calTxt = 'HW LIMITS ARE UNCALIBRATED<br>'; }
-            if (d.openIsCCW == 'true') { chckTxt = 'checked'; openLabel = 'Open is CCW';} else { chckTxt = ''; openLabel = 'Open is CW'; }
-            if (d.swapLimSW == 'true') { swapTxt = 'checked'; swapLabel = 'Swapped Lim SW';} else { swapTxt = ''; swapLabel = 'Normal Lim SW'; }
-            if (d.deviceTimedOut == 'true') { dispTxt = 'inline'; timedOutTxt = 'ERROR - TIMED OUT';} else { dispTxt = 'none'; timedOutTxt = ''; }
-   
-                var ii = 999;
-                var addDiv = "<div class='CPdevice' id='CPnode-" + ii +"'>" +
-                    "<input type='hidden' id='targetIP-" + ii + "' value='" + d.IP + "'>" +
-                    "<div class='CPhdErr' id='hdErr-" + ii + "' display='" + dispTxt + "'>"+ timedOutTxt +"</div>" +
-                    "<div class='sldRow'>" +
-                    "<div class='sldLab'>% Open</div><input class='sld' id='pctOpenSld-" + ii + "' type='range' value='" + posPct(d.motorPos, d.range, d.openIsCCW) + "' max='100' min='0' oninput=sync(" + ii + ",'pctOpen',1)> <input class='sldVal' id='pctOpenVal-" + ii + "' type='number' value='" + posPct(d.motorPos, d.range, d.openIsCCW) + "' max='100' min='0' onchange=sync(" + ii + ",'pctOpen',2)>" +
-                    "</div>" +
-                    "<div class='btnRow'><input class='lftBtn' id='fcbtn-" + ii + "' type='button' value='Full Close' onclick=sendCmd(" + ii + ",'C')><input class='midBtn' id='pobtn-" + ii + "' type='button' value='Go % Open' onclick=sendCmd(" + ii + ",'G')><input class='rgtBtn' id='fobtn-" + ii + "' type='button' value='Full Open' onclick=sendCmd(" + ii + ",'O')></div>" +
-                    "<div class='btnRow'><input class='fullBtn' id='stpbtn-" + ii + "' type='button' value='Stop' onclick=sendCmd(" + ii + ",'S')></div>" +
-                    "<div class='cfgPnl' id='cfgPnl-" + ii + "' style='display: hidden;'><hr>" +
-                    "<label class='cfgInpLab' for='devNote-" + ii + "'>Note:<input class='cfgInp' onkeypress='return blockSpecialChar(event)' id='note-" + ii + "' value='" + d.note + "' maxlength='55'></label><hr><div class='calTxt' id='calTxt-" + ii + "'>" + calTxt + "</div>" +
-                    "<label class='calTxt' >HW Limits: <span class='cfgInp' onkeypress='return blockSpecialChar(event)' id='HWlim-" + ii + "'>CCW = 0 CW = " + d.range + "</span></label> " +
-                    "	<div class='sldRow'>" +
-                    "		<div class='sldLab'>Mot Pos</div><input class='sld-dis' id='motPosSld-" + ii + "' type='range' value='" + d.motorPos + "' max='" + d.range + "' min='0' disabled> <input class='sldVal' id='motPosVal-" + ii + "' type='number' value='" + d.motorPos + "' max='" + d.range + "' min='0' disabled>" +
-                    "	</div><hr>" +
-                    "	<label class='cfgInpLab' for='timeOut-" + ii + "'>Time Out:<input class='cfgInpNum' onkeypress='return numberCharOnly(event)' id='timeOut-" + ii + "' value='" + d.timeOut + "' maxlength='5' title='Enter a time (in seconds) to wait for the actuator to respond before stopped and displaying an error message (assuming the actuator got stuck).'></label>" +
-                    "	<div class='swRow'>" +
-                    "		<label class='sw' id='sw-" + ii + "'><input type='checkbox' id='swChck-" + ii + "' " + chckTxt + " onchange=openIsCCWUpd(" + ii + ")><span class='sldSw'></span></label><span class='swLab' id='swLab-" + ii + "'>" + openLabel + "</span>" +
-                    "	</div>" +
-                    "	<div class='swRow'>" +
-                    "		<label class='sw' id='swMstr-" + ii + "'><input type='checkbox' id='swMstrChck-" + ii + "' " + mstrChckTxt + " onchange=swMstrUpd(" + ii + ")><span class='sldSw'></span></label><span class='swLab' id='swMstrLab-" + ii + "'>"+mstrLabel+"</span>" +
-                    "	</div>" +
-                    "	<div class='swRow'>" +
-                    "		<label class='sw' id='swSwap-" + ii + "'><input type='checkbox' id='swSwapChck-" + ii + "' " + swapTxt + " onchange=swSwapUpd(" + ii + ")><span class='sldSw'></span></label><span class='swLab' id='swSwapLab-" + ii + "'>"+swapLabel+"</span>" +
-                    "	</div>" +
-                    "	<label class='cfgInpLab' for='devName-" + ii + "'>Device Name:<input class='cfgInp' onkeypress='return blockSpecialChar(event)' id='devName-" + ii + "' value='" + d.deviceName + "' maxlength='40'></label>" +
-                    "	<label class='cfgInpLab' for='groupName-" + ii + "'>Group Name:<input class='cfgInp' onkeypress='return blockSpecialChar(event)' id='groupName-" + ii + "' value='" + d.group + "' maxlength='40'></label>" +
-                    "	<label class='cfgInpLab' for='devType-" + ii + "'>Device Type:<input class='cfgInp' onkeypress='return blockSpecialChar(event)' id='devType-" + ii + "' value='" + d.devType + "' maxlength='20'></label>" +
-                    "	<label class='cfgInpLab' >SW Version:<span class='cfgInp' onkeypress='return blockSpecialChar(event)' id='devSWver-" + ii + "'>" + d.swVer + "</span></label>" +
-                    "	<div class='btnRow'>" +
-                    "	<input class='cfgBtnY' id='updCfgBtn-" + ii + "' type='button' value='UPDATE SETTINGS' onclick=sendCmd(" + ii + ",'config') title='This will save new settings in the device. New settings should be displayed on next refresh.  If trying to adjust mulitple settings it is recommended that you temporarily turn off Auto-refresh.'>"+
-                    "	<input class='cfgBtnY' id='updCfgBtn-" + ii + "' type='button' value='REBOOT DEVICE' onclick=sendCmd(" + ii + ",'reboot') title='This will reboot the device.'>"+
-                    "	</div><div class='btnRow'>" +
-                    "<input class='cfgBtn' id='updCfgBtn-" + ii + "' type='button' value='AUTO-CAL. HW LIM' onclick=sendCmd(" + ii + ",'cal') title='WARNING: Auto-Cal will attempt to cycle your actuator full open and shut to determine  hardware limit switch positions. Ensure that range is possible to prevent damage.'>" +
-                    "	<input class='cfgBtn' id='rstWifiBtn-" + ii + "' type='button' value='RESET WIFI' onclick=sendCmd(" + ii + ",'rstWifi') title='WARNING: Reset Wifi will attempt to delete your network SSID and password and put the device into wifi-server mode to learn new wifi SSID and password. To teach a reset device a new wifi network go to the device IP address using a mobile phone or computer.'>" +
-                    "	</div>" +
-                    "	<hr>" +
-                    "</div>" +
-                    "<div class='btnRow'><input class='tglBtn' id='cfgBtn-" + ii + "' type='button' value='[+] Show Settings Panel' onclick=toggleCfg(" + ii + ")></div>" +
-                    "</div>";
-                return addDiv;
-        }
-        var pollTimer;
-        function buildPage() {
-            //var d = JSON.parse(fishyNetJSON).fishyDevices[0];
-            var srcStr = './node.JSON?nocache=' + (new Date()).getTime();
-            var addDiv = '';
-            var mstrTxt = '';
-            var calTxt = '';
-            var chckTxt = '';
-            var mstrChckTxt = '';
-            var i=0;
-            var theBody = document.getElementById('myBody');
-            var newdiv = document.createElement('DIV');
-            newdiv.className = 'flex-container';
-            newdiv.id = 'flex-container';
-           loadJSON(srcStr, 
-                //load success function
-                function (data) {
-                    var d = data.fishyDevices[0];
-                    newdiv.innerHTML = addDevice(d);
-                    theBody.appendChild(newdiv);
-                    start();
-                }
-            );
-        }
-            
+              
+        var infoText='...Loading...';
+        
         //TODO - add listener that will detect a document hight change to 0 - then close the websocket. 
         //      - or add a change to the master to destroy the modal page rather than just close the iframe to zero.
-        window.onload = buildPage();
+        window.onload = start();
     </script>
 
 </div>
+<div id='flex-container' class='flex-grid-outer'>
+    <div class='status' id='deviceStatus'><table style='padding:0px;'><tr class='mainTxtRw'><td width=18px><span class='info-icon' id='info-icon' onclick='showDetails()'>&#x1F6C8;</span></td><td width=265px><span class='mainTxt' id='mainTxt'>...Loading...</span></td></tr><tr class='otherTxtRw'><td colspan=2><span id='otherTxt'></span></td></tr></table></div>
+    <div class='buttonSet'>
+        <div class='flex-grid'><div class='sliderDiv'><input class='slider' id='pctOpenSld' type='range' value='50' max='100' min='0' oninput='syncPO()'></div><div class='button' onclick='sendCmd("G")'><p class='buttonTxt' id='pobtntxt'>50%</p></div></div>
+        <div class='flex-grid' >
+        <div class='button' onclick='sendCmd("O")'><p class='buttonTxt'>OPEN</p></div>
+        <div class='button' onclick='sendCmd("S")'><p class='buttonTxt'>STOP</p></div>
+        <div class='button' onclick='sendCmd("C")'><p class='buttonTxt'>CLOSE</p></div>
+      </div>
+    </div>
+
+    <div class='configPanel'>
+            <label class='cfgInpLab' for='devIP'>IP Address:<input class='cfgInp' disabled id='devIP' value='...Loading...' maxlength='40'></label><br>
+            <label class='cfgInpLab' for='devName'>Name:<input class='cfgInp' onkeypress='return blockSpecialChar(event)' id='devName' value='...Loading...' maxlength='40'></label><br>
+            <label class='cfgInpLab' for='groupName'>Group:<input class='cfgInp' onkeypress='return blockSpecialChar(event)' id='groupName' value='...Loading...' maxlength='40'></label><br>
+            <label class='cfgInpLab' for='devType'>Type:<input class='cfgInp' onkeypress='return blockSpecialChar(event)' id='devType' value='...Loading...' maxlength='20'></label><br>
+            <label class='cfgInpLab' for='devNote'>Note:<input class='cfgInp' onkeypress='return blockSpecialChar(event)' id='devNote' value='...Loading...' maxlength='55'></label><br>
+            <label class='cfgInpLab' for='timeOut'>Time-Out:<input class='cfgInpNum' onkeypress='return numberCharOnly(event)' id='timeOut' value='00' maxlength='5' title='Enter a time (in seconds) to wait for the actuator to respond before stopped and displaying an error message (assuming the actuator got stuck).'></label>
+    </div>
+    <div>
+        <div class='swPanel'>
+                <div class='swRow'><label class='sw' id='sw'><input type='checkbox' id='swChck' onchange='openIsCCWUpd()'><span class='sldSw'></span></label><span class='swLab' id='swLab'>Open is CW</span></div>
+                <div class='swRow'><label class='sw' id='swMstr'><input type='checkbox' id='swMstrChck' checked='' onchange='swMstrUpd()'><span class='sldSw'></span></label><span class='swLab' id='swMstrLab'>Master Node</span>	</div>
+                <div class='swRow'><label class='sw' id='swSwap'><input type='checkbox' id='swSwapChck' checked='' onchange='swSwapUpd()'><span class='sldSw'></span></label><span class='swLab' id='swSwapLab'>Swapped Lim SW</span>	</div>
+        </div>    
+        <div class='buttonSet' >
+                <div class='flex-grid'>
+                    <input class='cfgbuttonY' id='updCfgBtn' type='button' value='UPDATE SETTINGS' onclick='sendCmd("config")' title='This will save new settings in the device. New settings should be displayed on next refresh.  If trying to adjust mulitple settings it is recommended that you temporarily turn off Auto-refresh.'>
+                    <input class='cfgbuttonY' id='updCfgBtn' type='button' value='REBOOT DEVICE' onclick='sendCmd("reboot")' title='This will reboot the device.'>
+                </div>
+                <div class='flex-grid'>
+                    <input class='cfgbuttonR' id='updCfgBtn' type='button' value='AUTO-CAL. HW LIM' onclick='sendCmd("cal")' title='WARNING:Auto-Cal will attempt to cycle your actuator full open and shut to determine  hardware limit switch positions. Ensure that range is possible to prevent damage.'>
+                    <input class='cfgbuttonR' id='rstWifiBtn' type='button' value='RESET WIFI' onclick='sendCmd("rstWifi")' title='WARNING:Reset Wifi will attempt to delete your network SSID and passwordand put the device into wifi-server mode to learn new wifi SSID and password. To teach a reset device a new wifi network go to the device IP address using a mobile phone or computer.'>
+                </div>
+        </div>
+    </div>
+</div>
+  
 </body>
 </html>

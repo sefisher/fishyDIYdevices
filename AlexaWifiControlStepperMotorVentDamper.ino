@@ -48,14 +48,17 @@ Notes:
 //#include <WiFiManager.h> 
 
 //custom definitions
-#include "motorDefinitions.h"	//called for 2-state limit switch devices
-#include "deviceDefinitions.h"  //
-#include "globals.h"			// global variables
-#include "webresources.h"		// strings for device served webpages
+#include "motorDefinitions.h"			//called for 2-state limit switch devices
+#include "deviceDefinitions.h"  		//
+#include "globals.h"					// global variables
+#include "2-State-Actuator-Globals.h" 	// global variables specific to 2-state-actuators
+#include "webresources.h"				// strings for device served webpages
 
-//TEST - TODO remove
-int count;
-unsigned long tmrs[]={0,0,0,0,0,0,0,0};
+#if (DEBUG_TIMING)
+	int count;
+	unsigned long tmrs[]={0,0,0,0,0,0,0,0};
+#endif
+
 //this is the base setup routine called first on power up or reboot
 void setup()
 {
@@ -80,10 +83,6 @@ void loop()
 	dns.processNextRequest();
 	if(DEBUG_TIMING) {tmrs[0]=tmrs[0] + (millis()-lastMillis);lastMillis = millis();}
 	checkResetOnLoop(); //reset device if flagged to
-
-
-//i'm here - websocket.loop is really slow; trying to see why and make sure the async version isn't working
-
 	if(DEBUG_TIMING) {tmrs[1]=tmrs[1] + (millis()-lastMillis); lastMillis = millis();}
 	//webSocket.loop(); //handle webSocket
 	if(DEBUG_TIMING) {tmrs[2]=tmrs[2] + (millis()-lastMillis); lastMillis = millis();}

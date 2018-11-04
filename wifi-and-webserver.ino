@@ -17,7 +17,7 @@ void WiFiSetup()
 		WiFiManager.autoConnect(EEPROMdata.namestr);
 		
 		if(!WiFiManager.autoConnect()) {
-			Serial.println("failed to connect and hit timeout");
+			if (DEBUG_MESSAGES){Serial.println("Failed to connect and hit timeout");}
 			//reset and try again, or maybe put it to deep sleep
 			ESP.reset();
 			delay(1000);
@@ -26,7 +26,7 @@ void WiFiSetup()
 		WiFi.mode(WIFI_STA);
 		WiFi.begin(SSID_CUSTOM, PASS_CUSTOM);
 		if (WiFi.waitForConnectResult() != WL_CONNECTED) {
-			Serial.println("WiFi Failed");
+			if (DEBUG_MESSAGES){Serial.println("WiFi Failed");}
 			
 			while(1) {
 				fastBlinks(2);
@@ -112,70 +112,12 @@ void webSocketEvent(uint8_t num, WStype_t type, uint8_t * payload, size_t length
 				IPAddress ip = webSocket.remoteIP(num);
 				Serial.printf("[%u] Connected from %d.%d.%d.%d url: %s\r\n", num, ip[0], ip[1], ip[2], ip[3], payload);
 				
-				
 				webSocket.broadcastTXT(getNodeJSON().c_str(),strlen(getNodeJSON().c_str()));
-				/*
-				// Send the current LED status
-				if (LEDStatus1) {
-				webSocket.sendTXT(num, LEDON1, strlen(LEDON1));
-				}
-				else {
-				webSocket.sendTXT(num, LEDOFF1, strlen(LEDOFF1));
-				}
-				
-				// Send the current LED status
-				if (LEDStatus2) {
-				webSocket.sendTXT(num, LEDON2, strlen(LEDON2));
-				}
-				else {
-				webSocket.sendTXT(num, LEDOFF2, strlen(LEDOFF2));
-				}
-				
-				// Send the current LED status
-				if (LEDStatus1) {
-				webSocket.sendTXT(num, LEDON3, strlen(LEDON3));
-				}
-				else {
-				webSocket.sendTXT(num, LEDOFF3, strlen(LEDOFF3));
-				}
-
-				// Send the current SW 1 status
-				if (SWstatus1) {
-				webSocket.sendTXT(num, SWOPEN1, strlen(SWOPEN1));
-				}
-				else {
-				webSocket.sendTXT(num, SWCLOSED1, strlen(SWCLOSED1));
-				}
-				*/
 			} 
 			break;
-			
-			case WStype_TEXT:
+		case WStype_TEXT:
 			Serial.printf("[%u] get Text: %s\r\n", num, payload);
 			executeCommands((char*)payload, WiFi.localIP());
-			/*
-			if (strcmp(LEDON1, (const char *)payload) == 0) {
-				writeLED(1,true);
-			}
-			else if (strcmp(LEDOFF1, (const char *)payload) == 0) {
-				writeLED(1,false);
-			}
-			else if (strcmp(LEDON2, (const char *)payload) == 0) {
-				writeLED(2,true);
-			}
-			else if (strcmp(LEDOFF2, (const char *)payload) == 0) {
-				writeLED(2,false);
-			}
-			else if (strcmp(LEDON3, (const char *)payload) == 0) {
-				writeLED(3,true);
-			}
-			else if (strcmp(LEDOFF3, (const char *)payload) == 0) {
-				writeLED(3,false);
-			}
-			else {
-				Serial.println("Unknown command");
-			}
-			*/
 			// send data to all connected clients
 			webSocket.broadcastTXT(payload, length);
 		break;
@@ -192,21 +134,18 @@ void webSocketEvent(uint8_t num, WStype_t type, uint8_t * payload, size_t length
   }
 }
 
-//TODO test this function - I'm here
-//todo - format a string with the infomation about the device plus any message
-//send a message to the web clients via webSocket
 void updateClients(String message){
 	static unsigned long lastUpdate = millis();
 	String text="MSG:"+message+"~*~*DAT:"+getNodeJSON();
 	
-	if (millis() - lastUpdate > 1000)
+	if (millis() - lastUpdate > 500)
 	{
 		lastUpdate = millis();
 		Serial.println(text);
 		webSocket.broadcastTXT(text.c_str(), strlen(text.c_str()));
 	}
-	//webSocket.broadcastTXT(text.c_str(), strlen(text.c_str()));
 }
+
 //-----------------------------------------------------------------------------
 //-------------------------Web Server Functions--------------------------------
 //-----------------------------------------------------------------------------

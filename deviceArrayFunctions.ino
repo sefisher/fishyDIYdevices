@@ -2,10 +2,9 @@
 //-------deviceArray funtions---------------------------
 //-------------------------------------------------------------------------
 
-//TODO-convert these array functions over to just storing the limited amount of info required for the MASTER pages (ip,name,typestr,groupstr,statusstr,inError,isMaster)
+//TODO!!-convert these array functions over to just storing the limited amount of info required for the MASTER pages (ip,name,typestr,groupstr,statusstr,inError,isMaster)
 // - make sure the EEPROMdata is used for all internal things
 // - create a status message (which will be device specific - so name the function TWOSTATE_[function] for consistency)
-//
 
 //return a fishyDevice with this devices status in it.
 //used primarily to add device data to array of device data Stored
@@ -106,7 +105,7 @@ int findDeadNode()
 			}
 		}
 		return -1; //no more room - oh well
-		//TODO - alert the user on the webpage when the number of devices is at  MAX_NODES and no more space can be found
+		//TODO!! - alert the user on the webpage when the number of devices is at  MAX_NODES and no more space can be found
 }
 
 //store an updated device in the deviceArray at index

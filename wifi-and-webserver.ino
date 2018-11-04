@@ -60,24 +60,18 @@ void WiFiSetup()
 	{
 		hostName = "fishyDIYNode" + String(WiFi.localIP()[3]);
 	}
-	MDNS.begin(hostName.c_str());					  //start mDNS to fishyDIYmaster.local
+	MDNS.begin(hostName.c_str());	//start mDNS to fishyDIYmaster.local
 
-	//TODO - look at deleting this (and all references) once websocks are fully tested
-	httpServer.on("/genericArgs", handleGenericArgs); //Associate the handler function to the path
-	
 	httpServer.on("/", handleRoot);
 	httpServer.on("/SWupdater", handleRoot);
 	httpServer.on("/control", handleCtrl);
 	httpServer.on("/SWupdateDevForm", HTTP_GET, handleSWupdateDevForm);
 	httpServer.on("/SWupdateGetForm", HTTP_GET, handleSWupdateDevForm);
 	httpServer.on("/SWupdatePostForm", HTTP_POST, handleSWupdateDevPostDone,  handleSWupdateDevPost);
-	//httpServer.on("/SWupdateDone", handleSWupdateDone);
 	httpServer.on("/network.JSON", handleNetworkJSON);
 	httpServer.on("/node.JSON", handleNodeJSON);
 	httpServer.on("/styles.css",handleCSS);
-	//httpServer.on("/test",handleTest);
 	httpServer.onNotFound(handleNotFound);
-	//httpUpdater.setup(&httpServer);
 	httpServer.begin();
 
 	MDNS.addService("http", "tcp", 80);
@@ -236,102 +230,29 @@ String getNodeJSON()
 			"\",\"swapLimSW\":\"" + String(EEPROMdata.swapLimSW ? "true" : "false") + "\"}";
 
 	temp += "]}";
-	//if(DEBUG_MESSAGES){Serial.println("[getJSON] built: " + temp);}
 	return temp;
-}
-
-void handleGenericArgs(AsyncWebServerRequest *request)
-{ //Handler
-	if (EEPROMdata.master || (masterIP.toString()=="0.0.0.0"))
-	{
-		IPAddress IPtoSend;
-		String IPforCommand = "";
-		char command[MAXCMDSZ] = "";
-		String message = "Number of args received:";
-		message += request->args(); //Get number of parameters
-		message += "\n";			  //Add a new line
-		if (DEBUG_MESSAGES)
-		{
-			Serial.println("[handleGenericArgs] :" + message);
-		}
-		for (int i = 0; i < request->args(); i++)
-		{
-			message += "Arg #" + String(i) + " -> "; //Include the current iteration value
-			message += request->argName(i) + ": "; //Get the name of the parameter
-			message += request->arg(i) + "\n";	 //Get the value of the parameter
-
-			if (request->argName(i) == "IPCommand")
-			{
-				String response = request->arg(i);
-
-				//IP
-				int strStrt = 0;
-				int strStop = response.indexOf(";", strStrt);
-				String strIP = response.substring(strStrt, strStop);
-				IPtoSend[3] = strIP.substring(strIP.lastIndexOf(".") + 1).toInt();
-				strIP = strIP.substring(0, strIP.lastIndexOf("."));
-				IPtoSend[2] = strIP.substring(strIP.lastIndexOf(".") + 1).toInt();
-				strIP = strIP.substring(0, strIP.lastIndexOf("."));
-				IPtoSend[1] = strIP.substring(strIP.lastIndexOf(".") + 1).toInt();
-				strIP = strIP.substring(0, strIP.lastIndexOf("."));
-				IPtoSend[0] = strIP.toInt();
-				response = response.substring(strStop + 1);
-				if (DEBUG_MESSAGES && UDP_PARSE_MESSAGES)
-				{
-					Serial.println("[handleGenericArgs] strIP:response " + IPtoSend.toString() + ":" + response);
-				}
-				message += "[handleGenericArgs] strIP:response " + IPtoSend.toString() + ":" + response;
-				
-				response.toCharArray(command, MAXCMDSZ);
-				if (IPtoSend == WiFi.localIP())
-				{
-					if (DEBUG_MESSAGES && UDP_PARSE_MESSAGES)
-					{
-						Serial.println("[handleGenericArgs] MASTER node processing configuration change...");
-					}
-					executeCommands(command, WiFi.localIP());
-				}
-				else
-				{
-					if (DEBUG_MESSAGES && UDP_PARSE_MESSAGES)
-					{
-						Serial.println("[handleGenericArgs] Sending slave node configuration change...");
-					}
-					Udp.beginPacket(IPtoSend, UDP_LOCAL_PORT);
-					Udp.write(response.c_str());
-					Udp.endPacket();
-				}
-			}
-		}
-		request->send(200, "text/html", message.c_str()); //Response to the HTTP request
-	}
-	else
-	{
-		handleNotMaster(request);
-	}
 }
 
 //this creates the iframes for all the devices in the network, if /SWupdater then it loads those forms, otherwise it loads /ctrlPanels for each iframe
 void handleRoot(AsyncWebServerRequest *request)
 {
-		
-		if (DEBUG_MESSAGES)
-		{
-			Serial.println("\n[handleRoot]\n");
-			Serial.println(String(WEBROOTSTRNEW));
-		}
-		request->send_P(200,"text/html",WEBROOTSTRNEW);
+	if (DEBUG_MESSAGES)
+	{
+		Serial.println("\n[handleRoot]\n");
+		Serial.println(String(WEBROOTSTRNEW));
+	}
+	request->send_P(200,"text/html",WEBROOTSTRNEW);
 }
 
 
-void handleCtrl(AsyncWebServerRequest *request){
-	
-		if (DEBUG_MESSAGES)
-		{
-			Serial.println("\n[handleCtrl]\n");
-			Serial.println(String(WEBCTRLSTRNEW));
-		}
-		request->send_P(200,"text/html",WEBCTRLSTRNEW);
+void handleCtrl(AsyncWebServerRequest *request)
+{
+	if (DEBUG_MESSAGES)
+	{
+		Serial.println("\n[handleCtrl]\n");
+		Serial.println(String(WEBCTRLSTRNEW));
+	}
+	request->send_P(200,"text/html",WEBCTRLSTRNEW);
 }
 
 //show the SW update form for the specifc device (function for every device webserver)
@@ -353,21 +274,6 @@ void handleCSS(AsyncWebServerRequest *request)
 	request->send_P(200, "text/css", WEBSTYLESSTR);
 }
 
-// //TODO - delete this once done with testing
-// void handleTest(AsyncWebServerRequest *request)
-// {
-//  	if (DEBUG_MESSAGES){Serial.println("\n[handleTest]Test HTML\n");}
-// 	request->send(200, "text/html", "<!doctype html><head><link rel=\"stylesheet\" type=\"text/css\" href=\"/styles.css\"><title>fishDIY Device Network Test</title><meta content=\"width=device-width,initial-scale=1\"name=viewport></head><body><div>TEST</div></body></html>");
-// }
-
-// //TODO - delete if not referenced
-// void setUpdaterError()
-// {
-// 	if (DEBUG_MESSAGES) Update.printError(Serial);
-// 	StreamString str;
-// 	Update.printError(str);
-// 	_updaterError = str.c_str();
-// }
 
 void handleSWupdateDevPost(AsyncWebServerRequest *request, String filename, size_t index, uint8_t *data, size_t len, bool final){
     if(!index){

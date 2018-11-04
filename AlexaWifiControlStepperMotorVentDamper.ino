@@ -54,10 +54,9 @@ Notes:
 #include "2-State-Actuator-Globals.h" 	// global variables specific to 2-state-actuators
 #include "webresources.h"				// strings for device served webpages
 
-#if (DEBUG_TIMING)
-	int count;
-	unsigned long tmrs[]={0,0,0,0,0,0,0,0};
-#endif
+//Used for DEBUG_TIMING if enabled
+int count;
+unsigned long tmrs[]={0,0,0,0,0,0,0,0};
 
 //this is the base setup routine called first on power up or reboot
 void setup()

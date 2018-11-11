@@ -18,7 +18,8 @@ To build this template file intp the code after updating it do the following:
     }
 
     .main,body {
-        font-family: "Lucida Sans Unicode","Lucida Grande",sans-serif
+        font-family: "Lucida Sans Unicode","Lucida Grande",sans-serif;
+        margin: 0px;
     }
 
     #loader {
@@ -114,7 +115,7 @@ function abortHandler(event) {
 
 </script>
 </head>
-<body><div id=loader style=display:none></div>
+<body style="margin:0px;"><div id=loader style=display:none></div>
 <div id="SWinfoDiv">
 <!--PART 1 END -->
 <p>dynamic content on SW version</p>
@@ -124,7 +125,7 @@ function abortHandler(event) {
 <hr>
   <form id="upload_form" enctype="multipart/form-data" method="post">
   <input type="file" name="file1" id="file1" onchange="uploadFile()"><br>
-  <progress id="progressBar" value="0" max="100" style="width:80%;display:none;"></progress>
+  <progress id="progressBar" value="0" max="100" style="width:50%;display:none;"></progress>
   <h3 id="status"></h3>
   <p id="loaded_n_total"></p>
 </form>

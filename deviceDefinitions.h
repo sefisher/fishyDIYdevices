@@ -6,7 +6,7 @@
 //You can update code - update this number - compile - and then load SW onto all the devices without
 //modifying the personality settings as long as INITIALIZE is the same on the devices (see below)
 //LIMITED to 10 alpanumeric characters
-#define SW_VER "20181103-1"
+#define SW_VER "20181110-1"
 
 //--------------------------PERSONALITY SETTINGS-----------------------------------//
 //Put in a time/date string to define the personality variables. 

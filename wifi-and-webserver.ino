@@ -199,6 +199,8 @@ and is paralleled by UDPpollReply and if configuration setting data updated by t
 if adding data elements all these may need updating.  This function sends data as follows (keep this list updated):
 {ip,name,typestr,groupstr,statusstr,inError,isMaster,dead}
 */
+
+//I'm HERE - todo - need to fix inError (either here or in makefishydevice and whatever stores it in the array); need to make the statusstr
 			temp += "{\"ip\":\"" + deviceArray[i].ip.toString() + "\",\"name\":\"" + String(deviceArray[i].name) + "\",\"typestr\":\"" + String(deviceArray[i].typestr) + "\",\"groupstr\":\"" + String(deviceArray[i].groupstr) + "\",\"statusstr\":\"" + String(deviceArray[i].statusstr) + "\",\"inError\":\"" + String(deviceArray[i].inError ? "true" : "false") + "\",\"isMaster\":\"" + String(deviceArray[i].isMaster ? "true" : "false") + "\",\"dead\":\"" + String(deviceArray[i].dead) + "\"}";
 		}
 	}

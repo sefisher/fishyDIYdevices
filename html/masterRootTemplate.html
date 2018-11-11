@@ -17,7 +17,9 @@ To build it in the code do the following:
     <link rel="stylesheet" href="/styles.css"> 
     <link rel="stylesheet" href="styles.css"> <!-- note this points to a file location on the local test server; it is intentionally placed here -->
 
-</head><body><div class='main' id='myBody'>   
+</head>
+<body>
+    <div class='main' id='myBody'>   
     <script>
         
         function addDevice(d){
@@ -34,6 +36,7 @@ To build it in the code do the following:
             if (d.isMaster == 'true') { mstrTxt = 'MASTER:'+d.ip; } else { mstrTxt = d.ip; }
             var addDiv = "<div class='CPhd' id='hd1-" + d.ip + "'>" + d.name + "</div>";
             if(isCtrl){
+                //TODO - update ERROR text if ERROR; update other text with status summary
                 addDiv += "<div id='CPerr-" + d.ip + "' class='" + errTxt + "'>ERROR</div>";
                 addDiv += "<div >" + d.statusstr + "</div>";
                 addDiv += "<button class='CPbutton' onclick='openModal(\"" + d.ip + "\")'; id='myBtn-" + d.ip + "'>Open Controls</button>";
@@ -144,6 +147,7 @@ To build it in the code do the following:
              var ii;
              var theBody = document.getElementById('myBody');
              var newdiv = document.createElement('DIV');
+             var theFtr;
              newdiv.className = 'fishyHdr';
              theBody.appendChild(newdiv);
              if (location.pathname.slice(1,4) == "SWu"){ 
@@ -156,9 +160,14 @@ To build it in the code do the following:
              newdiv.className = 'CPhd3';
              theBody.appendChild(newdiv);
              if(isCtrl){
-                 newdiv.innerHTML = "<span class='swRow'><label class='sw' id='swRefresh-1'><input type='checkbox' checked id='swRefreshChck-1' onchange=refreshToggle()><span class='sldSw'></span></label><span class='swLabHdr' id='swRefreshLab-1'>Auto-refresh On</span></span>";
+                 newdiv.innerHTML = "<span class='swRow'><label class='sw2' id='swRefresh-1'><input type='checkbox' checked id='swRefreshChck-1' onchange=refreshToggle()><span class='sldSw'></span></label><span class='swLabHdr' id='swRefreshLab-1'>Auto-refresh On</span></span>";
              }
             
+             theFtr = document.createElement('DIV');
+             theFtr.className = 'fishyFtr';
+             theBody.appendChild(theFtr);
+             theFtr.innerHTML = "<a href='/'>[Controls]</a>  <a href='/SWupdater'>[SW Update]</a>";                 
+             
              //TODO - make a funtion to parse the group names, and then make a group iframe
              // alternatively add a "group" control option for group labelled devices
              loadJSON(srcStr, 
@@ -174,9 +183,11 @@ To build it in the code do the following:
                     newdiv.className = 'flex-container';
                     newdiv.id = 'flex-container';
                     newdiv.innerHTML = items.join('');
-                    theBody.appendChild(newdiv);
+                    //theBody.appendChild(newdiv);
+                    theBody.insertBefore(newdiv,theFtr);
                 }
-            );            
+            );
+       
         }
         
         window.onload = buildPage();
@@ -189,13 +200,14 @@ To build it in the code do the following:
             }
         }
     </script>
-    <div class='fishyFtr'><a href="/">[Controls]</a>  <a href="/SWupdater">[SW Update]</a></div>
+       
     </div>
+     
     <!-- The Modal -->
     <div id='myModal' class='overlay'>
         <!-- Close button for overlay modal panel.  -->
         <a href='javascript:void(0)' class='closebtn' onclick='closeModal()'>
-        <div class='background'>&#x26DD;</div></a>
+        <div class='closebtn'>&#x2716;</div></a>
         <!-- Modal Content-->
         <div id='myIframeDiv' class='modal-body'><iframe id='myIframe' class='iframeBody' width=100% height=100% src=''></iframe></div>
     </div>

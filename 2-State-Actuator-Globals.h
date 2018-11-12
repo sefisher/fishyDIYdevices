@@ -1,6 +1,7 @@
 //=========================================================================================
 //CUSTOM GLOBALS - For 2-state-actuator 
 //=========================================================================================
+
 int targetPos = -1; //meaning no target
 enum trueState //enum used to define stages of both static and transient status - tracked in the device only
 {

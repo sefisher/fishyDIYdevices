@@ -6,16 +6,16 @@ To build this template file intp the code after updating it do the following:
  1) copy the HTML (from below this comment to the next comment where the JSON is defined).
  2) put it through a minifier (like https://kangax.github.io/html-minifier/) and then through a String builder
  (like http://buildmystring.com/ with "strip out carriage returns" on) to create a single string with no tabs and one line.
- 3) paste that into the WEBCTRLSTRNEW After "PROGMEM" in the webresources.h file.
+ 3) paste that into the WEBCTRLSTR After "PROGMEM" in the webresources.h file.
  4) copy the second block (from below the JSON definition to the end).
  ------------------------------------------------------------------------------------------------------ -->
  <!DOCTYPE html>
  <html>
  <head>
-     <title>fishDIY Device Network</title>
+     <title>fishDIY 2-State Actuator</title>
      <meta name='viewport' content='initial-scale=1.0'>
     
-     <link rel="stylesheet" href="/styles.css">
+     <link id='styles' rel="stylesheet" href="/styles.css">
      <link rel="stylesheet" href="styles.css"> <!-- intentionally left for testing -->
     
     </head>
@@ -138,11 +138,6 @@ To build this template file intp the code after updating it do the following:
                 cmd += ';timeOut=' + document.getElementById('timeOut').value;
             }
             document.body.style.backgroundColor = "var(--bg-col-ack)";
-            
-            /*var tmr = setTimeout(function () {
-                    returnColor();
-                   }, 1000);
-            */
             websock.send(cmd);
         }
         
@@ -184,7 +179,8 @@ To build this template file intp the code after updating it do the following:
             if (d.deviceTimedOut == 'true') {inErr=true;errTxt=errTxt + 'ERROR - DEVICE TIMED OUT\n';}
             openIsCCWUpd(); swMstrUpd(); swSwapUpd();
 
-            infoText = 'NAME: ' + d.deviceName + '<br>\n' +
+            infoText = 'DEVICE TYPE: ' + d.typestr + '<br>\n' +
+                       'NAME: ' + d.deviceName + '<br>\n' +
                        'IP ADDRESS: ' + d.ip + mstrTxt + '<hr>\n' +
                        'MOTOR POSITION: ' + d.motorPos + '<br>\n' +
                        'MOTOR HARDWARE LIMITS: CCW=0 CW= ' + d.range + '<hr>\n' +
@@ -201,8 +197,7 @@ To build this template file intp the code after updating it do the following:
             document.getElementById('timeOut').value = d.timeOut;
             document.getElementById('devName').value = d.deviceName;
             document.getElementById('groupName').value = d.group;
-            document.getElementById('devType').value = d.devType;
-           
+            document.getElementById('devType').value = d.devType;           
         }
         
         function posPct(motPos, range, openIsCCW) {
@@ -233,12 +228,10 @@ To build this template file intp the code after updating it do the following:
 </div>
 <div id='flex-container' class='flex-grid-outer'>
         <div class='fishyHdr' id='deviceStatus'><table width=100%><tr><td><div class='info-icon' id='info-icon' onclick='showDetails()'>&#9432;</div></td><td><div class='flex-grid' style="padding:6px"><table><tr><td style="font-size:12px">Position:</td></tr><tr><td id=mainTxt>100%</td></tr></table><span class=otherTxt id='otherTxt'></span></div></td></tr></table></div>
-        <!-- <div class='fishyHdr' id='deviceStatus'><table style='padding:0px;'><tr class='mainTxtRw'><td width=18px><span class='info-icon' id='info-icon' onclick='showDetails()'>&#9432;</span></td><td id=mainTxt width=265px>...Loading...</td></tr><tr class='otherTxtRw'><td colspan=2><span class=otherTxt id='otherTxt'></span></td></tr></table></div> -->
-    <div>
+       <div>
     <div class='buttonSet'>
       <div class='flex-grid'>
         <div class='sliderDiv'><input class='slider' id='pctOpenSld' type='range' value='50' max='100' min='0' oninput='syncPO()'></div>
-        <!--<div class='button' onclick='sendCmd("G")'><p class='buttonTxt' id='pobtntxt'>50%</p></div>-->
         <div class='button' onclick='sendCmd("G")'><table width=100%><tr><td class='lilButtonTxt'>GOTO</td></tr><tr><td class='buttonTxt'><span id='pobtntxt'>50%</span></td></tr></table></div>
       </div>
       <div class='flex-grid' >

@@ -1,8 +1,8 @@
 /* 
-This styles.css file is used by the other HTML pages built into the code. If you modify the css below then:
+This styles.css file is used by the other HTML pages and built into the code in webresources.h. If you modify the css below then:
 1) copy the whole file (from below this comment).
-2) put it through a css minifier (like https://css.github.io/csso/csso.html) and then through a String builder (like http://buildmystring.com/ with "strip out carriage returns" on) to create a single string with no tabs and one line.
-3) paste that into the WEBCTRLSTR After "PROGMEM" in the webresources.h file.
+2) put it through a css minifier (like https://codebeautify.org/css-beautify-minify#) and then through a String builder (like http://buildmystring.com/ with "strip out carriage returns" on) to create a single one-line string.
+3) paste that into the WEBSTYLESSTR After "PROGMEM" in the webresources.h file.
 */
 :root {
 	font-family: Arial, Helvetica, sans-serif;
@@ -279,14 +279,12 @@ body {
 	position: relative;
 	left: -10px;
 }
-
 .otherTxt {
 	text-align: center;
 	font-size: 20px;
 	font-weight: 500;
 }
 /*--------------Resizing for wide screens-----------*/
-
 @media screen and (min-width: 606px) {
 	.status {
 		height: 155px;
@@ -294,15 +292,12 @@ body {
 	.configPanel {
 		height: 155px;
 	}
-
 	.info-icon,
 	.info-icon-blink {
 		font-size: 28px;
 	}
-
 }
 /*---------------CONFIG-INPUT ------------*/
-
 .cfgInp,
 .cfgInpNum {
 	background-color: var(--lght-col);
@@ -328,7 +323,6 @@ body {
 	font-size: var(--sml-fnt);
 }
 /*-------------------HORIZONTAL-SLIDER-------------------*/
-
 input[type=range].slider {
 	-webkit-appearance: none;
 	width: 100%;
@@ -417,7 +411,6 @@ input[type=range].slider:focus::-ms-fill-upper {
 /*--------------------END HORIZONTAL-SLIDER -------------------*/
 
 /* ---------------- TWO-STATE SWITCHES ---------------- */
-
 .sw,
 .sw2 {
 	position: relative;
@@ -486,57 +479,42 @@ input:checked+.sldSw:before {
 	width: var(--cp-sz);
 	border: none;
 }
+.closebtn {
+	position: absolute;
+	z-index: 9999;
+	cursor: pointer;
+	width: 30px;
+	height: 30px;
+	top: 0px;
+	right: 3px;
+	display:none;
+	font-size: 26px;
+}
 .overlay {
 	height: 0%;
 	width: 100%;
 	position: fixed;
-	z-index: 1;
 	top: 0;
 	left: 0;
 	background-color: rgba(255, 255, 255, 0.7);
 	overflow-y: hidden;
 	transition: 0.5s;
+	z-index: 9999;
+	cursor: pointer;
 }
 .overlay-content {
-	position: relative;
+	position: fixed;
 	top: 25%;
 	width: 100%;
 	text-align: center;
 	margin-top: 30px;
 }
 .overlay a {
-	padding: 8px;
-	text-decoration: none;
-	font-size: 36px;
-	color: red;
+	/*padding: 8px;
+	text-decoration: none;*/
+	
 	display: block;
-	transition: 0.3s;
-}
-.overlay a:hover,
-.overlay a:focus {
-	color: #f1f1f1;
-}
-.overlay .closebtn {
-	position: absolute;
-	z-index: 999;
-	cursor: pointer;
-	background: transparent;
-	font-size: 30px;
-	font-weight: bold;
-	display: inline-block;
-	line-height: 0px;
-	padding: 11px 3px;
-}
-.closebtn {
-	position: absolute;
-	width: 30px;
-  height: 30px;
-	padding: 0;
-	margin: 0;
-	border: 1px;
-	top: 4px;
-  right: 3px;
-  color: red;
+	transition: 0.8s;
 }
 .modal-body {
 	position: relative;
@@ -544,20 +522,18 @@ input:checked+.sldSw:before {
 	bottom: 2px;
 	left: 2px;
 	right: 2px;
-	width: 99%;
-	height: 99%;
+	width:99%;
+	height:99%;
 	text-align: center;
 }
 .iframeBody {
 	border: none;
-	/*border-radius: 25px;*/
 }
 .myIframeDiv {
 	border: none;
-	/*border-radius: 25px;*/
-  background: transparent;
-  }
+  	background: transparent;
+}
 .swUpdate {
     min-width:300px;
     min-height: 300px;
-  }
+}

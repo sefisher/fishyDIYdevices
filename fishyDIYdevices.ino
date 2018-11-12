@@ -41,12 +41,6 @@ Notes:
 #include <EEPROM.h>
 #include <StreamString.h>
 
-//#include <ESP8266WebServer.h>
-//#include <Hash.h>
-//#include <WiFiClient.h>
-//#include <WiFiUdp.h>
-//#include <WiFiManager.h> 
-
 //custom definitions
 #include "motorDefinitions.h"			//called for 2-state limit switch devices
 #include "deviceDefinitions.h"  		//

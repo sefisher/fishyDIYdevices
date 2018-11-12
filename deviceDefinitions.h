@@ -6,7 +6,7 @@
 //You can update code - update this number - compile - and then load SW onto all the devices without
 //modifying the personality settings as long as INITIALIZE is the same on the devices (see below)
 //LIMITED to 10 alpanumeric characters
-#define SW_VER "20181111-1"
+#define SW_VER "20181112-1"
 
 //--------------------------PERSONALITY SETTINGS-----------------------------------//
 //Put in a time/date string to define the personality variables. 
@@ -25,13 +25,11 @@ their "personality settings" and wiping out stored motor info.
 
 //PICK A UNIQUE NAME FOR EACH DEVICE USING ONLY LETTERS AND NUMBERS
 // LIMITED to 40 alpanumeric characters (abcdefghijklmnopqrstuvwxyz0123456789)
-// #define CUSTOM_DEVICE_NAME "Direct Rotating Test" 
-//#define CUSTOM_DEVICE_NAME "Test Device 3"
-//#define CUSTOM_DEVICE_NAME "Test Device 2"
-//#define CUSTOM_DEVICE_NAME "Floor 4 Damper"
-#define CUSTOM_DEVICE_NAME "Floor 3 Damper"
-//#define CUSTOM_DEVICE_NAME "Floor 2 Damper"
-//#define CUSTOM_DEVICE_NAME "Floor 1 Damper"
+#define CUSTOM_DEVICE_NAME "Floor 3 Vent"
+
+//ENTER THIS DEVICE'S TYPE USING ONLY LETTERS AND NUMBERS (NO SPACES)
+//LIMITED to 20 alpanumeric characters 
+#define CUSTOM_DEVICE_TYPE "2-State-Actuator"
 
 //PICK ONLY ONE DEVICE ON THE NETWORK AS MASTER (and set this to true when you compile its code).  
 //IT WILL BE THE WEBSERVER AND CONTROLLER FOR ALL OTHER NODES.  Set false for all the others.
@@ -43,17 +41,10 @@ their "personality settings" and wiping out stored motor info.
 #define OPEN_IS_CCW false
 
 //Software fix in case you miswired and swapped the hardware limit switches.  
-#define SWAP_LIM_SW true
-// #define SWAP_LIM_SW false
+#define SWAP_LIM_SW false
 
 //SET THE TIMEOUT (in seconds) FOR STOPPING THE ACTUATOR IF MOTION CONTINUES WITHOUT REACHING A HARDWARE LIMIT
 #define MOTOR_TIMEOUT 60
-
-//IF DESIRED, SPECIFY THE DEVICE TYPE (default is "2-State Actuator")
-//LIMITED to 20 alpanumeric characters 
-//The note is displayed on the control panel for the device.
-//TODO - use this option
-#define CUSTOM_DEVICE_TYPE "2-State Actuator"
 
 //IF DESIRED, PICK A GROUP NAME FOR EACH DEVICE USING ONLY LETTERS/NUMBERS
 //LIMITED to 40 alpanumeric characters 

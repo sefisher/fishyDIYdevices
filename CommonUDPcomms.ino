@@ -110,8 +110,7 @@ void UDPpollReply(IPAddress remote)
 	Udp.beginPacket(remote, UDP_LOCAL_PORT);
 /* 
 send fishyDevice data.
-Note - this is parsed by UDPparsePollResponse and paralleled by getJSON; sometimes UDPparseConfigResponse is affected if new data needs set by the website configuration update; 
-if adding data elements all these may need updating.  This function sends data as follows (keep this list updated):{ip,name,typestr,groupstr,statusstr,inError,isMaster}
+Note - this is parsed by UDPparsePollResponse and paralleled by getJSON; if adding data elements all these may need updating.  This function sends data as follows (keep this list updated):{ip,name,typestr,groupstr,statusstr,inError,isMaster}
 */
 	response += "{" + holder.ip.toString() + "," +
 			String(holder.name) + ","  +  
@@ -137,7 +136,7 @@ void UDPparsePollResponse(String responseIn, IPAddress remote)
 	{
 /* 
 parse fishyDevice data.
-Note - this data set is sent by UDPparsePollResponse and getJSON; sometimes UDPparseConfigResponse is affected as well (if data is added that needs set by configuration updates)
+Note - this data set is sent by UDPparsePollResponse and getNetworkJSON; UDPparseConfigResponse may be affected as well (if data is added that needs set by configuration updates)
 it is also parsed by scripts in wifi-and-webserver.ino and webresources.h if adding data elements all these may need updating.  This function sends data as follows (keep this list updated):{ip,name,typestr,groupstr,statusstr,inError,isMaster}
 */
 		String response = responseIn.substring(14); //strip off "POLL RESPONSE"

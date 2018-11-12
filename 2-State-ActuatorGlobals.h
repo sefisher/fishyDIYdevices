@@ -1,6 +1,18 @@
 //=========================================================================================
 //CUSTOM GLOBALS - For 2-state-actuator 
 //=========================================================================================
+
+//This says EEPROM since it is extracted from the 255 char (max) string stored in the EEPROMdata struct
+//that is stored in EEPROM.  This struct is dynamic (not stored), but is encoded into the char[] then stored.
+struct EEPROMdeviceData{
+	bool swapLimSW = false;					//1 byte     //unique to 2-state-actuator
+	bool openIsCCW = true;					//1 byte     //unique to 2-state-actuator
+	bool motorPosAtCCWset = false;			//1 byte	 //unique to 2-state-actuator
+	bool motorPosAtCWset = false;			//1 byte     //unique to 2-state-actuator
+	int motorPos = 0; 						//4 bytes    //unique to 2-state-actuator
+	int range = 0; 							//4 bytes    //unique to 2-state-actuator
+}EEPROMdeviceData;
+
 int targetPos = -1; //meaning no target
 enum trueState //enum used to define stages of both static and transient status - tracked in the device only
 {
@@ -21,6 +33,7 @@ enum calStages // enum used to define steps as a device is sequenced through sta
 static const char *calStages_String[] = {"doneCal", "openingCal", "closingCal"};
 calStages deviceCalStage = doneCal; //used to sequence the device through stages of auto-cal
 trueState deviceTrueState = unknown; //used to track motor and gear actual (not ordered) state
+
 //==============================================================
 
 //Stepper Motor Full Swing Settings----------------------------------------------

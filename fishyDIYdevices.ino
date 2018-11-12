@@ -1,13 +1,11 @@
 /*
-TODO - update this advice when the program is completed
+You should only have to edit the code in this file to add new custom device types. See deviceDefinitions.h
+for the customization variables common to all types
 
-You shouldn't have to edit this code in this file.  See deviceDefinitions.h
-for the customization variables.
+This file is setup and tested to work with a NodeMCU 1.0 module (ESP-12E) - defined as ESP8266 in deviceDefinitions.h.
+If you have a variant with a different PIN-arrangement you may need to edit the pin definitions listed below.
 
-This file is is setup to work with a NodeMCU 1.0 module (ESP-12E).
-If you have a variant with a different PIN-arrangement you may need
-to edit the pin definitions listed below.
-
+//TODO - UPDATE THIS WHEN DONE
 To make this work in your home you need to:
 	1) Connect to your device as an access point when it first boots and
 	provide the WiFi SSID and password of you network
@@ -29,25 +27,27 @@ Notes:
 
 //Libraries
 #include <Arduino.h>
-#include <ESP8266WiFi.h>  //https://github.com/esp8266/Arduino
+#include <ESP8266WiFi.h>  			//https://github.com/esp8266/Arduino
 #include <ESP8266mDNS.h>
 
 #include <ESPAsyncWebServer.h>
 #include <ESPAsyncWiFiManager.h>
 #include <ESPAsyncTCP.h>
-#include <WebSocketsServer.h> //for ASYNC websockets - go into webSockets.h and uncomment #define WEBSOCKETS_NETWORK_TYPE NETWORK_ESP8266_ASYNC - comment out other #define WEBSOCKETS_NETWORK_TYPE lines
+#include <WebSocketsServer.h> 		//for ASYNC websockets - go into webSockets.h and uncomment #define WEBSOCKETS_NETWORK_TYPE NETWORK_ESP8266_ASYNC - comment out other #define WEBSOCKETS_NETWORK_TYPE lines
 #include <fauxmoESP.h>
 #include <AccelStepper.h>
 #include <EEPROM.h>
 #include <StreamString.h>
 
 //custom definitions
-#include "motorDefinitions.h"				//called for 2-state limit switch devices
-#include "deviceDefinitions.h"  			//
-#include "globals.h"						// global variables
-#include "webresources.h"					// strings for device served webpages
-#include "2-State-Actuator-globals.h" 		// global variables specific to 2-state-actuators
-#include "2-State-Actuator-webresources.h" 	// webresources specific to 2-state-actuators
+#include "CommonDeviceDefinitions.h"  		// device settings common to all devices (names, debug paramters, etc)
+#include "CommonGlobals.h"					// global variables
+#include "CommonWebresources.h"				// strings for device served webpages
+#include "2-State-ActuatorGlobals.h" 		// global variables specific to 2-state-actuators
+#include "2-State-ActuatorWebresources.h" 	// webresources specific to 2-state-actuators
+
+//the list of device types incoroprated into this build
+#define DEVICETYPES "{2-State-Actuator}"
 
 //Used for DEBUG_TIMING if enabled
 int count;
@@ -57,8 +57,8 @@ unsigned long tmrs[]={0,0,0,0,0,0,0,0};
 void setup()
 {
 	serialStart(); //if debugging turn on serial, supports all "show" functions
-	showPersonalityDataSize();
-	retrieveDataFromEEPROM();
+	showPersonalityDataSize(); //if debugging - show the EEPROM size for all the data
+	retrieveDataFromEEPROM(); //
 	showEEPROMPersonalityData();
 	initializePersonalityIfNew();
 	showEEPROMPersonalityData();	
@@ -72,9 +72,8 @@ void setup()
 //this is the main operating loop (MOL) that is repeatedly executed
 void loop()
 {
-	//todo - clean out all this timing stuff
-	static unsigned long lastMillisTiming;
-	if(DEBUG_TIMING){count=count+1;lastMillisTiming = millis();}
+	//TODO - clean out all this timing stuff if desired
+	static unsigned long lastMillisTiming; if(DEBUG_TIMING){count=count+1;lastMillisTiming = millis();}
 	dns.processNextRequest(); if(DEBUG_TIMING) {tmrs[0]=tmrs[0] + (millis()-lastMillisTiming);lastMillisTiming = millis();}
 	//reset device if flagged to
 	checkResetOnLoop(); if(DEBUG_TIMING) {tmrs[1]=tmrs[1] + (millis()-lastMillisTiming); lastMillisTiming = millis();}
@@ -121,23 +120,16 @@ void initializePersonalityIfNew(){
 		strncpy(EEPROMdata.groupstr, CUSTOM_GROUP_NAME, 41);
 		strncpy(EEPROMdata.typestr, CUSTOM_DEVICE_TYPE, 21);
 		strncpy(EEPROMdata.note, CUSTOM_NOTE, 56);
-		EEPROMdata.openIsCCW = OPEN_IS_CCW;
-		EEPROMdata.swapLimSW = SWAP_LIM_SW;
-		EEPROMdata.timeOut = MOTOR_TIMEOUT;
+		EEPROMdata.timeOut = DEVICE_TIMEOUT;
+		EEPROMdata.deviceTimedOut = false;	//initialized to false on boot
 
-		//Just put defaults into motor data following Initialization
-		EEPROMdata.motorPosAtCCWset = false;	
-		EEPROMdata.motorPosAtCWset = false;			
-		EEPROMdata.motorPos = 0;
-		EEPROMdata.range = FULL_SWING; 	
-		EEPROMdata.deviceTimedOut = false;	
+		//Get the default device specific data - load it into EEPROMdata, and decode it into the device specific EEPROMdeviceData
+		//this call also stores the encoded char[256] into EEPROMdata.deviceCustomData
+		initializeDeviceCustomData();
 
 		if (MASTER_NODE)
 		{
-			if (DEBUG_MESSAGES)
-			{
-				Serial.println("[SETUP] Setting this node as MASTER.");
-			}
+			if (DEBUG_MESSAGES)	{Serial.println("[SETUP] Setting this node as MASTER.");}
 			EEPROMdata.master = true;
 		}
 		else
@@ -167,9 +159,10 @@ void showEEPROMPersonalityData()
 {	
 	if (DEBUG_MESSAGES)
 	{
-		Serial.println("[SETUP] Init string: "+String(EEPROMdata.initstr)+", Name string: "+String(EEPROMdata.namestr)+", Master: " + String(EEPROMdata.master?"True":"False")+", Group name string: "+String(EEPROMdata.groupstr)+",Type string: "+String(EEPROMdata.typestr)+",Note string: "+String(EEPROMdata.note)+", OpenIsCCW: "+String(EEPROMdata.openIsCCW?"True":"False") + ", SwapLimSW: "+String(EEPROMdata.swapLimSW?"True":"False") + ", SW Version string: "+String(EEPROMdata.swVer) + ", Motor Timeout "+String(EEPROMdata.timeOut)+ ", Device Timedout "+String(EEPROMdata.deviceTimedOut));
-		Serial.println("[SETUP] Found motor data: {CCWset,CWset,Pos,range}: {" + String(EEPROMdata.motorPosAtCCWset)+ "," + String(EEPROMdata.motorPosAtCWset)+ "," + String(EEPROMdata.motorPos)+ "," + String(EEPROMdata.range)+"}");  	
-		Serial.println("[SETUP] Compiled init string: " + String(INITIALIZE) + ". Stored init string: " + String(EEPROMdata.initstr));
+		Serial.println("[SETUP] Init string: "+String(EEPROMdata.initstr)+", Name string: "+String(EEPROMdata.namestr)+", Master: " + String(EEPROMdata.master?"True":"False")+", Group name string: "+String(EEPROMdata.groupstr)+",Type string: "+String(EEPROMdata.typestr)+",Note string: "+String(EEPROMdata.note)+", SW Version string: "+String(EEPROMdata.swVer) + ", Motor Timeout "+String(EEPROMdata.timeOut)+ ", Device Timedout "+String(EEPROMdata.deviceTimedOut));
+		Serial.println("[SETUP-device] Compiled init string: " + String(INITIALIZE) + ". Stored init string: " + String(EEPROMdata.initstr));
+		
+		showEEPROMdevicePersonalityData();		
 	}
 }
 //dump fishyDevice data to Serial
@@ -279,15 +272,10 @@ void showPersonalityDataSize(){
 		Serial.println("[SETUP] typestr " + String(sizeof(EEPROMdata.typestr)));
 		Serial.println("[SETUP] groupstr " + String(sizeof(EEPROMdata.groupstr)));
 		Serial.println("[SETUP] note " + String(sizeof(EEPROMdata.note)));
-		Serial.println("[SETUP] openIsCCW " + String(sizeof(EEPROMdata.openIsCCW)));
 		Serial.println("[SETUP] swVer " + String(sizeof(EEPROMdata.swVer)));
-		Serial.println("[SETUP] motorPosAtCCWset " + String(sizeof(EEPROMdata.motorPosAtCCWset)));
-		Serial.println("[SETUP] motorPosAtCWset " + String(sizeof(EEPROMdata.motorPosAtCWset)));
-		Serial.println("[SETUP] motorPos " + String(sizeof(EEPROMdata.motorPos)));
-		Serial.println("[SETUP] range " + String(sizeof(EEPROMdata.range)));
 		Serial.println("[SETUP] timeOut " + String(sizeof(EEPROMdata.timeOut)));
 		Serial.println("[SETUP] deviceTimedOut " + String(sizeof(EEPROMdata.deviceTimedOut)));
-		Serial.println("[SETUP] swapLimSW " + String(sizeof(EEPROMdata.swapLimSW)));
+		Serial.println("[SETUP] deviceCustomData " + String(sizeof(EEPROMdata.deviceCustomData)));
 	}
 }
 

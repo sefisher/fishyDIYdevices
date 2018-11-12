@@ -179,7 +179,7 @@ To build this template file intp the code after updating it do the following:
             if (d.deviceTimedOut == 'true') {inErr=true;errTxt=errTxt + 'ERROR - DEVICE TIMED OUT\n';}
             openIsCCWUpd(); swMstrUpd(); swSwapUpd();
 
-            infoText = 'DEVICE TYPE: ' + d.typestr + '<br>\n' +
+            infoText = 'DEVICE TYPE: ' + d.devType + '<br>\n' +
                        'NAME: ' + d.deviceName + '<br>\n' +
                        'IP ADDRESS: ' + d.ip + mstrTxt + '<hr>\n' +
                        'MOTOR POSITION: ' + d.motorPos + '<br>\n' +

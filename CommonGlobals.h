@@ -34,16 +34,14 @@ typedef struct fishyDevice
 	bool isMaster;
 	bool dead = true;
 	unsigned long timeStamp=0;	//used to track when device updates were made last to cull dead nodes
-
 } fishyDevice;
 
 fishyDevice deviceArray[MAX_DEVICE]; //array of fishydevices for use in creating contorl panel webpages
 
 //struct for storing personailty data in real time and for storing in EEPROM
 //remember a character is needed for the string terminations
-//SW reports needed 204 bytes; left some margin
-#define EEPROMsz 204
-
+//SW reports needed 447 bytes; left some margin
+#define EEPROMsz 450
 struct EEPROMdata
 {
 	char initstr[13] = ""; 					//13 bytes
@@ -52,15 +50,10 @@ struct EEPROMdata
 	char typestr[21] = "";					//21 bytes
 	char groupstr[41] = "";					//41 bytes
 	char note[56] = "";						//56 bytes
-	bool openIsCCW = true;					//1 byte     //unique to 2-state-actuator
 	char swVer[11] = "";					//11 bytes
-	bool motorPosAtCCWset = false;			//1 byte	 //unique to 2-state-actuator
-	bool motorPosAtCWset = false;			//1 byte     //unique to 2-state-actuator
-	int motorPos = 0; 						//4 bytes    //unique to 2-state-actuator
-	int range = 0; 							//4 bytes    //unique to 2-state-actuator
 	int timeOut = 60;						//4 bytes
 	bool deviceTimedOut = false; 			//1 byte
-	bool swapLimSW = false;					//1 byte     //unique to 2-state-actuator
+	char deviceCustomData[256] = "";		//256 bytes - 255 characters - format: '{name=value&name=value&name=value}' (no spaces, no "&", no "=" stored in string)
 } EEPROMdata;
 
 IPAddress masterIP = {0, 0, 0, 0}; //the IP address of the MASTER device

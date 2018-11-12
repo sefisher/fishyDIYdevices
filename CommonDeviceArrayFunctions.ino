@@ -11,7 +11,7 @@
 //for webserver
 fishyDevice makeMyFishyDevice()
 {
-	bool isCalibrated = false;
+	bool isReady = false; //used for the custom device functions to report any errors to include being uncalibrated
 	
 	fishyDevice holder;
 		
@@ -20,12 +20,11 @@ fishyDevice makeMyFishyDevice()
 	holder.timeStamp = millis();
 	holder.ip = WiFi.localIP();
 	
-	if (EEPROMdata.motorPosAtCCWset && EEPROMdata.motorPosAtCWset)
-	{isCalibrated = true;}else{isCalibrated = false;}
+	isReady = isCustomDeviceReady();
 	
 	holder.isMaster = EEPROMdata.master;
 	
-	if(EEPROMdata.deviceTimedOut || !(isCalibrated)){
+	if(EEPROMdata.deviceTimedOut || !(isReady)){
 		holder.inError = true;
 	}else{
 		holder.inError = false;

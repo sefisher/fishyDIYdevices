@@ -211,32 +211,16 @@ if adding data elements all these may need updating.  This function sends data a
 
 	return temp;
 }
-//return the JSON data for this device
+//return the JSON data for this device from the device specific .ino file
+	// put this fishyDevice data in a string.
+	// Note - this is string will be parsed by scripts in webresources.h 
+	// and is paralleled by UDPpollReply and if configuration setting data updated by the website then UDPparseConfigResponse is affected; 
+	// if adding data elements all these may need updating.  This function sends data as follows (keep this list updated):
+	// {ip,motorPosAtCWset,motorPosAtCCWset,isMaster,motorPos,name,openIsCCW,port,group,note,swVer,devType,initStamp,range,timeOut,deviceTimedOut,swapLimSW}
+
 String getNodeJSON()
 {
-	//Serial.println("[getNodeJSON] EEPROMdata: "+String(EEPROMdata.motorPos)+"\n Live Data:"+String(int(stepper1.currentPosition())));
-	String temp;
-	temp = "{\"fishyDevices\":[";
-	/* 
-	put this fishyDevice data in a string.
-	Note - this is string will be parsed by scripts in webresources.h 
-	and is paralleled by UDPpollReply and if configuration setting data updated by the website then UDPparseConfigResponse is affected; 
-	if adding data elements all these may need updating.  This function sends data as follows (keep this list updated):
-	{ip,motorPosAtCWset,motorPosAtCCWset,isMaster,motorPos,name,openIsCCW,port,group,note,swVer,devType,initStamp,range,timeOut,deviceTimedOut,swapLimSW}
-	*/
-	temp += "{\"ip\":\"" + WiFi.localIP().toString() +
-			"\",\"motorPosAtCWset\":\"" + String(EEPROMdata.motorPosAtCWset ? "true" : "false") +
-			"\",\"motorPosAtCCWset\":\"" + String(EEPROMdata.motorPosAtCCWset ? "true" : "false") +
-			"\",\"isMaster\":\"" + String(EEPROMdata.master ? "true" : "false") + "\",\"motorPos\":\"" + String(int(stepper1.currentPosition())) +
-			"\",\"deviceName\":\"" + String(EEPROMdata.namestr) + "\",\"openIsCCW\":\"" + String(EEPROMdata.openIsCCW ? "true" : "false") + "\",\"group\":\"" + String(EEPROMdata.groupstr) + 
-			"\",\"note\":\"" + String(EEPROMdata.note) + "\",\"swVer\":\"" + String(EEPROMdata.swVer) + 
-			"\",\"devType\":\"" + String(EEPROMdata.typestr) + "\",\"initStamp\":\"" + String(EEPROMdata.initstr) + 
-			"\",\"range\":\"" + String(EEPROMdata.range) + "\",\"timeOut\":\"" + String(EEPROMdata.timeOut) + 
-			"\",\"deviceTimedOut\":\"" + String(EEPROMdata.deviceTimedOut ? "true" : "false") + 
-			"\",\"swapLimSW\":\"" + String(EEPROMdata.swapLimSW ? "true" : "false") + "\"}";
-
-	temp += "]}";
-	return temp;
+	return getDeviceSpecificJSON();
 }
 
 //this creates the iframes for all the devices in the network, if /SWupdater then it loads those forms, otherwise it loads /ctrlPanels for each iframe

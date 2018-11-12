@@ -6,7 +6,7 @@
 //You can update code - update this number - compile - and then load SW onto all the devices without
 //modifying the personality settings as long as INITIALIZE is the same on the devices (see below)
 //LIMITED to 10 alpanumeric characters
-#define SW_VER "20181112-1"
+#define SW_VER "20181112-2"
 
 //--------------------------PERSONALITY SETTINGS-----------------------------------//
 //Put in a time/date string to define the personality variables. 
@@ -21,7 +21,7 @@ This allows a single software upload to be used for multiple devices without ove
 their "personality settings" and wiping out stored motor info. 
 */
 //String format -> "YYYYMMDDHHmm" (where HHmm is 24 hr time). 
-#define INITIALIZE "201810131511"
+#define INITIALIZE "201811121400"
 
 //PICK A UNIQUE NAME FOR EACH DEVICE USING ONLY LETTERS AND NUMBERS
 // LIMITED to 40 alpanumeric characters (abcdefghijklmnopqrstuvwxyz0123456789)
@@ -33,18 +33,19 @@ their "personality settings" and wiping out stored motor info.
 
 //PICK ONLY ONE DEVICE ON THE NETWORK AS MASTER (and set this to true when you compile its code).  
 //IT WILL BE THE WEBSERVER AND CONTROLLER FOR ALL OTHER NODES.  Set false for all the others.
-#define MASTER_NODE true
-// #define MASTER_NODE false
+//#define MASTER_NODE true
+ #define MASTER_NODE false
 
 //FIGURE OUT WHAT DIRECTION YOU WANT TO PICK AS OPEN or CLOSE FOR YOUR DEVICE.  
 //#define OPEN_IS_CCW true
 #define OPEN_IS_CCW false
 
 //Software fix in case you miswired and swapped the hardware limit switches.  
-#define SWAP_LIM_SW false
+//#define SWAP_LIM_SW false 
+#define SWAP_LIM_SW true //Floor 3 Vent, Floor 1 Vent
 
 //SET THE TIMEOUT (in seconds) FOR STOPPING THE ACTUATOR IF MOTION CONTINUES WITHOUT REACHING A HARDWARE LIMIT
-#define MOTOR_TIMEOUT 60
+#define DEVICE_TIMEOUT 60
 
 //IF DESIRED, PICK A GROUP NAME FOR EACH DEVICE USING ONLY LETTERS/NUMBERS
 //LIMITED to 40 alpanumeric characters 
@@ -81,7 +82,7 @@ their "personality settings" and wiping out stored motor info.
 #define MAX_DEVICE 24
 
 //Test switches for Serial output text (set to false to disable debug messages) and WiFi Functions
-#define DEBUG_MESSAGES false //debugging for device problems (movement, switches, etc)
+#define DEBUG_MESSAGES true //debugging for device problems (movement, switches, etc)
 #define DEBUG_UDP_MESSAGES false //debugging for network comms (MASTER - SLAVE issues with nodes on the network)
 #define UDP_PARSE_MESSAGES false //debugging for parsing messages - used after you've changed the message structures
 #define DEBUG_HEAP_MESSAGE false //just tracking the heap size for memory leak issues or overloaded nodeMCUs

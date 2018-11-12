@@ -1,0 +1,134 @@
+<!--------------------------------------------------------------------------------------------------------
+This is the template file for the SW update panel for each device (stored in webresources.h in parts). 
+To build this template file intp the code after updating it do the following:
+ 1) copy the PART 1 (from below this comment to the next comment where the JSON is defined).
+ 2) put it through a minifier (like https://kangax.github.io/html-minifier/) and then through a String builder
+ (like http://buildmystring.com/ with "strip out carriage returns" on) to create a single string with no tabs and one line.
+ 3) paste that into the WEBSTR_SWUPDATE_PT1 After "PROGMEM" in the webresources.h file.
+ 4) copy the second block (from below the part that says it is dynamically generated).
+ 5) minify and stringify it - then paste it into WEBSTR_SWUPDATE_PT2
+ ------------------------------------------------------------------------------------------------------ -->
+ <!--PART 1 START-->
+<!DOCTYPE html>
+ <html>
+ <head>
+     <style>
+    a {
+        color: #fff
+    }
+
+    .main,body {
+        font-family: "Lucida Sans Unicode","Lucida Grande",sans-serif;
+        margin: 0px;
+    }
+
+    #loader {
+        position: absolute;
+        left: 50%;
+        top: 50%;
+        z-index: 1;
+        width: 150px;
+        height: 150px;
+        margin: -75px 0 0 -75px;
+        border: 16px solid #f3f3f3;
+        border-radius: 50%;
+        border-top: 16px solid #3498db;
+        width: 120px;
+        height: 120px;
+        -webkit-animation: spin 2s linear infinite;
+        animation: spin 2s linear infinite
+    }
+
+    @-webkit-keyframes spin {
+        0% {
+            -webkit-transform: rotate(0)
+        }
+
+        100% {
+            -webkit-transform: rotate(360deg)
+        }
+    }
+
+    @keyframes spin {
+        0% {
+            transform: rotate(0)
+        }
+
+        100% {
+            transform: rotate(360deg)
+        }
+    }
+</style>
+<script>
+
+function showLoader(){
+    document.getElementById("loader").style.display="block";
+    document.getElementById("formDiv").style.display="none";
+    document.getElementById("SWinfoDiv").style.display="none";
+    setTimeout("location.href = '/SWupdateGetForm';", 8000);
+}
+
+function _(el) {
+  return document.getElementById(el);
+}
+
+function uploadFile() {
+  _("progressBar").value = 0;
+  _("progressBar").style.display = "block";
+  
+  var file = _("file1").files[0];
+  // alert(file.name+" | "+file.size+" | "+file.type);
+  var formdata = new FormData();
+  formdata.append("file1", file);
+  var ajax = new XMLHttpRequest();
+  ajax.upload.addEventListener("progress", progressHandler, false);
+  ajax.addEventListener("load", completeHandler, false);
+  ajax.addEventListener("error", errorHandler, false);
+  ajax.addEventListener("abort", abortHandler, false);
+  ajax.open("POST", "/SWupdatePostForm"); 
+  ajax.send(formdata);
+}
+
+function progressHandler(event) {
+  _("loaded_n_total").innerHTML = "Uploaded " + event.loaded + " bytes of " + event.total;
+  var percent = (event.loaded / event.total) * 100;
+  _("progressBar").value = Math.round(percent);
+  _("status").innerHTML = Math.round(percent) + "% uploaded...";
+  if(_("progressBar").value  == 100){
+    _("status").innerHTML = "Done. Rebooting.";
+    showLoader();
+  }
+}
+
+function completeHandler(event) {
+  _("status").innerHTML = event.target.responseText;
+  _("progressBar").value = 0; //will clear progress bar after successful upload
+}
+
+function errorHandler(event) {
+  _("status").innerHTML = "Upload Failed";
+}
+
+function abortHandler(event) {
+  _("status").innerHTML = "Upload Aborted";
+}
+
+</script>
+</head>
+<body style="margin:0px;"><div id=loader style=display:none></div>
+<div id="SWinfoDiv">
+<!--PART 1 END -->
+<p>dynamic content on SW version</p>
+<!--PART 2 START-->  
+</div>
+<div id=formDiv>
+<hr>
+  <form id="upload_form" enctype="multipart/form-data" method="post">
+  <input type="file" name="file1" id="file1" onchange="uploadFile()"><br>
+  <progress id="progressBar" value="0" max="100" style="width:50%;display:none;"></progress>
+  <h3 id="status"></h3>
+  <p id="loaded_n_total"></p>
+</form>
+</div>
+</body>
+</html>

@@ -127,15 +127,20 @@ void webSocketEvent(uint8_t num, WStype_t type, uint8_t * payload, size_t length
 		break;
   }
 }
-
+//send an update any connected websocket clients to update the screen.
+//it only provides updates every 500 mSec unless forceUpdate = true.
+//NOTE: forceUpdate=true will casue performance problems if called too frequently
 void updateClients(String message){
+	updateClients(message,false);
+}
+void updateClients(String message,bool forceUpdate){
 	static unsigned long lastUpdate = millis();
 	String text="MSG:"+message+"~*~*DAT:"+getNodeJSON();
 	
-	if (millis() - lastUpdate > 500)
+	if ((millis() - lastUpdate > 500)||forceUpdate)
 	{
 		lastUpdate = millis();
-		Serial.println(text);
+		if(DEBUG_MESSAGES){Serial.println(text);}
 		webSocket.broadcastTXT(text.c_str(), strlen(text.c_str()));
 	}
 }
@@ -199,8 +204,6 @@ and is paralleled by UDPpollReply and if configuration setting data updated by t
 if adding data elements all these may need updating.  This function sends data as follows (keep this list updated):
 {ip,name,typestr,groupstr,statusstr,inError,isMaster,dead}
 */
-
-//I'm HERE - todo - need to fix inError (either here or in makefishydevice and whatever stores it in the array); need to make the statusstr
 			temp += "{\"ip\":\"" + deviceArray[i].ip.toString() + "\",\"name\":\"" + String(deviceArray[i].name) + "\",\"typestr\":\"" + String(deviceArray[i].typestr) + "\",\"groupstr\":\"" + String(deviceArray[i].groupstr) + "\",\"statusstr\":\"" + String(deviceArray[i].statusstr) + "\",\"inError\":\"" + String(deviceArray[i].inError ? "true" : "false") + "\",\"isMaster\":\"" + String(deviceArray[i].isMaster ? "true" : "false") + "\",\"dead\":\"" + String(deviceArray[i].dead) + "\"}";
 		}
 	}
@@ -208,9 +211,10 @@ if adding data elements all these may need updating.  This function sends data a
 
 	return temp;
 }
-
+//return the JSON data for this device
 String getNodeJSON()
 {
+	//Serial.println("[getNodeJSON] EEPROMdata: "+String(EEPROMdata.motorPos)+"\n Live Data:"+String(int(stepper1.currentPosition())));
 	String temp;
 	temp = "{\"fishyDevices\":[";
 	/* 
@@ -223,7 +227,7 @@ String getNodeJSON()
 	temp += "{\"ip\":\"" + WiFi.localIP().toString() +
 			"\",\"motorPosAtCWset\":\"" + String(EEPROMdata.motorPosAtCWset ? "true" : "false") +
 			"\",\"motorPosAtCCWset\":\"" + String(EEPROMdata.motorPosAtCCWset ? "true" : "false") +
-			"\",\"isMaster\":\"" + String(EEPROMdata.master ? "true" : "false") + "\",\"motorPos\":\"" + String(EEPROMdata.motorPos) +
+			"\",\"isMaster\":\"" + String(EEPROMdata.master ? "true" : "false") + "\",\"motorPos\":\"" + String(int(stepper1.currentPosition())) +
 			"\",\"deviceName\":\"" + String(EEPROMdata.namestr) + "\",\"openIsCCW\":\"" + String(EEPROMdata.openIsCCW ? "true" : "false") + "\",\"group\":\"" + String(EEPROMdata.groupstr) + 
 			"\",\"note\":\"" + String(EEPROMdata.note) + "\",\"swVer\":\"" + String(EEPROMdata.swVer) + 
 			"\",\"devType\":\"" + String(EEPROMdata.typestr) + "\",\"initStamp\":\"" + String(EEPROMdata.initstr) + 

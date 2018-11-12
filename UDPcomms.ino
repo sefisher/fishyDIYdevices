@@ -54,12 +54,11 @@ void UDPkeepAliveAndCull()
 			if (DEBUG_MESSAGES){ Serial.println("[MAIN] Removing Dead Nodes"); }
 			cullDeadNodes();
 		}
-	} else {
 		static unsigned long lastAvoidCulling = millis();
-		if (millis() - lastAvoidCulling > 48000) //tell master you're alive to avoid being culled as a dead node every 8 minutes
+		if (millis() - lastAvoidCulling > 240000) //poll the net every 4 minutes to avoid culling nodes
 		{
 			lastAvoidCulling = millis();
-			if (DEBUG_MESSAGES){ Serial.println("[MAIN] I'm not a Dead Node - broadcasting"); }
+			if (DEBUG_MESSAGES){ Serial.println("[MAIN] Broadcasting for Poll"); }
 			UDPbroadcast();
 		}
 	}

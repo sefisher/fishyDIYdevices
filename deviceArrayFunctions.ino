@@ -25,7 +25,7 @@ fishyDevice makeMyFishyDevice()
 	
 	holder.isMaster = EEPROMdata.master;
 	
-	if(EEPROMdata.timeOut || !(isCalibrated)){
+	if(EEPROMdata.deviceTimedOut || !(isCalibrated)){
 		holder.inError = true;
 	}else{
 		holder.inError = false;
@@ -35,7 +35,9 @@ fishyDevice makeMyFishyDevice()
 	holder.typestr = String(EEPROMdata.typestr);
 	holder.groupstr = String(EEPROMdata.groupstr);
 	holder.statusstr = getStatusString();
-
+	
+	showThisNode(holder);
+	
 	return holder;
 }
 

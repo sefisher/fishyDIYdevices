@@ -77,18 +77,16 @@ void setup()
 //this is the main operating loop (MOL) that is repeatedly executed
 void loop()
 {
-	unsigned long lastMillis;
-	if(DEBUG_TIMING){count=count+1;lastMillis = millis();}
-	dns.processNextRequest();
-	if(DEBUG_TIMING) {tmrs[0]=tmrs[0] + (millis()-lastMillis);lastMillis = millis();}
-	checkResetOnLoop(); //reset device if flagged to
-	if(DEBUG_TIMING) {tmrs[1]=tmrs[1] + (millis()-lastMillis); lastMillis = millis();}
-	//webSocket.loop(); //handle webSocket
-	if(DEBUG_TIMING) {tmrs[2]=tmrs[2] + (millis()-lastMillis); lastMillis = millis();}
-	UDPprocessPacket(); //process any net (UDP) traffic
-	if(DEBUG_TIMING) {tmrs[3]=tmrs[3] + (millis()-lastMillis); lastMillis = millis();}
-	UDPkeepAliveAndCull(); //talk on net and drop dead notes from list
-	if(DEBUG_TIMING) {tmrs[4]=tmrs[4] + (millis()-lastMillis); lastMillis = millis();}
+	//todo - clean out all this timing stuff
+	static unsigned long lastMillisTiming;
+	if(DEBUG_TIMING){count=count+1;lastMillisTiming = millis();}
+	dns.processNextRequest(); if(DEBUG_TIMING) {tmrs[0]=tmrs[0] + (millis()-lastMillisTiming);lastMillisTiming = millis();}
+	//reset device if flagged to
+	checkResetOnLoop(); if(DEBUG_TIMING) {tmrs[1]=tmrs[1] + (millis()-lastMillisTiming); lastMillisTiming = millis();}
+	//process any net (UDP) traffic
+	UDPprocessPacket(); if(DEBUG_TIMING) {tmrs[3]=tmrs[3] + (millis()-lastMillisTiming); lastMillisTiming = millis();}
+	//talk on net and drop dead notes from list
+	UDPkeepAliveAndCull(); if(DEBUG_TIMING) {tmrs[4]=tmrs[4] + (millis()-lastMillisTiming); lastMillisTiming = millis();}
 	
 	// Since fauxmoESP 2.0 the library uses the "compatibility" mode by
 	// default, this means that it uses WiFiUdp class instead of AsyncUDP.
@@ -96,15 +94,15 @@ void loop()
 	// whilst the former works fine with current stable 2.3.0 version.
 	// But, since it's not "async" anymore we have to manually poll for UDP
 	// packets
-	fauxmo.handle();
-	if(DEBUG_TIMING) {tmrs[5]=tmrs[5] + (millis()-lastMillis); lastMillis = millis();}
+	fauxmo.handle(); if(DEBUG_TIMING) {tmrs[5]=tmrs[5] + (millis()-lastMillisTiming); lastMillisTiming = millis();}
+	//run state machine for device
+	operateDevice(); if(DEBUG_TIMING) {tmrs[6]=tmrs[6] + (millis()-lastMillisTiming); lastMillisTiming = millis();}
 	
-	operateDevice(); //run state machine for device
-	if(DEBUG_TIMING) {tmrs[6]=tmrs[6] + (millis()-lastMillis); lastMillis = millis();}
 	showHeapAndProcessSerialInput(); //if debugging allow heap display and take serial commands
+	
 	if(DEBUG_TIMING) 
 	{
-		tmrs[7]=tmrs[7] + (millis()-lastMillis); lastMillis = millis();
+		tmrs[7]=tmrs[7] + (millis()-lastMillisTiming); lastMillisTiming = millis();
 		if (count%100000==0) {Serial.println();for(int iii=0;iii<8;iii++){Serial.printf("%d) delta: %lu\n",iii,tmrs[iii]);}}
 	}
 }
@@ -179,6 +177,14 @@ void showEEPROMPersonalityData()
 		Serial.println("[SETUP] Compiled init string: " + String(INITIALIZE) + ". Stored init string: " + String(EEPROMdata.initstr));
 	}
 }
+//dump fishyDevice data to Serial
+void showThisNode(fishyDevice holder){
+	if (DEBUG_MESSAGES)
+	{
+		Serial.println("[SETUP] IP: "+holder.ip.toString()+", Name string: "+String(holder.name)+", Master: " + String(holder.isMaster?"True":"False")+", Group name string: "+String(holder.groupstr)+",Type string: "+String(holder.typestr)+",Status string: "+String(holder.statusstr)+", Error state: "+String(holder.inError?"True":"False") + ", Dead state: "+String(holder.dead?"True":"False") + ", Time Stamp: "+String(holder.timeStamp));
+	}
+}
+
 //sets up a fauxmo device if enabled to allow control via Alexa, etc
 void WifiFauxmoAndDeviceSetup(){
 	// You can enable or disable the library at any moment

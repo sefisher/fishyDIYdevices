@@ -237,6 +237,26 @@ body {
 	font-weight: 800;
 	animation: blinkingText 2.25s infinite;
 }
+.infoPanel{
+	display:none;
+	text-align: center;
+	border-radius:10px;
+	padding: 5px;
+	background: var(--lght-col);
+	border: var(--drk-col);
+	border-style: solid;
+    border-width: 4px;
+	position:absolute;
+	top:30px;
+	left:50%;
+	width:var(--cp-sz);
+	height:340px;   
+	margin-left:calc(-1*var(--cp-sz)/2);   /* negative half of width above */
+}
+.infoDiv{
+	height: 300px;
+	text-align: left;
+}
 @keyframes blinkingText {
 	0% {
 		color: red;

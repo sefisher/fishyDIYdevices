@@ -23,7 +23,8 @@ To build this template file intp the code after updating it do the following:
     <script>
         var websock;
         function showDetails(){
-            alert(infoText);
+            document.getElementById('infoDiv').innerHTML = infoText;
+            document.getElementById('infoPanel').style.display='block';  
         }
         //extract after MSG:and before ~*~*
         function getMsg(data){
@@ -183,12 +184,12 @@ To build this template file intp the code after updating it do the following:
             if (d.deviceTimedOut == 'true') {inErr=true;errTxt=errTxt + 'ERROR - DEVICE TIMED OUT\n';}
             openIsCCWUpd(); swMstrUpd(); swSwapUpd();
 
-            infoText = 'NAME: ' + d.deviceName + '\n' +
-                       'IP ADDRESS: ' + d.ip + mstrTxt + '\n' +
-                       'MOTOR POSITION: ' + d.motorPos + '\n' +
-                       'MOTOR HARDWARE LIMITS: CCW=0 CW= ' + d.range + '\n' +
-                       'SOFTWARE VERSION: ' + d.swVer + '\n' +
-                       'INIT STR: ' + d.initStamp + '\n\n\n' + calTxt + '\n' + errTxt;
+            infoText = 'NAME: ' + d.deviceName + '<br>\n' +
+                       'IP ADDRESS: ' + d.ip + mstrTxt + '<hr>\n' +
+                       'MOTOR POSITION: ' + d.motorPos + '<br>\n' +
+                       'MOTOR HARDWARE LIMITS: CCW=0 CW= ' + d.range + '<hr>\n' +
+                       'SOFTWARE VERSION: ' + d.swVer + '<br>\n' +
+                       'INIT STR: ' + d.initStamp + '\n\n\n<hr>' + calTxt + '<br>\n' + errTxt;
             if(inErr){
                 document.getElementById("info-icon").className="info-icon-blink";
             }else{
@@ -276,6 +277,20 @@ To build this template file intp the code after updating it do the following:
         </div>
     </div>    
 </div>
+
+<!-- Overlay Modal -->
+<div id='infoPanel' class='infoPanel'>
+    <div id='infoDiv' class='infoDiv'></div>
+    <!-- Close button for overlay modal panel.  -->
+    <input type='button' class='infoOKbtn' onclick='closeCtrlModal()' value='OK'>    
+</div>
   
 </body>
+<script>
+var ctrlModal = document.getElementById('infoPanel');
+// When the user clicks the X
+function closeCtrlModal() {
+    ctrlModal.style.display='none';
+}
+</script>
 </html>

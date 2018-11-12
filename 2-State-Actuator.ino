@@ -8,10 +8,20 @@
 //CUSTOM DEVICE FUNCTION - EXTERNAL (SAME FUNCTION CALLED BY ALL DEVICES)
 //THIS IS A FUNCTION FOR A 2-State Actuator
 //generates a status message to be delivered for this devices state to the summary webpage for all the devices by the MASTER webserver
-char* getStatusString(){
- //TODO - put in status response message; then process status response message in controlwebpage websocket
- char statusStr[100] = "This is a status message which should tell you what is going on with a device.";
- return statusStr;
+String getStatusString(){
+   	String statusStr = "Current Position:";
+   	int pos;
+   	if(EEPROMdata.range==0) {
+		statusStr = statusStr + "0% Open";
+		if(DEBUG_MESSAGES){Serial.println("[getStatusString] Range of 0 found.");}
+	}
+	else{
+	   	pos = round(((float)EEPROMdata.motorPos*100.0)/(float)EEPROMdata.range);
+	   	if(EEPROMdata.openIsCCW) pos = 100-pos;
+        statusStr = statusStr + String(pos) + "% Open";
+	}
+   	return statusStr;
+	if(DEBUG_MESSAGES){Serial.println("[getStatusString] Status:" + String(statusStr));}
 }
 
 //CUSTOM DEVICE FUNCTION - EXTERNAL (SAME NAME CALLED IN ALL DEVICES)
@@ -34,9 +44,9 @@ void deviceSetup()
 //This function takes messages from some remote address (if from another node)
 //that are of maximum lenght MAXCMDSZ and determines what actions are required.
 //Commands can come from other nodes via UDP messages or from the web
-//VALID COMMANDS: 
-// (open,close,stop,gotoXXX,{hi.hello},reset_wifi,reset,calibrate,anyfishydev_there,poll_net,poll_response,
-//  fishydiymaster,config[;semi-colon-separated-parameters=values])
+//REQD COMMANDS: {anyfishydev_there,fishydiymaster,poll_net,poll_response,reset_wifi,reset} -> needed to be a fishyDevice on the network
+//VALID DEVICE COMMANDS: 
+// (open,close,stop,gotoXXX,{hi.hello},calibrate,config[;semi-colon-separated-parameters=values])
 void executeCommands(char inputMsg[MAXCMDSZ], IPAddress remote)
 {
 	String cmd = String(inputMsg);
@@ -47,7 +57,7 @@ void executeCommands(char inputMsg[MAXCMDSZ], IPAddress remote)
 		{
 			Serial.println("[executeCommands] Commanded OPEN");
 		}
-		updateClients("Open Received");
+		updateClients("Open Received", true);
 		executeState(true); //WiFi "true" is open (going CCW to stop for OpenisCCW=true)
 	}
 	else if (cmd.startsWith("close"))
@@ -56,7 +66,7 @@ void executeCommands(char inputMsg[MAXCMDSZ], IPAddress remote)
 		{
 			Serial.println("[executeCommands] Commanded CLOSE");
 		}
-		updateClients("Close Received");
+		updateClients("Close Received", true);
 		executeState(false); //WiFi "false" is close (going CW to stop for OpenisCCW=true)
 	}
 	else if (cmd.startsWith("stop"))
@@ -65,7 +75,7 @@ void executeCommands(char inputMsg[MAXCMDSZ], IPAddress remote)
 		{
 			Serial.println("[executeCommands] Commanded STOP");
 		}
-		updateClients("Stop Received");
+		updateClients("Stop Received", true);
 		executeStop();
 	}
 	else if (cmd.startsWith("goto"))
@@ -74,7 +84,7 @@ void executeCommands(char inputMsg[MAXCMDSZ], IPAddress remote)
 		{
 			Serial.println("[executeCommands] Commanded GOTO (" + cmd + ")");
 		}
-		updateClients("Goto (" + cmd + ") Received");
+		updateClients("Goto (" + cmd + ") Received", true);
 		executeGoto(cmd); 
 	}
 	else if (cmd.startsWith("hi")||cmd.startsWith("hello"))
@@ -93,7 +103,7 @@ void executeCommands(char inputMsg[MAXCMDSZ], IPAddress remote)
 		{
 			Serial.println("[executeCommands] Commanded RESET_WIFI");
 		}
-		updateClients("Resetting WiFi");
+		updateClients("Resetting WiFi",true);
 		AsyncWiFiManager WiFiManager(&httpServer,&dns);
 		WiFiManager.resetSettings();
 		resetOnNextLoop = true;
@@ -105,7 +115,7 @@ void executeCommands(char inputMsg[MAXCMDSZ], IPAddress remote)
 		{
 			Serial.println("[executeCommands] Commanded RESET");
 		}
-		updateClients("Rebooting Device");
+		updateClients("Rebooting Device",true);
 		resetOnNextLoop=true;
 	}
 	else if (cmd.startsWith("calibrate"))
@@ -120,7 +130,7 @@ void executeCommands(char inputMsg[MAXCMDSZ], IPAddress remote)
 		{
 			Serial.printf("[executeCommands] Going to calibration opening stage.\n");
 		}
-		updateClients("Calibrating");
+		updateClients("Calibrating", true);
 		executeState(true);
 	}
 	else if (cmd.startsWith("anyfishydev_there"))
@@ -162,6 +172,7 @@ void executeCommands(char inputMsg[MAXCMDSZ], IPAddress remote)
 			Serial.println("[executeCommands] Commanded CONFIG");
 		}
 		UDPparseConfigResponse(String(inputMsg), remote); //want the original case for this
+		updateClients("Settings Updated.", true);
 	}
 	else
 	{
@@ -176,10 +187,7 @@ void UDPparseConfigResponse(String responseIn, IPAddress remote){
 	String response = responseIn.substring(7); //strip off "CONFIG"
 	int strStrt, strStop;
 
-/*
-		parseString in this order: {openIsCCW, isMaster, devName, groupName, devType, note}
-*/
-
+	//parseString in this order: {openIsCCW, isMaster, devName, groupName, devType, note}
 	if (DEBUG_MESSAGES && UDP_PARSE_MESSAGES)
 	{
 		Serial.println("[UDPparseConfigResponse] Got this: " + responseIn);
@@ -466,6 +474,7 @@ void executeStop()
 		Serial.println("[executeStop] Stopping actuator");
 	}
 	deviceTrueState = man_idle;
+	deviceCalStage = doneCal;
 	idleActuator(deviceTrueState);
 }
 
@@ -493,11 +502,7 @@ trueState moveCCW()
 		stepper1.setCurrentPosition(0);
 		EEPROMdata.motorPosAtCCWset = true;
 		newState = idleActuator(opened); //make actuator idle
-		if (DEBUG_MESSAGES)
-		{
-
-			Serial.printf("[moveCCW] Reached CCW stop at motor position %d; CCW: %d; CW: %d\n", stepper1.currentPosition(), CCWlimSensorVal, CWlimSensorVal);
-		}
+		if (DEBUG_MESSAGES)	{Serial.printf("[moveCCW] Reached CCW stop at motor position %d; CCW: %d; CW: %d\n", stepper1.currentPosition(), CCWlimSensorVal, CWlimSensorVal);}
 	}else{ //keep going if still have distance to travel
 		newState = opening;
 		
@@ -619,8 +624,10 @@ trueState idleActuator(trueState idleState)
 	EEPROMdata.motorPos = int(stepper1.currentPosition());
 	storeDataToEEPROM();
 	UDPpollReply(masterIP); //tell the Master Node the new info
-	updateClients("Done. Actuator Idle.");
+	updateClients("Stopped.", true);
 	return idleState;
+
+	//TODO - fix this - add update to ensure the websocket coonnected panels are refreshed when stopped
 }
 //CUSTOM DEVICE FUNCTION - INTERNAL
 //this detemines which way to goto to get to a commanded position
@@ -696,5 +703,6 @@ trueState openPercentActuator(int percent)
 		return newState;
 	}
 }
+
 
 //====================================================================================================================================

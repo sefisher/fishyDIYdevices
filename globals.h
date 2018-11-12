@@ -9,17 +9,13 @@ AsyncWebServer httpServer(80);						//for master node web server
 DNSServer dns;										//supports AsyncWifiManager
 WiFiUDP Udp;						 				//for UDP traffic between nodes
 WebSocketsServer webSocket = WebSocketsServer(81);  //for websocket comms
-
 //-------------------------------------------------------------------------------------------
 
 //-------------------------------------------------------------------------------------------
 //----------------- DEVICE STATUS STORAGE PARAMETERS-----------------------------------------
 //-------------------------------------------------------------------------------------------
 //Some global variables to store device state
-
 bool deviceState = LOW; //used for state data via WiFi comms (Alexa, etc) - for any FAUXMO enabled device
-
-//float currentSpeed = stepper1.speed(); //CUSTOM?
 
 unsigned long deviceResponseTime = 0; //used for tracking how long the device is being moved to determine if TIMEOUT ERROR is needed
 
@@ -56,15 +52,15 @@ struct EEPROMdata
 	char typestr[21] = "";					//21 bytes
 	char groupstr[41] = "";					//41 bytes
 	char note[56] = "";						//56 bytes
-	bool openIsCCW = true;					//1 byte
+	bool openIsCCW = true;					//1 byte     //unique to 2-state-actuator
 	char swVer[11] = "";					//11 bytes
-	bool motorPosAtCCWset = false;			//1 byte
-	bool motorPosAtCWset = false;			//1 byte
-	int motorPos = 0; 						//4 bytes
-	int range = 0; 							//4 bytes
+	bool motorPosAtCCWset = false;			//1 byte	 //unique to 2-state-actuator
+	bool motorPosAtCWset = false;			//1 byte     //unique to 2-state-actuator
+	int motorPos = 0; 						//4 bytes    //unique to 2-state-actuator
+	int range = 0; 							//4 bytes    //unique to 2-state-actuator
 	int timeOut = 60;						//4 bytes
 	bool deviceTimedOut = false; 			//1 byte
-	bool swapLimSW = false;					//1 byte
+	bool swapLimSW = false;					//1 byte     //unique to 2-state-actuator
 } EEPROMdata;
 
 IPAddress masterIP = {0, 0, 0, 0}; //the IP address of the MASTER device

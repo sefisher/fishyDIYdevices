@@ -42,11 +42,12 @@ Notes:
 #include <StreamString.h>
 
 //custom definitions
-#include "motorDefinitions.h"			//called for 2-state limit switch devices
-#include "deviceDefinitions.h"  		//
-#include "globals.h"					// global variables
-#include "2-State-Actuator-Globals.h" 	// global variables specific to 2-state-actuators
-#include "webresources.h"				// strings for device served webpages
+#include "motorDefinitions.h"				//called for 2-state limit switch devices
+#include "deviceDefinitions.h"  			//
+#include "globals.h"						// global variables
+#include "webresources.h"					// strings for device served webpages
+#include "2-State-Actuator-globals.h" 		// global variables specific to 2-state-actuators
+#include "2-State-Actuator-webresources.h" 	// webresources specific to 2-state-actuators
 
 //Used for DEBUG_TIMING if enabled
 int count;

@@ -81,7 +81,7 @@ their "personality settings" and wiping out stored motor info.
 #define MAX_DEVICE 24
 
 //Test switches for Serial output text (set to false to disable debug messages) and WiFi Functions
-#define DEBUG_MESSAGES true //debugging for device problems (movement, switches, etc)
+#define DEBUG_MESSAGES false //debugging for device problems (movement, switches, etc)
 #define DEBUG_UDP_MESSAGES false //debugging for network comms (MASTER - SLAVE issues with nodes on the network)
 #define UDP_PARSE_MESSAGES false //debugging for parsing messages - used after you've changed the message structures
 #define DEBUG_HEAP_MESSAGE false //just tracking the heap size for memory leak issues or overloaded nodeMCUs

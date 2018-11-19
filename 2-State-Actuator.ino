@@ -200,10 +200,13 @@ void executeCommands(char inputMsg[MAXCMDSZ], IPAddress remote)
 			Serial.println("[executeCommands] Commanded RESET_WIFI");
 		}
 		updateClients("Resetting WiFi",true);
-		AsyncWiFiManager WiFiManager(&httpServer,&dns);
-		WiFiManager.resetSettings();
-		resetOnNextLoop = true;
-		delay(2000);
+		
+		//TODO - FIX THIS WIFI RESET
+		resetWiFiCredentials();
+		//AsyncWiFiManager WiFiManager(&httpServer,&dns);
+		//WiFiManager.resetSettings();
+		//resetOnNextLoop = true;
+		//delay(2000);
 	}
 	else if (cmd.startsWith("reset"))
 	{
@@ -722,8 +725,6 @@ trueState idleActuator(trueState idleState)
 	UDPpollReply(masterIP); //tell the Master Node the new info
 	updateClients("Stopped.", true);
 	return idleState;
-
-	//TODO - fix this - add update to ensure the websocket coonnected panels are refreshed when stopped
 }
 //CUSTOM DEVICE FUNCTION - INTERNAL
 //this detemines which way to goto to get to a commanded position

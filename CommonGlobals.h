@@ -6,7 +6,7 @@
 
 //make the webserver and web updater
 AsyncWebServer httpServer(80);						//for master node web server
-DNSServer dns;										//supports AsyncWifiManager
+//DNSServer dns;										//supports AsyncWifiManager
 WiFiUDP Udp;						 				//for UDP traffic between nodes
 WebSocketsServer webSocket = WebSocketsServer(81);  //for websocket comms
 //-------------------------------------------------------------------------------------------
@@ -55,6 +55,23 @@ struct EEPROMdata
 	bool deviceTimedOut = false; 			//1 byte
 	char deviceCustomData[256] = "";		//256 bytes - 255 characters - format: '{name=value&name=value&name=value}' (no spaces, no "&", no "=" stored in string)
 } EEPROMdata;
+
+//Struct for WiFi setting data
+struct wifiConnect{
+  const char *softAP_ssid = CUSTOM_DEVICE_NAME;
+  const char *softAP_password = SOFT_AP_PWD;
+  /* DO NOT set wifi credentials here. 
+  They are configurated at runtime and stored on EEPROM */
+  char ssid[32] = "";
+  char password[32] = "";
+  boolean connect;
+  boolean softAPmode;
+  int status = WL_IDLE_STATUS;
+  int connectTryCount=0;
+}wifiConnect;
+// apIP and netMsk are Soft AP network parameters 
+IPAddress apIP(192, 168, 4, 1);
+IPAddress netMsk(255, 255, 255, 0);
 
 IPAddress masterIP = {0, 0, 0, 0}; //the IP address of the MASTER device
 

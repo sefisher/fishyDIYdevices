@@ -3,91 +3,114 @@
 // -----------------------------------------------------------------------------
 void WiFiSetup()
 {
-	if(USE_WIFIMANAGER){
-		AsyncWiFiManager WiFiManager(&httpServer,&dns);	
-		WiFiManager.setAPCallback(configModeCallback);
-		//reset saved settings (for testing)--------------------------------------------
-		//WiFiManager.resetSettings();
-		//------------------------------------------------------------------------------
+	wifiConnect.connect = false;  
+	if(DEBUG_WIFI_MESSAGES) {
+		Serial.println("\n---------------------\n[WiFiSetup] Configuring wifi...");
+	}
+	
+	//TODO-DELETE THIS:---------------------------
+	//test function - if true then reset credentials
+	if(false){
+		loadCredentials();
+		Serial.println("reseting credentials");
+		//Serial.print("SSID:");Serial.print(wifiConnect.ssid);Serial.print("PASS:");Serial.print(wifiConnect.password);
+		resetWiFiCredentials();
+	}
+	//----------------------------------------------
 
-		//if SSID and Password haven't been saved from before this opens an AP from the device
-		//allowing you to connect to the device from a phone/computer by joining its "network"
-		//from your wifi list - the name of the network will be the device name.
-		//After first configuration it will auto connect unless things fail and it needs to be reset
-		WiFiManager.autoConnect(EEPROMdata.namestr);
-		
-		if(!WiFiManager.autoConnect()) {
-			if (DEBUG_MESSAGES){Serial.println("Failed to connect and hit timeout");}
-			//reset and try again, or maybe put it to deep sleep
-			ESP.reset();
-			delay(1000);
-		}	
+	bool result = loadCredentials();
+	if(!result){
+		if(DEBUG_WIFI_MESSAGES) {Serial.println("No WiFi credentials found.  Going into Soft AP mode to accept new WiFi SSID and Password.");}
+		wifiConnect.connect = false;
+		wifiConnect.softAPmode = true;
+		runSoftAPServer(); //make softAP and serve wifi ssid pass collection page
 	}else{
-		WiFi.mode(WIFI_STA);
-		WiFi.begin(SSID_CUSTOM, PASS_CUSTOM);
-		if (WiFi.waitForConnectResult() != WL_CONNECTED) {
-			if (DEBUG_MESSAGES){Serial.println("WiFi Failed");}
-			
-			while(1) {
-				fastBlinks(2);
-				delay(1000);
-			}
-		}
-	}
-	if (DEBUG_MESSAGES)
-	{
-		Serial.println("connected...");
-	}
-
-	// Connected!
-	if (DEBUG_MESSAGES)
-	{
-		Serial.printf("[WiFi] STATION Mode, SSID: %s, IP address: %s\n", WiFi.SSID().c_str(), WiFi.localIP().toString().c_str());
-	}
-
-	Udp.begin(UDP_LOCAL_PORT); //start listening on UDP port for node-node traffic
-	UDPbroadcast();			   //get a poll going
-	
-	webSocket.begin();
-  	webSocket.onEvent(webSocketEvent);
-	
-	String hostName;
-	if (EEPROMdata.master)
-	{
-		hostName = "fishyDIY";
-	}
-	else
-	{
-		hostName = "fishyDIYNode" + String(WiFi.localIP()[3]);
-	}
-	MDNS.begin(hostName.c_str());	//start mDNS to fishyDIYmaster.local
-
-	httpServer.on("/", handleRoot);
-	httpServer.on("/SWupdater", handleRoot);
-	httpServer.on("/control", handleCtrl);
-	httpServer.on("/SWupdateDevForm", HTTP_GET, handleSWupdateDevForm);
-	httpServer.on("/SWupdateGetForm", HTTP_GET, handleSWupdateDevForm);
-	httpServer.on("/SWupdatePostForm", HTTP_POST, handleSWupdateDevPostDone,  handleSWupdateDevPost);
-	httpServer.on("/network.JSON", handleNetworkJSON);
-	httpServer.on("/node.JSON", handleNodeJSON);
-	httpServer.on("/styles.css",handleCSS);
-	httpServer.onNotFound(handleNotFound);
-	httpServer.begin();
-
-	MDNS.addService("http", "tcp", 80);
-	fastBlinks(5);
-	if (DEBUG_MESSAGES)
-	{
-		Serial.printf("%s is now ready! Open http://%s.local/update in your browser\n", EEPROMdata.namestr, hostName.c_str());
+		if(DEBUG_WIFI_MESSAGES) {Serial.println("WiFi credentials loaded.  Going to try and connect.");}
+		wifiConnect.connect=true;
+		wifiConnect.softAPmode = false;
 	}
 }
 
-void configModeCallback (AsyncWiFiManager *myWiFiManager) {
-  Serial.println("Entered config mode");
-  Serial.println(WiFi.softAPIP());
-  //if you used auto generated SSID, print it
-  Serial.println(myWiFiManager->getConfigPortalSSID());
+void connectWifi() {
+  if(DEBUG_WIFI_MESSAGES) {
+    Serial.print("Connecting as WiFi client...Try number: ");
+    Serial.println(wifiConnect.connectTryCount);
+
+    //TODO - Delete this------------------------
+    //Serial.print("SSID:");Serial.print(wifiConnect.ssid);Serial.print("PASS:");Serial.print(wifiConnect.password);
+    //------------------------------------------
+  }
+
+  WiFi.mode(WIFI_STA);
+  WiFi.begin ( wifiConnect.ssid, wifiConnect.password );
+  int connRes = WiFi.waitForConnectResult();
+
+  if(DEBUG_WIFI_MESSAGES) {Serial.print ( "\nConnection Try Result: " );Serial.println ( readStatus(connRes) );}
+  
+  if(connRes!=WL_CONNECTED){
+    wifiConnect.connect = true;
+  }else{
+    wifiConnect.connect = false;
+    fastBlinks(5);
+    runNormalServer();
+  }
 }
+
+//a wifi connection status response translator
+String readStatus(int s){
+    if(s==WL_NO_SHIELD) return String("WL_NO_SHIELD");
+    if(s==WL_IDLE_STATUS) return String("WL_IDLE_STATUS");      
+    if(s==WL_NO_SSID_AVAIL) return String("WL_NO_SSID_AVAIL");  
+    if(s==WL_SCAN_COMPLETED) return String("WL_SCAN_COMPLETED");
+    if(s==WL_CONNECTED) return String("WL_CONNECTED");       
+    if(s==WL_CONNECT_FAILED) return String("WL_CONNECT_FAILED");    
+    if(s==WL_CONNECTION_LOST) return String("WL_CONNECTION_LOST");  
+    if(s==WL_DISCONNECTED) return String("WL_DISCONNECTED");  
+}
+// this manages trying to connect to the network
+void manageConnection(){
+  
+    static long lastConnectTry = 0;
+    int s = WiFi.status();
+    
+    //if not connected give it a try every 10 seconds
+    if (s != WL_CONNECTED && (millis() > (lastConnectTry + 10000) ||  (wifiConnect.connectTryCount==0))) {
+      wifiConnect.connect = false;
+      if(DEBUG_WIFI_MESSAGES) {Serial.println ( "Connecting..." );}
+      lastConnectTry = millis();
+      fastBlinks(wifiConnect.connectTryCount);
+      connectWifi();
+      wifiConnect.connectTryCount = wifiConnect.connectTryCount + 1;
+      if(wifiConnect.connectTryCount > 3){
+        wifiConnect.softAPmode = true;
+        runSoftAPServer();  
+      }
+    }
+    // Detect a WLAN status change
+    if (wifiConnect.status != s) { 
+      if(DEBUG_WIFI_MESSAGES) {Serial.print ( "Status: " );Serial.println ( readStatus(s) );}
+      wifiConnect.status = s;
+      if (s == WL_CONNECTED) {
+        fastBlinks(5);
+        runNormalServer();
+      } else if (s == WL_NO_SSID_AVAIL) {
+        WiFi.disconnect();
+      }else if (s == 4) {
+        WiFi.disconnect();
+      }
+    }
+}
+
+
+//TODO - DELETE THIS???
+// void configModeCallback (AsyncWiFiManager *myWiFiManager) {
+//   Serial.println("Entered config mode");
+//   Serial.println(WiFi.softAPIP());
+//   //if you used auto generated SSID, print it
+//   Serial.println(myWiFiManager->getConfigPortalSSID());
+// }
+
+
 //-----------------------------------------------------------------------------
 //----------------------------Websock Functions--------------------------------
 //-----------------------------------------------------------------------------
@@ -234,6 +257,74 @@ void handleRoot(AsyncWebServerRequest *request)
 	request->send_P(200,"text/html",WEBROOTSTR);
 }
 
+// Wifi config page 
+void handleWifi(AsyncWebServerRequest *request) {
+	if(DEBUG_WIFI_MESSAGES){Serial.println("[handleWifi] wifi");}
+	
+	AsyncWebServerResponse *response = request->beginResponse(200, "text/html","<!DOCTYPE html><html><head><meta name='viewport' content='width=device-width, initial-scale=1'></head><body>"
+	"<h1>WiFi Configuration:</h1>"
+	"\r\n<br/><form method='POST' action='wifisave'><h2>Connect to WiFi Network:</h2>"
+	"<input type='text' placeholder='network' name='n'/>"
+	"<br /><input type='password' placeholder='password' name='p'/>"
+	"<br /><input type='submit' value='Submit New WiFi Credentials'/><br>(Submitting blank info will delete saved credentials)</form>"
+	"<hr><form method='POST' action='justreboot'><h2>Reboot Device:</h2>Reboot and try to make the device reconnect using exisitng WiFi credentials:<br><input type='submit' value='Reboot Device'></form></body></html>");
+	
+	response->addHeader("Cache-Control", "no-cache, no-store, must-revalidate");
+  	response->addHeader("Pragma", "no-cache");
+  	response->addHeader("Expires", "-1");
+  	request->send(response);
+}
+
+void handleWifiSave(AsyncWebServerRequest *request) {
+  if(DEBUG_WIFI_MESSAGES){Serial.println("[handleWifiSave] wifi save");}
+  if(request->hasParam("n", true)) {
+    String n = request->arg("n");
+    n.toCharArray(wifiConnect.ssid, sizeof(wifiConnect.ssid) - 1);
+  }else{
+    //TODO - do something if we don't find the SSID arg - ignore for now
+  }
+  if(request->hasParam("p", true)) {
+    String p = request->arg("p");
+    p.toCharArray(wifiConnect.password, sizeof(wifiConnect.password) - 1);
+  }else{
+    //TODO - do something if we don't find the password arg - ignore for now
+  }
+  if((wifiConnect.ssid=="")){resetWiFiCredentials();} //if SSID is blank, reset credentials
+  
+  String responseString = "<!DOCTYPE html><html><head><meta name='viewport' content='width=device-width, initial-scale=1'></head><body>"
+    "<h1>Configuration updated.</h1>You will now be disconnected from this device and need to reconnect to your normal WiFi network."
+    "<br><br>If the WiFi credentials work it will reboot and connect to your network. If they fail, it will return to Access Point mode "
+    "after ~1 minute of trying. <br><br>If that occurs, use your WiFi settings to find \"" + String(wifiConnect.softAP_ssid) +
+    "\"). Then return to \"" + apIP.toString() + "/wifi\" to reenter the network ID and password.<br><br>Note: The LED on the device blinks slowly when acting "
+    "as an Access Point.<hr><a href=\"/wifi\">Return to the WiFi settings page.</a></body></html>";
+  
+  AsyncWebServerResponse *response = request->beginResponse(200, "text/html", responseString);
+  
+  //response->addHeader("Location", "wifi", true);
+  response->addHeader("Cache-Control", "no-cache, no-store, must-revalidate");
+  response->addHeader("Pragma", "no-cache");
+  response->addHeader("Expires", "-1");
+  request->send(response);
+  
+  saveCredentials();
+  if(DEBUG_WIFI_MESSAGES){Serial.println("[handleWifiSave] save complete");}
+  resetOnNextLoop=true;
+}
+
+void handleJustReboot(AsyncWebServerRequest *request) {
+  if(DEBUG_WIFI_MESSAGES){Serial.println("[handleJustReboot] just reboot");}
+  
+  AsyncWebServerResponse *response = request->beginResponse(200, "text/html", "<!DOCTYPE html><html><head><meta name='viewport' content='width=device-width, initial-scale=1'></head><body>"
+    "<h1>Rebooting Device.</h1><hr><a href=\"/wifi\">Return to the WiFi settings page.</a></body></html></body></html>");
+  //response->addHeader("Location", "wifi", true);
+  response->addHeader("Cache-Control", "no-cache, no-store, must-revalidate");
+  response->addHeader("Pragma", "no-cache");
+  response->addHeader("Expires", "-1");
+  request->send(response);
+
+  resetOnNextLoop=true;
+}
+
 
 void handleCtrl(AsyncWebServerRequest *request)
 {
@@ -303,3 +394,96 @@ void handleNotFound(AsyncWebServerRequest *request)
 {
 	handleNotMaster(request);
 }
+
+void resetWiFiCredentials(){
+    if(DEBUG_WIFI_MESSAGES) {Serial.println("[resetWiFiCredentials] Resetting Credentials");}
+    WiFi.disconnect();
+    wifiConnect.ssid[0]=0;
+    wifiConnect.password[0]=0;
+    saveCredentials();
+    resetOnNextLoop=true;
+}
+
+//function to setup normal functioning webpages and other net protocals after connecting to wifi
+void runNormalServer(){
+	WiFi.setAutoReconnect(true);
+	
+	Udp.begin(UDP_LOCAL_PORT); //start listening on UDP port for node-node traffic
+	UDPbroadcast();			   //get a poll going
+	
+	webSocket.begin();					//turn on websocket processing
+  	webSocket.onEvent(webSocketEvent);  //set a event handler for websocket comms
+
+	if(DEBUG_WIFI_MESSAGES) {
+		Serial.print("\n--------------------------\nConnected to SSID: " );
+		Serial.println (wifiConnect.ssid );
+		Serial.print ( "IP address: " );
+		Serial.println ( WiFi.localIP() );
+	}
+
+	String hostName;
+	if (EEPROMdata.master)
+	{
+		hostName = "fishyDIY";
+	}
+	else
+	{
+		hostName = "fishyDIYNode" + String(WiFi.localIP()[3]);
+	}
+	MDNS.begin(hostName.c_str());	//start mDNS to fishyDIYmaster.local
+
+	httpServer.on("/", handleRoot);
+	httpServer.on("/SWupdater", handleRoot);
+	httpServer.on("/control", handleCtrl);
+	httpServer.on("/SWupdateDevForm", HTTP_GET, handleSWupdateDevForm);
+	httpServer.on("/SWupdateGetForm", HTTP_GET, handleSWupdateDevForm);
+	httpServer.on("/SWupdatePostForm", HTTP_POST, handleSWupdateDevPostDone,  handleSWupdateDevPost);
+	httpServer.on("/network.JSON", handleNetworkJSON);
+	httpServer.on("/node.JSON", handleNodeJSON);
+	httpServer.on("/styles.css",handleCSS);
+	httpServer.on("/wifi", handleWifi);
+	httpServer.on("/wifisave", handleWifiSave);
+	httpServer.on("/justreboot",handleJustReboot);	
+	httpServer.onNotFound(handleNotFound);
+	httpServer.begin();
+	
+	MDNS.addService("http", "tcp", 80);
+	if(DEBUG_WIFI_MESSAGES) {Serial.println("HTTP server started\n--------------------------\n");}
+}
+
+//function to setup AP mode webpages (for WiFi setting only)
+void runSoftAPServer(){
+    WiFi.softAPConfig(apIP, apIP, netMsk);
+    WiFi.softAP(wifiConnect.softAP_ssid, wifiConnect.softAP_password);
+    delay(500); // Without delay I've seen the IP address blank
+    if(DEBUG_WIFI_MESSAGES) {
+      Serial.print("\n--------------------------\nAP Name to Connect via WiFi: ");
+      Serial.println(wifiConnect.softAP_ssid);
+	  Serial.print("\AP Network Password: ");
+      Serial.println(wifiConnect.softAP_password);
+      Serial.print("\AP IP address: ");
+      Serial.println(WiFi.softAPIP());
+    } 
+    httpServer.on("/", handleWifi);
+    httpServer.on("/wifi", handleWifi);
+    httpServer.onNotFound ( handleWifi );
+    httpServer.on("/wifisave", handleWifiSave);
+	httpServer.on("/justreboot",handleJustReboot);
+    httpServer.begin(); // Web server start
+    if(DEBUG_WIFI_MESSAGES) {Serial.println("HTTP server started\n--------------------------\n");}
+}
+
+void showWifiStatusinfo(){
+	static long lastTimeForMessage = 0;
+  	if(DEBUG_WIFI_MESSAGES){
+    if(millis()>lastTimeForMessage + 2000){
+      int s = WiFi.status();
+      lastTimeForMessage = millis();
+      Serial.print("Status");Serial.println(readStatus(s));
+      Serial.print("wifiConnect.status: ");Serial.println(readStatus(wifiConnect.status));
+      Serial.print("wifiConnect.connect: ");Serial.println(wifiConnect.connect?"true":"false");
+      Serial.print("wifiConnect.softAPmode: ");Serial.println(wifiConnect.softAPmode?"true":"false");
+    }
+  }
+}
+

@@ -6,7 +6,7 @@
 //You can update code - update this number - compile - and then load SW onto all the devices without
 //modifying the personality settings as long as INITIALIZE is the same on the devices (see below)
 //LIMITED to 10 alpanumeric characters
-#define SW_VER "20181112-2"
+#define SW_VER "20181117-1"
 
 //--------------------------PERSONALITY SETTINGS-----------------------------------//
 //Put in a time/date string to define the personality variables. 
@@ -59,13 +59,9 @@ their "personality settings" and wiping out stored motor info.
 #define CUSTOM_NOTE ""
 
 //----------------------------OTHER DEVICES SETTINGS-------------------------------//
+#define SOFT_AP_PWD "12345678"; //This is a hardcoded (can't be changed other than recompiling and loading software compile) password for connecting to the device as an Access Point when it can't connect to your WiFi
 
 #define ESP8266 //tell libraries this is an ESP8266 (vice ESP32)
-//#define USE_EADNS //use ESPAsyncDNSserver library instread of DNSserver
-//#define USE_WIFIMANAGER true
-//IF ABOVE SET TO FALSE THEN INSERT SSID AND PASSWORD BELOW:
-//#define SSID_CUSTOM "---INSERT SSID"
-//#define PASS_CUSTOM "---INSERT PASS"
 
 //SET THIS TO TRUE IF YOU WANT A SIMPLE "TURN ON, TURN OFF" COMMAND CAPABILITY FOR 
 //CONTROLLING THE DEVICE THROUGH AMAZON ECHO (ALEXA) OR A SMART HOME HUB (LIKE SMARTTHINGS).
@@ -86,6 +82,7 @@ their "personality settings" and wiping out stored motor info.
 #define DEBUG_UDP_MESSAGES false //debugging for network comms (MASTER - SLAVE issues with nodes on the network)
 #define UDP_PARSE_MESSAGES false //debugging for parsing messages - used after you've changed the message structures
 #define DEBUG_HEAP_MESSAGE false //just tracking the heap size for memory leak issues or overloaded nodeMCUs
+#define DEBUG_WIFI_MESSAGES true //shows wifi connection debugging info
 #define DEBUG_WiFiOFF false //turn to true to test without wifi (limited testing)
 #define DEBUG_TIMING false
 //-----------------------------------------------------------------------------------

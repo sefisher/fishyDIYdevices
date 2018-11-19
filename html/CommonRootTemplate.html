@@ -36,7 +36,6 @@ To build it in the code do the following:
             if (d.isMaster == 'true') { mstrTxt = 'MASTER:'+d.ip; } else { mstrTxt = d.ip; }
             var addDiv = "<div class='CPhd' id='hd1-" + d.ip + "'>" + d.name + "</div>";
             if(isCtrl){
-                //TODO - update ERROR text if ERROR; update other text with status summary
                 addDiv += "<div id='CPerr-" + d.ip + "' class='" + errTxt + "'>ERROR</div>";
                 addDiv += "<div >" + d.statusstr + "</div>";
                 addDiv += "<button class='CPbutton' onclick='openModal(\"" + d.ip + "\")'; id='myBtn-" + d.ip + "'>Open Controls</button>";

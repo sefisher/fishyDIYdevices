@@ -2,10 +2,6 @@
 //-------deviceArray funtions---------------------------
 //-------------------------------------------------------------------------
 
-//TODO!!-convert these array functions over to just storing the limited amount of info required for the MASTER pages (ip,name,typestr,groupstr,statusstr,inError,isMaster)
-// - make sure the EEPROMdata is used for all internal things
-// - create a status message (which will be device specific - so name the function TWOSTATE_[function] for consistency)
-
 //return a fishyDevice with this devices status in it.
 //used primarily to add device data to array of device data Stored
 //for webserver

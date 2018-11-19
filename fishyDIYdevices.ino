@@ -28,30 +28,28 @@ Notes:
 //Libraries
 #include <Arduino.h>
 #include <ESP8266WiFi.h>  			//https://github.com/esp8266/Arduino
-#include <ESP8266mDNS.h>
+#include <ESP8266mDNS.h>			//
+//#include <DNSServer.h>				
 
 #include <ESPAsyncWebServer.h>
-#include <ESPAsyncWiFiManager.h>
 #include <ESPAsyncTCP.h>
 #include <WebSocketsServer.h> 		//for ASYNC websockets - go into webSockets.h and uncomment #define WEBSOCKETS_NETWORK_TYPE NETWORK_ESP8266_ASYNC - comment out other #define WEBSOCKETS_NETWORK_TYPE lines
 #include <fauxmoESP.h>
 #include <AccelStepper.h>
 #include <EEPROM.h>
+//TODO - see if I can delete
 #include <StreamString.h>
 
 //custom definitions
 #include "CommonDeviceDefinitions.h"  		// device settings common to all devices (names, debug paramters, etc)
 #include "CommonGlobals.h"					// global variables
 #include "CommonWebresources.h"				// strings for device served webpages
+
+//TODO - make the following comment true
+//Device Type Definitions - CommonDeviceTranslator.ino takes the external function calls and calls all the internal device specific functions
+#define DEVICETYPES "{2-State-Actuator}" 	//the list of device types incoroprated into this build
 #include "2-State-ActuatorGlobals.h" 		// global variables specific to 2-state-actuators
 #include "2-State-ActuatorWebresources.h" 	// webresources specific to 2-state-actuators
-
-//the list of device types incoroprated into this build
-#define DEVICETYPES "{2-State-Actuator}"
-
-//Used for DEBUG_TIMING if enabled
-int count;
-unsigned long tmrs[]={0,0,0,0,0,0,0,0};
 
 //this is the base setup routine called first on power up or reboot
 void setup()
@@ -65,40 +63,39 @@ void setup()
 	WifiFauxmoAndDeviceSetup();
 	deviceSetup();
 	announceReadyOnUDP();	
-	count=0;
 }
-
 
 //this is the main operating loop (MOL) that is repeatedly executed
 void loop()
 {
-	//TODO - clean out all this timing stuff if desired
-	static unsigned long lastMillisTiming; if(DEBUG_TIMING){count=count+1;lastMillisTiming = millis();}
-	dns.processNextRequest(); if(DEBUG_TIMING) {tmrs[0]=tmrs[0] + (millis()-lastMillisTiming);lastMillisTiming = millis();}
-	//reset device if flagged to
-	checkResetOnLoop(); if(DEBUG_TIMING) {tmrs[1]=tmrs[1] + (millis()-lastMillisTiming); lastMillisTiming = millis();}
-	//process any net (UDP) traffic
-	UDPprocessPacket(); if(DEBUG_TIMING) {tmrs[3]=tmrs[3] + (millis()-lastMillisTiming); lastMillisTiming = millis();}
-	//talk on net and drop dead notes from list
-	UDPkeepAliveAndCull(); if(DEBUG_TIMING) {tmrs[4]=tmrs[4] + (millis()-lastMillisTiming); lastMillisTiming = millis();}
+	checkResetOnLoop(); //reset device if flagged to
+	showWifiStatusinfo(); //see how connection to WiFi is going if debugging
 	
-	// Since fauxmoESP 2.0 the library uses the "compatibility" mode by
-	// default, this means that it uses WiFiUdp class instead of AsyncUDP.
-	// The later requires the Arduino Core for ESP8266 staging version
-	// whilst the former works fine with current stable 2.3.0 version.
-	// But, since it's not "async" anymore we have to manually poll for UDP
-	// packets
-	fauxmo.handle(); if(DEBUG_TIMING) {tmrs[5]=tmrs[5] + (millis()-lastMillisTiming); lastMillisTiming = millis();}
-	//run state machine for device
-	operateDevice(); if(DEBUG_TIMING) {tmrs[6]=tmrs[6] + (millis()-lastMillisTiming); lastMillisTiming = millis();}
-	
+	if(wifiConnect.connect && !wifiConnect.softAPmode){ //only do this stuff the first time if we have credentials, after that just let autoreconnect handle temp losses
+    	manageConnection();
+  	}else if(!wifiConnect.connect && !wifiConnect.softAPmode){
+     	//connected and in STA mode - do normal loop stuff
+		//dns.processNextRequest(); 
+
+		UDPprocessPacket(); //process any net (UDP) traffic
+		UDPkeepAliveAndCull(); //talk on net and drop dead notes from list
+
+		// Since fauxmoESP 2.0 the library uses the "compatibility" mode by
+		// default, this means that it uses WiFiUdp class instead of AsyncUDP.
+		// The later requires the Arduino Core for ESP8266 staging version
+		// whilst the former works fine with current stable 2.3.0 version.
+		// But, since it's not "async" anymore we have to manually poll for UDP
+		// packets
+		fauxmo.handle(); 
+
+		//run state machine for device
+		operateDevice(); 
+      
+  	}else{ 
+    	//in SoftAP mode - only do AP Wifi Config server stuff
+    	slowBlinks(1);
+  }
 	showHeapAndProcessSerialInput(); //if debugging allow heap display and take serial commands
-	
-	if(DEBUG_TIMING) 
-	{
-		tmrs[7]=tmrs[7] + (millis()-lastMillisTiming); lastMillisTiming = millis();
-		if (count%100000==0) {Serial.println();for(int iii=0;iii<8;iii++){Serial.printf("%d) delta: %lu\n",iii,tmrs[iii]);}}
-	}
 }
 
 //determine if initalization string is different than stored in EEPROM - 
@@ -257,7 +254,8 @@ void serialStart(){
 void checkResetOnLoop(){	
 	if(resetOnNextLoop){
 		//allow time for any commit to settle and webresponses to process before bailing
-		delay(2000);
+		if(DEBUG_MESSAGES){Serial.println("[checkResetOnLoop] Reset Is Required...delay, then reset.");}
+		delay(1000);
 		resetController();
 	}
 }
@@ -296,7 +294,6 @@ void fastBlinks(int numBlinks)
 
 void slowBlinks(int numBlinks)
 {
-
 	pinMode(LED_BUILTIN, OUTPUT); // Initialize GPIO2 pin as an output
 
 	for (int i = 0; i < numBlinks; i++)
@@ -375,8 +372,10 @@ String paddedIntQuotes(int lengthInt, int val)
 	return paddedStr;
 }
 
-//put the controller in a unknown state ready for calibration
 void resetController()
 {
-	ESP.restart();
+  WiFi.disconnect(true);
+  delay(2000);
+  if(DEBUG_MESSAGES){Serial.println("[resetController] Restarting.");}
+  ESP.restart();
 }

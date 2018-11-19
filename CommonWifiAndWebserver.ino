@@ -7,17 +7,6 @@ void WiFiSetup()
 	if(DEBUG_WIFI_MESSAGES) {
 		Serial.println("\n---------------------\n[WiFiSetup] Configuring wifi...");
 	}
-	
-	//TODO-DELETE THIS:---------------------------
-	//test function - if true then reset credentials
-	if(false){
-		loadCredentials();
-		Serial.println("reseting credentials");
-		//Serial.print("SSID:");Serial.print(wifiConnect.ssid);Serial.print("PASS:");Serial.print(wifiConnect.password);
-		resetWiFiCredentials();
-	}
-	//----------------------------------------------
-
 	bool result = loadCredentials();
 	if(!result){
 		if(DEBUG_WIFI_MESSAGES) {Serial.println("No WiFi credentials found.  Going into Soft AP mode to accept new WiFi SSID and Password.");}
@@ -35,10 +24,6 @@ void connectWifi() {
   if(DEBUG_WIFI_MESSAGES) {
     Serial.print("Connecting as WiFi client...Try number: ");
     Serial.println(wifiConnect.connectTryCount);
-
-    //TODO - Delete this------------------------
-    //Serial.print("SSID:");Serial.print(wifiConnect.ssid);Serial.print("PASS:");Serial.print(wifiConnect.password);
-    //------------------------------------------
   }
 
   WiFi.mode(WIFI_STA);
@@ -101,52 +86,42 @@ void manageConnection(){
     }
 }
 
-
-//TODO - DELETE THIS???
-// void configModeCallback (AsyncWiFiManager *myWiFiManager) {
-//   Serial.println("Entered config mode");
-//   Serial.println(WiFi.softAPIP());
-//   //if you used auto generated SSID, print it
-//   Serial.println(myWiFiManager->getConfigPortalSSID());
-// }
-
-
 //-----------------------------------------------------------------------------
 //----------------------------Websock Functions--------------------------------
 //-----------------------------------------------------------------------------
 
 void webSocketEvent(uint8_t num, WStype_t type, uint8_t * payload, size_t length)
 {
-	Serial.printf("webSocketEvent(%d, %d, ...)\r\n", num, type);
+	if (DEBUG_MESSAGES){Serial.printf("webSocketEvent(%d, %d, ...)\r\n", num, type);}
   	switch(type) {
 		case WStype_DISCONNECTED:
-			Serial.printf("[%u] Disconnected!\r\n", num);
+			if (DEBUG_MESSAGES){Serial.printf("[%u] Disconnected!\r\n", num);}
 			webSocket.sendTXT(num, "DISCONNECTED", strlen("DISCONNECTED"));
 		break;
 		case WStype_CONNECTED:
 			{
 				webSocket.sendTXT(num, "CONNECTED", strlen("CONNECTED"));
 				IPAddress ip = webSocket.remoteIP(num);
-				Serial.printf("[%u] Connected from %d.%d.%d.%d url: %s\r\n", num, ip[0], ip[1], ip[2], ip[3], payload);
+				if (DEBUG_MESSAGES){Serial.printf("[%u] Connected from %d.%d.%d.%d url: %s\r\n", num, ip[0], ip[1], ip[2], ip[3], payload);}
 				
 				webSocket.broadcastTXT(getNodeJSON().c_str(),strlen(getNodeJSON().c_str()));
 			} 
 			break;
 		case WStype_TEXT:
-			Serial.printf("[%u] get Text: %s\r\n", num, payload);
+			if (DEBUG_MESSAGES){Serial.printf("[%u] get Text: %s\r\n", num, payload);}
 			executeCommands((char*)payload, WiFi.localIP());
 			// send data to all connected clients
 			webSocket.broadcastTXT(payload, length);
 		break;
 		case WStype_BIN:
-			Serial.printf("[%u] get binary length: %u\r\n", num, length);
+			if (DEBUG_MESSAGES){Serial.printf("[%u] get binary length: %u\r\n", num, length);}
 			hexdump(payload, length);
 
 			// echo data back to browser
 			webSocket.sendBIN(num, payload, length);
 		break;
 		default:
-			Serial.printf("Invalid WStype [%d]\r\n", type);
+			if (DEBUG_MESSAGES){Serial.printf("Invalid WStype [%d]\r\n", type);}
 		break;
   }
 }

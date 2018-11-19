@@ -275,7 +275,7 @@ void executeCommands(char inputMsg[MAXCMDSZ], IPAddress remote)
 	}
 	else
 	{
-		Serial.printf("[executeCommands] Input: %s is not a recognized command.\n", inputMsg);
+		if (DEBUG_MESSAGES){Serial.printf("[executeCommands] Input: %s is not a recognized command.\n", inputMsg);}
 	}
 }
 

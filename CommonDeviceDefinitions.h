@@ -6,7 +6,7 @@
 //You can update code - update this number - compile - and then load SW onto all the devices without
 //modifying the personality settings as long as INITIALIZE is the same on the devices (see below)
 //LIMITED to 10 alpanumeric characters
-#define SW_VER "20181117-1"
+#define SW_VER "20181118-1"
 
 //--------------------------PERSONALITY SETTINGS-----------------------------------//
 //Put in a time/date string to define the personality variables. 
@@ -25,7 +25,7 @@ their "personality settings" and wiping out stored motor info.
 
 //PICK A UNIQUE NAME FOR EACH DEVICE USING ONLY LETTERS AND NUMBERS
 // LIMITED to 40 alpanumeric characters (abcdefghijklmnopqrstuvwxyz0123456789)
-#define CUSTOM_DEVICE_NAME "Floor 3 Vent"
+#define CUSTOM_DEVICE_NAME "Floor Vent"
 
 //ENTER THIS DEVICE'S TYPE USING ONLY LETTERS AND NUMBERS (NO SPACES)
 //LIMITED to 20 alpanumeric characters 
@@ -34,7 +34,7 @@ their "personality settings" and wiping out stored motor info.
 //PICK ONLY ONE DEVICE ON THE NETWORK AS MASTER (and set this to true when you compile its code).  
 //IT WILL BE THE WEBSERVER AND CONTROLLER FOR ALL OTHER NODES.  Set false for all the others.
 //#define MASTER_NODE true
- #define MASTER_NODE false
+#define MASTER_NODE false
 
 //FIGURE OUT WHAT DIRECTION YOU WANT TO PICK AS OPEN or CLOSE FOR YOUR DEVICE.  
 //#define OPEN_IS_CCW true
@@ -59,7 +59,7 @@ their "personality settings" and wiping out stored motor info.
 #define CUSTOM_NOTE ""
 
 //----------------------------OTHER DEVICES SETTINGS-------------------------------//
-#define SOFT_AP_PWD "12345678"; //This is a hardcoded (can't be changed other than recompiling and loading software compile) password for connecting to the device as an Access Point when it can't connect to your WiFi
+#define SOFT_AP_PWD "12345678" //This is a hardcoded (can't be changed other than recompiling and loading software compile) password for connecting to the device as an Access Point when it can't connect to your WiFi
 
 #define ESP8266 //tell libraries this is an ESP8266 (vice ESP32)
 
@@ -82,7 +82,7 @@ their "personality settings" and wiping out stored motor info.
 #define DEBUG_UDP_MESSAGES false //debugging for network comms (MASTER - SLAVE issues with nodes on the network)
 #define UDP_PARSE_MESSAGES false //debugging for parsing messages - used after you've changed the message structures
 #define DEBUG_HEAP_MESSAGE false //just tracking the heap size for memory leak issues or overloaded nodeMCUs
-#define DEBUG_WIFI_MESSAGES true //shows wifi connection debugging info
+#define DEBUG_WIFI_MESSAGES false //shows wifi connection debugging info
 #define DEBUG_WiFiOFF false //turn to true to test without wifi (limited testing)
 #define DEBUG_TIMING false
 //-----------------------------------------------------------------------------------

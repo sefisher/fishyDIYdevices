@@ -8,16 +8,16 @@
 //CUSTOM DEVICE FUNCTION - EXTERNAL (SAME FUNCTION CALLED BY ALL DEVICES)
 //THIS IS A FUNCTION FOR A 2-State Actuator
 //generates a status message to be delivered for this devices state to the summary webpage for all the devices by the MASTER webserver
-String getStatusString(){
+String TwoSAgetStatusString(){
    	String statusStr = "Current Position:";
    	int pos;
-   	if(EEPROMdeviceData.range==0) {
+   	if(TwoSAEEPROMdeviceData.range==0) {
 		statusStr = statusStr + "0% Open";
 		if(DEBUG_MESSAGES){Serial.println("[getStatusString] Range of 0 found.");}
 	}
 	else{
-	   	pos = round(((float)EEPROMdeviceData.motorPos*100.0)/(float)EEPROMdeviceData.range);
-	   	if(EEPROMdeviceData.openIsCCW) pos = 100-pos;
+	   	pos = round(((float)TwoSAEEPROMdeviceData.motorPos*100.0)/(float)TwoSAEEPROMdeviceData.range);
+	   	if(TwoSAEEPROMdeviceData.openIsCCW) pos = 100-pos;
         statusStr = statusStr + String(pos) + "% Open";
 	}
    	return statusStr;
@@ -26,7 +26,7 @@ String getStatusString(){
 //CUSTOM DEVICE FUNCTION - EXTERNAL (SAME NAME CALLED IN ALL DEVICES)
 //THIS IS A FUNCTION FOR A 2-State Actuator
 //encode compiled (settings) device data into the char[256] for storage in EEPROMdata for new devices
-void initializeDeviceCustomData(){
+void TwoSAinitializeDeviceCustomData(){
 	    String builder = String("openIsCCW=") + String(OPEN_IS_CCW?"1":"0") + String("&swapLimSW=") + String(SWAP_LIM_SW?"1":"0") + String("&motorPosAtCCWset=0&motorPosAtCWset=0&motorPos=0&range=") + String(FULL_SWING);
 		strncpy(EEPROMdata.deviceCustomData, builder.c_str(), 256);
 		extractDeviceCustomData();
@@ -34,7 +34,7 @@ void initializeDeviceCustomData(){
 //CUSTOM DEVICE FUNCTION - EXTERNAL (SAME NAME CALLED IN ALL DEVICES)
 //THIS IS A FUNCTION FOR A 2-State Actuator
 //extract custom device data from char[256] in EEPROMdata and put it into the device specific struct
-void extractDeviceCustomData(){
+void TwoSAextractDeviceCustomData(){
 	//example EEPROMdata.deviceCustomData = "openIsCCW=1&swapLimSW=0&motorPosAtCCWset=0&motorPosAtCWset=0&motorPos=2340&range=8889";
     char *strings[12];
     char *ptr = NULL;
@@ -53,43 +53,42 @@ void extractDeviceCustomData(){
     if(DEBUG_MESSAGES){for(int n = 0; n < index; n++){Serial.print(n);Serial.print(") ");Serial.println(strings[n]);}}
 
 	//names are even (0,2,4..), data is odd(1,3,5..)
-	EEPROMdeviceData.openIsCCW = (String(strings[1])=="1")?true:false;		
-	EEPROMdeviceData.swapLimSW = (String(strings[3])=="1")?true:false;
-	EEPROMdeviceData.motorPosAtCCWset = (String(strings[5])=="1")?true:false;	
-	EEPROMdeviceData.motorPosAtCWset = (String(strings[7])=="1")?true:false;	
-	EEPROMdeviceData.motorPos = atoi(strings[9]); 						
-	EEPROMdeviceData.range = atoi(strings[11]); 
+	TwoSAEEPROMdeviceData.openIsCCW = (String(strings[1])=="1")?true:false;		
+	TwoSAEEPROMdeviceData.swapLimSW = (String(strings[3])=="1")?true:false;
+	TwoSAEEPROMdeviceData.motorPosAtCCWset = (String(strings[5])=="1")?true:false;	
+	TwoSAEEPROMdeviceData.motorPosAtCWset = (String(strings[7])=="1")?true:false;	
+	TwoSAEEPROMdeviceData.motorPos = atoi(strings[9]); 						
+	TwoSAEEPROMdeviceData.range = atoi(strings[11]); 
 
     if(DEBUG_MESSAGES){
-		String builder = "openIsCCW=" + String(EEPROMdeviceData.openIsCCW?"1":"0") + "&swapLimSW=" + String(EEPROMdeviceData.swapLimSW?"1":"0") + "&motorPosAtCCWset=" + String(EEPROMdeviceData.motorPosAtCCWset?"1":"0") + "&motorPosAtCWset=" + String(EEPROMdeviceData.motorPosAtCWset?"1":"0") + "&motorPos=" + String(EEPROMdeviceData.motorPos) + "&range=" + String(EEPROMdeviceData.range);
+		String builder = "openIsCCW=" + String(TwoSAEEPROMdeviceData.openIsCCW?"1":"0") + "&swapLimSW=" + String(TwoSAEEPROMdeviceData.swapLimSW?"1":"0") + "&motorPosAtCCWset=" + String(TwoSAEEPROMdeviceData.motorPosAtCCWset?"1":"0") + "&motorPosAtCWset=" + String(TwoSAEEPROMdeviceData.motorPosAtCWset?"1":"0") + "&motorPos=" + String(TwoSAEEPROMdeviceData.motorPos) + "&range=" + String(TwoSAEEPROMdeviceData.range);
 		Serial.println(builder);
 
 		showEEPROMdevicePersonalityData();
 	}
-
 }
 //CUSTOM DEVICE FUNCTION - EXTERNAL (SAME NAME CALLED IN ALL DEVICES)
 //THIS IS A FUNCTION FOR A 2-State Actuator
 //encode dynamic device data into the char[256] for storage in EEPROMdata
-void encodeDeviceCustomData(){
-	    String builder = "openIsCCW=" + String(EEPROMdeviceData.openIsCCW?"1":"0") + "&swapLimSW=" + String(EEPROMdeviceData.swapLimSW?"1":"0") + "&motorPosAtCCWset=" + String(EEPROMdeviceData.motorPosAtCCWset?"1":"0") + "&motorPosAtCWset=" + String(EEPROMdeviceData.motorPosAtCWset?"1":"0") + "&motorPos=" + String(EEPROMdeviceData.motorPos) + "&range=" + String(EEPROMdeviceData.range);
+void TwoSAencodeDeviceCustomData(){
+	    String builder = "openIsCCW=" + String(TwoSAEEPROMdeviceData.openIsCCW?"1":"0") + "&swapLimSW=" + String(TwoSAEEPROMdeviceData.swapLimSW?"1":"0") + "&motorPosAtCCWset=" + String(TwoSAEEPROMdeviceData.motorPosAtCCWset?"1":"0") + "&motorPosAtCWset=" + String(TwoSAEEPROMdeviceData.motorPosAtCWset?"1":"0") + "&motorPos=" + String(TwoSAEEPROMdeviceData.motorPos) + "&range=" + String(TwoSAEEPROMdeviceData.range);
 		strncpy(EEPROMdata.deviceCustomData, builder.c_str(), 256);
 }
 //CUSTOM DEVICE FUNCTION - EXTERNAL (SAME NAME CALLED IN ALL DEVICES)
 //THIS IS A FUNCTION FOR A 2-State Actuator
 //encode dynamic device data into the char[256] for storage in EEPROMdata
-void showEEPROMdevicePersonalityData(){
+void TwoSAshowEEPROMdevicePersonalityData(){
 	if(DEBUG_MESSAGES){
-		Serial.println("[SETUP-device] OpenIsCCW: "+String(EEPROMdeviceData.openIsCCW?"True":"False") + ", SwapLimSW: "+String(EEPROMdeviceData.swapLimSW?"True":"False"));
-		Serial.println("[SETUP-device] Found motor data: {CCWset,CWset,Pos,range}: {" + String(EEPROMdeviceData.motorPosAtCCWset)+ "," + String(EEPROMdeviceData.motorPosAtCWset)+ "," + String(EEPROMdeviceData.motorPos)+ "," + String(EEPROMdeviceData.range)+"}");  	
+		Serial.println("[SETUP-device] OpenIsCCW: "+String(TwoSAEEPROMdeviceData.openIsCCW?"True":"False") + ", SwapLimSW: "+String(TwoSAEEPROMdeviceData.swapLimSW?"True":"False"));
+		Serial.println("[SETUP-device] Found motor data: {CCWset,CWset,Pos,range}: {" + String(TwoSAEEPROMdeviceData.motorPosAtCCWset)+ "," + String(TwoSAEEPROMdeviceData.motorPosAtCWset)+ "," + String(TwoSAEEPROMdeviceData.motorPos)+ "," + String(TwoSAEEPROMdeviceData.range)+"}");  	
 	}
 }
 //CUSTOM DEVICE FUNCTION - EXTERNAL (SAME NAME CALLED IN ALL DEVICES)
 //THIS IS A FUNCTION FOR A 2-State Actuator
 //return if the device is calibrated (the common function checks for deviceTimedOut)
-bool isCustomDeviceReady(){
+bool TwoSAisCustomDeviceReady(){
 	//if both limit switch positions have been stored the device is calibrated
-	if (EEPROMdeviceData.motorPosAtCCWset && EEPROMdeviceData.motorPosAtCWset)
+	if (TwoSAEEPROMdeviceData.motorPosAtCCWset && TwoSAEEPROMdeviceData.motorPosAtCWset)
 	{
 		return true;
 	}else{
@@ -97,7 +96,7 @@ bool isCustomDeviceReady(){
 	}
 }
 
-String getDeviceSpecificJSON(){
+String TwoSAgetDeviceSpecificJSON(){
 	String temp;
 	temp = "{\"fishyDevices\":[";
 	/* 
@@ -107,32 +106,143 @@ String getDeviceSpecificJSON(){
 	{ip,motorPosAtCWset,motorPosAtCCWset,isMaster,motorPos,name,openIsCCW,port,group,note,swVer,devType,initStamp,range,timeOut,deviceTimedOut,swapLimSW}
 	*/
 	temp += "{\"ip\":\"" + WiFi.localIP().toString() +
-			"\",\"motorPosAtCWset\":\"" + String(EEPROMdeviceData.motorPosAtCWset ? "true" : "false") +
-			"\",\"motorPosAtCCWset\":\"" + String(EEPROMdeviceData.motorPosAtCCWset ? "true" : "false") +
+			"\",\"motorPosAtCWset\":\"" + String(TwoSAEEPROMdeviceData.motorPosAtCWset ? "true" : "false") +
+			"\",\"motorPosAtCCWset\":\"" + String(TwoSAEEPROMdeviceData.motorPosAtCCWset ? "true" : "false") +
 			"\",\"isMaster\":\"" + String(EEPROMdata.master ? "true" : "false") + "\",\"motorPos\":\"" + String(int(stepper1.currentPosition())) +
-			"\",\"deviceName\":\"" + String(EEPROMdata.namestr) + "\",\"openIsCCW\":\"" + String(EEPROMdeviceData.openIsCCW ? "true" : "false") + "\",\"group\":\"" + String(EEPROMdata.groupstr) + 
+			"\",\"deviceName\":\"" + String(EEPROMdata.namestr) + "\",\"openIsCCW\":\"" + String(TwoSAEEPROMdeviceData.openIsCCW ? "true" : "false") + "\",\"group\":\"" + String(EEPROMdata.groupstr) + 
 			"\",\"note\":\"" + String(EEPROMdata.note) + "\",\"swVer\":\"" + String(EEPROMdata.swVer) + 
 			"\",\"devType\":\"" + String(EEPROMdata.typestr) + "\",\"initStamp\":\"" + String(EEPROMdata.initstr) + 
-			"\",\"range\":\"" + String(EEPROMdeviceData.range) + "\",\"timeOut\":\"" + String(EEPROMdata.timeOut) + 
+			"\",\"range\":\"" + String(TwoSAEEPROMdeviceData.range) + "\",\"timeOut\":\"" + String(EEPROMdata.timeOut) + 
 			"\",\"deviceTimedOut\":\"" + String(EEPROMdata.deviceTimedOut ? "true" : "false") + 
-			"\",\"swapLimSW\":\"" + String(EEPROMdeviceData.swapLimSW ? "true" : "false") + "\"}";
+			"\",\"swapLimSW\":\"" + String(TwoSAEEPROMdeviceData.swapLimSW ? "true" : "false") + "\"}";
 
 	temp += "]}";
 	return temp;
 }
 //CUSTOM DEVICE FUNCTION - EXTERNAL (SAME NAME CALLED IN ALL DEVICES)
 //THIS IS A FUNCTION FOR A 2-State Actuator
-void operateDevice()
+void TwoSAoperateDevice()
 {
-	operateLimitSwitchActuator();
+	//operateLimitSwitchActuator:
+
+	//get CURRENT position of the switches as wired they should be 1=switch open (not at limit)
+	int CCWlimSensorVal=1;
+	int CWlimSensorVal=1;
+	if (TwoSAEEPROMdeviceData.swapLimSW == false) { //fix in case switches are miswired (easy to get confused on linear actuator)
+		 CCWlimSensorVal = digitalRead(SWpinLimitCCW);
+		 CWlimSensorVal = digitalRead(SWpinLimitCW);
+	}else{
+		 CCWlimSensorVal = digitalRead(SWpinLimitCW);
+		 CWlimSensorVal = digitalRead(SWpinLimitCCW);
+	}
+
+	//STATE MACHINE:
+	//First -- check for a calibration in progress; if so - finish calibration.
+	//second - go through all the other actions based on deviceTrueState.
+
+	switch (deviceCalStage)
+	{
+	case doneCal:
+		//No new manual ctrl ordered or calibration - use deviceTrueState to determine actions
+		//advance the stepper if opening or closing and not at a limit (or at the correct stopping position)
+		switch (deviceTrueState)
+		{
+		case man_idle: //idle - do nothing
+		case opened:   //idle - do nothing
+		case closed:   //idle - do nothing
+			break;
+		case opening: //opening not at limit (really just moving CCW)
+			deviceTrueState = TwoSAmoveCCW();
+			updateClients("Moving CCW");
+			break;
+		case closing: //closing not at limit (really just moving CW)
+			deviceTrueState = TwoSAmoveCW();
+			updateClients("Moving CW");
+			break;
+		case unknown: //unknown state (bootup without stored HW limits)
+			if (!CWlimSensorVal)
+			{ //at CW limit
+				TwoSAEEPROMdeviceData.range = stepper1.currentPosition();
+				TwoSAEEPROMdeviceData.motorPosAtCWset = true;
+				TwoSAEEPROMdeviceData.motorPosAtCCWset = false;
+				//make actuator idle
+				if(TwoSAEEPROMdeviceData.openIsCCW){
+					TwoSAidleActuator(closed); 
+				}else{
+					TwoSAidleActuator(opened);
+				}
+			}
+			else if (!CCWlimSensorVal)
+			{ //at CCW limit
+				stepper1.setCurrentPosition(0);
+				TwoSAEEPROMdeviceData.motorPosAtCCWset = true;
+				TwoSAEEPROMdeviceData.range = FULL_SWING;
+				TwoSAEEPROMdeviceData.motorPosAtCWset = false;
+					//make actuator idle
+				if(TwoSAEEPROMdeviceData.openIsCCW){
+					TwoSAidleActuator(opened); 
+				}else{
+					TwoSAidleActuator(closed);
+				}
+			}
+			else
+			{
+				TwoSAEEPROMdeviceData.motorPosAtCWset = false;
+				TwoSAEEPROMdeviceData.motorPosAtCCWset = false;
+			}
+			break;
+		}
+		break;
+	case openingCal: //calibration in first stage	
+		TwoSAEEPROMdeviceData.range = FULL_SWING;		
+		TwoSAEEPROMdeviceData.motorPosAtCCWset = false;			
+		TwoSAEEPROMdeviceData.motorPosAtCWset = false;	
+		updateClients("Calibrating - CCW");
+		deviceTrueState = TwoSAmoveCCW();
+		if (deviceTrueState == opened)
+		{ //Done with stage 1 go onto closing stage
+			deviceCalStage = closingCal;
+			if (DEBUG_MESSAGES)
+			{
+				Serial.printf("[MAIN loop cal] Found open (CCW) limit (0 by def'n). Set motorPos to 0. Going to calibration closing stage.\n");
+			}
+			executeState(false);
+		}
+		break;
+	case closingCal: //calibration in second stage
+		updateClients("Calibrating - CW");
+		TwoSAmoveCW();
+		if (deviceTrueState == closed)
+		{ //Done with stage 2 - done!
+			deviceCalStage = doneCal;
+			if (DEBUG_MESSAGES)
+			{
+				Serial.printf("[MAIN loop cal] Found close (CW) limit (%d). Calibration complete.\n", TwoSAEEPROMdeviceData.range);
+			}
+		}
+		break;
+	}
 }
 
 //CUSTOM DEVICE FUNCTION - EXTERNAL (SAME NAME CALLED IN ALL DEVICES)
 //THIS IS A FUNCTION FOR A 2-State Actuator
-void deviceSetup()
+void TwoSAdeviceSetup()
 {
-	pinSetup();
-	motorSetup();
+	//pinSetup:
+	//set switch pins to use internal pull_up resistor
+	pinMode(SWpinLimitCW, INPUT_PULLUP);
+	pinMode(SWpinLimitCCW, INPUT_PULLUP);
+	
+	//motorSetup:
+	//stepper motor setup
+	stepper1.setMaxSpeed(MAX_SPEED);
+	stepper1.setAcceleration(ACCELERATION);
+	stepper1.setSpeed(0);
+	stepper1.setCurrentPosition(TwoSAEEPROMdeviceData.motorPos);
+	if((TwoSAEEPROMdeviceData.motorPosAtCCWset+TwoSAEEPROMdeviceData.motorPosAtCWset)==2){
+		//if prior HW limits set state to man_idle to prevent unknown state effects
+		deviceTrueState = man_idle;
+	}
 }
 
 //CUSTOM DEVICE FUNCTION - EXTERNAL (SAME NAME AND PARAMETERS CALLED IN ALL DEVICES)
@@ -143,7 +253,7 @@ void deviceSetup()
 //REQD COMMANDS: {anyfishydev_there,fishydiymaster,poll_net,poll_response,reset_wifi,reset} -> needed to be a fishyDevice on the network
 //VALID DEVICE COMMANDS: 
 // (open,close,stop,gotoXXX,{hi.hello},calibrate,config[;semi-colon-separated-parameters=values])
-void executeCommands(char inputMsg[MAXCMDSZ], IPAddress remote)
+void TwoSAexecuteCommands(char inputMsg[MAXCMDSZ], IPAddress remote)
 {
 	String cmd = String(inputMsg);
 	cmd.toLowerCase();
@@ -172,7 +282,7 @@ void executeCommands(char inputMsg[MAXCMDSZ], IPAddress remote)
 			Serial.println("[executeCommands] Commanded STOP");
 		}
 		updateClients("Stop Received", true);
-		executeStop();
+		TwoSAexecuteStop();
 	}
 	else if (cmd.startsWith("goto"))
 	{ 
@@ -181,7 +291,7 @@ void executeCommands(char inputMsg[MAXCMDSZ], IPAddress remote)
 			Serial.println("[executeCommands] Commanded GOTO (" + cmd + ")");
 		}
 		updateClients("Goto (" + cmd + ") Received", true);
-		executeGoto(cmd); 
+		TwoSAexecuteGoto(cmd); 
 	}
 	else if (cmd.startsWith("hi")||cmd.startsWith("hello"))
 	{
@@ -282,7 +392,7 @@ void executeCommands(char inputMsg[MAXCMDSZ], IPAddress remote)
 //CUSTOM DEVICE FUNCTION - EXTERNAL (SAME FUNCTION CALLED BY ALL DEVICES)
 //THIS IS A FUNCTION FOR A 2-State Actuator
 //configuration response from web/udp - this preforms a configuration update to the device and stores it in EEPROM
-void UDPparseConfigResponse(String responseIn, IPAddress remote){
+void TwoSAUDPparseConfigResponse(String responseIn, IPAddress remote){
 	String response = responseIn.substring(7); //strip off "CONFIG"
 	int strStrt, strStop;
 
@@ -294,11 +404,11 @@ void UDPparseConfigResponse(String responseIn, IPAddress remote){
 	//openIsCCW
 	strStrt = response.indexOf("=", strStop)+1;
 	strStop = response.indexOf(";", strStrt);
-	EEPROMdeviceData.openIsCCW = (response.substring(strStrt, strStop) == "false") ? false : true;
+	TwoSAEEPROMdeviceData.openIsCCW = (response.substring(strStrt, strStop) == "false") ? false : true;
 	if (DEBUG_MESSAGES && UDP_PARSE_MESSAGES)
 	{
 		Serial.print("[UDPparseConfigResponse] openIsCCW: ");
-		Serial.println(EEPROMdeviceData.openIsCCW ? "true" : "false");
+		Serial.println(TwoSAEEPROMdeviceData.openIsCCW ? "true" : "false");
 	}
 	//isMaster
 	strStrt = response.indexOf("=", strStop)+1;
@@ -344,11 +454,11 @@ void UDPparseConfigResponse(String responseIn, IPAddress remote){
 	//swapLimSW
 	strStrt = response.indexOf("=", strStop)+1;
 	strStop = response.indexOf(";", strStrt);
-	EEPROMdeviceData.swapLimSW = (response.substring(strStrt, strStop) == "false") ? false : true;
+	TwoSAEEPROMdeviceData.swapLimSW = (response.substring(strStrt, strStop) == "false") ? false : true;
 	if (DEBUG_MESSAGES && UDP_PARSE_MESSAGES)
 	{
 		Serial.print("[UDPparseConfigResponse] swapLimSW: ");
-		Serial.println(EEPROMdeviceData.swapLimSW ? "true" : "false");
+		Serial.println(TwoSAEEPROMdeviceData.swapLimSW ? "true" : "false");
 	}
 	//timeOut
 	strStrt = response.indexOf("=", strStop)+1;
@@ -369,7 +479,7 @@ void UDPparseConfigResponse(String responseIn, IPAddress remote){
 // execute a WiFi received state change
 // ON equates to open
 // OFF equates to close
-void executeState(bool state)
+void TwoSAexecuteState(bool state)
 {
 	//reset the motor timeout counter
 	deviceResponseTime = millis();
@@ -377,7 +487,7 @@ void executeState(bool state)
 	//ensure motor output is enabled
 	stepper1.enableOutputs();
 	//determine correct direction based on OpenisCCW and correct the state
-	bool correctedState = whichWay(state);
+	bool correctedState = TwoSAwhichWay(state);
 	if (DEBUG_MESSAGES)
 	{
 		Serial.printf("[executeState] Going to state: %s\n", state ? "ON" : "OFF");
@@ -391,7 +501,7 @@ void executeState(bool state)
 		{
 			Serial.println("[executeState] Transition to moving CCW...");
 		}
-		deviceTrueState = moveCCW();	
+		deviceTrueState = TwoSAmoveCCW();	
 	}
 	else
 	{
@@ -400,7 +510,7 @@ void executeState(bool state)
 		{
 			Serial.println("[executeState] Transition to moving CW...");
 		}
-		deviceTrueState = moveCW();
+		deviceTrueState = TwoSAmoveCW();
 	}
 }
 //=====================================================================================================================
@@ -408,184 +518,57 @@ void executeState(bool state)
 
 //=====================================================================================================================
 //BEGIN CUSTOM DEVICE FUNCTIONS - INTERNAL
-//THIS IS A FUNCTION FOR A 2-State Actuator
-
-//CUSTOM DEVICE FUNCTION - INTERNAL
-//THIS IS A FUNCTION FOR A 2-State Actuator
-//set pin modes
-void pinSetup(){
-	//set switch pins to use internal pull_up resistor
-	pinMode(SWpinLimitCW, INPUT_PULLUP);
-	pinMode(SWpinLimitCCW, INPUT_PULLUP);
-}
-
-//CUSTOM DEVICE FUNCTION - INTERNAL
-//THIS IS A FUNCTION FOR A 2-State Actuator
-//set up motor parameters
-void motorSetup(){
-	//stepper motor setup
-	stepper1.setMaxSpeed(MAX_SPEED);
-	stepper1.setAcceleration(ACCELERATION);
-	stepper1.setSpeed(0);
-	stepper1.setCurrentPosition(EEPROMdeviceData.motorPos);
-	if((EEPROMdeviceData.motorPosAtCCWset+EEPROMdeviceData.motorPosAtCWset)==2){
-		//if prior HW limits set state to man_idle to prevent unknown state effects
-		deviceTrueState = man_idle;
-	}
-}
-
-//CUSTOM DEVICE FUNCTION - INTERNAL
-//THIS IS A FUNCTION FOR A 2-State Actuator
-void operateLimitSwitchActuator(){
-	//get CURRENT position of the switches as wired they should be 1=switch open (not at limit)
-	int CCWlimSensorVal=1;
-	int CWlimSensorVal=1;
-	if (EEPROMdeviceData.swapLimSW == false) { //fix in case switches are miswired (easy to get confused on linear actuator)
-		 CCWlimSensorVal = digitalRead(SWpinLimitCCW);
-		 CWlimSensorVal = digitalRead(SWpinLimitCW);
-	}else{
-		 CCWlimSensorVal = digitalRead(SWpinLimitCW);
-		 CWlimSensorVal = digitalRead(SWpinLimitCCW);
-	}
-
-	//STATE MACHINE:
-	//First -- check for a calibration in progress; if so - finish calibration.
-	//second - go through all the other actions based on deviceTrueState.
-
-	switch (deviceCalStage)
-	{
-	case doneCal:
-		//No new manual ctrl ordered or calibration - use deviceTrueState to determine actions
-		//advance the stepper if opening or closing and not at a limit (or at the correct stopping position)
-		switch (deviceTrueState)
-		{
-		case man_idle: //idle - do nothing
-		case opened:   //idle - do nothing
-		case closed:   //idle - do nothing
-			break;
-		case opening: //opening not at limit (really just moving CCW)
-			deviceTrueState = moveCCW();
-			updateClients("Moving CCW");
-			break;
-		case closing: //closing not at limit (really just moving CW)
-			deviceTrueState = moveCW();
-			updateClients("Moving CW");
-			break;
-		case unknown: //unknown state (bootup without stored HW limits)
-			if (!CWlimSensorVal)
-			{ //at CW limit
-				EEPROMdeviceData.range = stepper1.currentPosition();
-				EEPROMdeviceData.motorPosAtCWset = true;
-				EEPROMdeviceData.motorPosAtCCWset = false;
-				//make actuator idle
-				if(EEPROMdeviceData.openIsCCW){
-					idleActuator(closed); 
-				}else{
-					idleActuator(opened);
-				}
-			}
-			else if (!CCWlimSensorVal)
-			{ //at CCW limit
-				stepper1.setCurrentPosition(0);
-				EEPROMdeviceData.motorPosAtCCWset = true;
-				EEPROMdeviceData.range = FULL_SWING;
-				EEPROMdeviceData.motorPosAtCWset = false;
-					//make actuator idle
-				if(EEPROMdeviceData.openIsCCW){
-					idleActuator(opened); 
-				}else{
-					idleActuator(closed);
-				}
-			}
-			else
-			{
-				EEPROMdeviceData.motorPosAtCWset = false;
-				EEPROMdeviceData.motorPosAtCCWset = false;
-			}
-			break;
-		}
-		break;
-	case openingCal: //calibration in first stage	
-		EEPROMdeviceData.range = FULL_SWING;		
-		EEPROMdeviceData.motorPosAtCCWset = false;			
-		EEPROMdeviceData.motorPosAtCWset = false;	
-		updateClients("Calibrating - CCW");
-		deviceTrueState = moveCCW();
-		if (deviceTrueState == opened)
-		{ //Done with stage 1 go onto closing stage
-			deviceCalStage = closingCal;
-			if (DEBUG_MESSAGES)
-			{
-				Serial.printf("[MAIN loop cal] Found open (CCW) limit (0 by def'n). Set motorPos to 0. Going to calibration closing stage.\n");
-			}
-			executeState(false);
-		}
-		break;
-	case closingCal: //calibration in second stage
-		updateClients("Calibrating - CW");
-		moveCW();
-		if (deviceTrueState == closed)
-		{ //Done with stage 2 - done!
-			deviceCalStage = doneCal;
-			if (DEBUG_MESSAGES)
-			{
-				Serial.printf("[MAIN loop cal] Found close (CW) limit (%d). Calibration complete.\n", EEPROMdeviceData.range);
-			}
-		}
-		break;
-	}
-}
 
 //CUSTOM DEVICE FUNCTION - INTERNAL
 //Parses string command and then executes the move.
 //cmd will be of form goto### (e.g., goto034)
-void executeGoto(String cmd)
+void TwoSAexecuteGoto(String cmd)
 {
 	//reset the motor timeout counter
 	deviceResponseTime = millis();
 	EEPROMdata.deviceTimedOut = false;
 	//ensure motor output is enabled
 	stepper1.enableOutputs();
-	int newPercentOpen = whichWayGoto(cmd.substring(4).toInt()); //STRIP OFF GOTO and correct for openisCCCW
+	int newPercentOpen = TwoSAwhichWayGoto(cmd.substring(4).toInt()); //STRIP OFF GOTO and correct for openisCCCW
 	if(newPercentOpen == 100){
 		targetPos=-1;
-		deviceTrueState = moveCCW();
+		deviceTrueState = TwoSAmoveCCW();
 	}else if(newPercentOpen == 0){
 		targetPos=-1;
-		deviceTrueState = moveCW();
+		deviceTrueState = TwoSAmoveCW();
 	}else{ //targetting mid position
 		if (DEBUG_MESSAGES)
 		{
-			Serial.printf("[executeGoto] Going to percent open: %d\n", newPercentOpen);
+			Serial.printf("[TwoSAexecuteGoto] Going to percent open: %d\n", newPercentOpen);
 		}
-		deviceTrueState = openPercentActuator(newPercentOpen);
+		deviceTrueState = TwoSAopenPercentActuator(newPercentOpen);
 	}
 }
 //CUSTOM DEVICE FUNCTION - INTERNAL
 //stops acutator where it is
-void executeStop()
+void TwoSAexecuteStop()
 {
 	//reset the motor timeout counter
 	deviceResponseTime = millis();
 	EEPROMdata.deviceTimedOut = false;
 	if (DEBUG_MESSAGES)
 	{
-		Serial.println("[executeStop] Stopping actuator");
+		Serial.println("[TwoSAexecuteStop] Stopping actuator");
 	}
 	deviceTrueState = man_idle;
 	deviceCalStage = doneCal;
-	idleActuator(deviceTrueState);
+	TwoSAidleActuator(deviceTrueState);
 }
 
 //CUSTOM DEVICE FUNCTION - INTERNAL
 //function used to do a normal WiFi or calibration opening of the actuator
 // - this moves at constant speed to HW limits
-trueState moveCCW()
+trueState TwoSAmoveCCW()
 {
 	//get CURRENT position of the switches as wired they should be 1=switch open (not at limit)
 	int CCWlimSensorVal=1;
 	int CWlimSensorVal=1;
-	if (EEPROMdeviceData.swapLimSW == false) { //fix in case switches are miswired (easy to get confused on linear actuator)
+	if (TwoSAEEPROMdeviceData.swapLimSW == false) { //fix in case switches are miswired (easy to get confused on linear actuator)
 		CCWlimSensorVal = digitalRead(SWpinLimitCCW);
 		CWlimSensorVal = digitalRead(SWpinLimitCW);
 	}else{
@@ -599,9 +582,9 @@ trueState moveCCW()
 		// -set stepper pos = 0;  (by definition fullCCW is 0) and
 		// -update flag indicating the HW lim sw was found
 		stepper1.setCurrentPosition(0);
-		EEPROMdeviceData.motorPosAtCCWset = true;
-		newState = idleActuator(opened); //make actuator idle
-		if (DEBUG_MESSAGES)	{Serial.printf("[moveCCW] Reached CCW stop at motor position %d; CCW: %d; CW: %d\n", stepper1.currentPosition(), CCWlimSensorVal, CWlimSensorVal);}
+		TwoSAEEPROMdeviceData.motorPosAtCCWset = true;
+		newState = TwoSAidleActuator(opened); //make actuator idle
+		if (DEBUG_MESSAGES)	{Serial.printf("[TwoSAmoveCCW] Reached CCW stop at motor position %d; CCW: %d; CW: %d\n", stepper1.currentPosition(), CCWlimSensorVal, CWlimSensorVal);}
 	}else{ //keep going if still have distance to travel
 		newState = opening;
 		
@@ -610,11 +593,11 @@ trueState moveCCW()
 			stepper1.run();
 			//see if done or if timedout
 			if((stepper1.currentPosition()==targetPos)){
-				newState = idleActuator(man_idle);
+				newState = TwoSAidleActuator(man_idle);
 			}
 			if((millis()-deviceResponseTime)>EEPROMdata.timeOut*1000){
 				EEPROMdata.deviceTimedOut = true;
-				newState = idleActuator(man_idle);
+				newState = TwoSAidleActuator(man_idle);
 			}
 		}else{
 			if (stepper1.speed() != -MAX_SPEED)
@@ -625,7 +608,7 @@ trueState moveCCW()
 			//see if timedout
 			if(((millis()-deviceResponseTime)>EEPROMdata.timeOut*1000)){
 				EEPROMdata.deviceTimedOut = true;
-				newState = idleActuator(man_idle);
+				newState = TwoSAidleActuator(man_idle);
 			}
 		}
 	}
@@ -633,12 +616,12 @@ trueState moveCCW()
 }
 //CUSTOM DEVICE FUNCTION - INTERNAL
 //function used to do a normal WiFi or calibration closing of the actuator
-trueState moveCW()
+trueState TwoSAmoveCW()
 {
 	//get CURRENT position of the switches as wired they should be 1=switch open (not at limit)
 	int CCWlimSensorVal=1;
 	int CWlimSensorVal=1;
-	if (EEPROMdeviceData.swapLimSW == false) { //fix in case switches are miswired (easy to get confused on linear actuator)
+	if (TwoSAEEPROMdeviceData.swapLimSW == false) { //fix in case switches are miswired (easy to get confused on linear actuator)
 		CCWlimSensorVal = digitalRead(SWpinLimitCCW);
 		CWlimSensorVal = digitalRead(SWpinLimitCW);
 	}else{
@@ -652,14 +635,14 @@ trueState moveCW()
 		//reached limit - disable everything and reset motor to idle
 		// -set range to current stepper pos and
 		// -update flag indicating the HW lim sw was found
-		EEPROMdeviceData.range = stepper1.currentPosition();
-		EEPROMdeviceData.motorPosAtCWset = true;
+		TwoSAEEPROMdeviceData.range = stepper1.currentPosition();
+		TwoSAEEPROMdeviceData.motorPosAtCWset = true;
 
-		newState = idleActuator(closed); //make actuator idle
+		newState = TwoSAidleActuator(closed); //make actuator idle
 		if (DEBUG_MESSAGES)
 		{
 
-			Serial.printf("[moveCW] Reached CW stop at motor position %d; CCW: %d; CW: %d\n", stepper1.currentPosition(), CCWlimSensorVal, CWlimSensorVal);
+			Serial.printf("[TwoSAmoveCW] Reached CW stop at motor position %d; CCW: %d; CW: %d\n", stepper1.currentPosition(), CCWlimSensorVal, CWlimSensorVal);
 		}
 	}else{ //keep going if still have distance to travel
 		newState = closing;
@@ -669,11 +652,11 @@ trueState moveCW()
 			stepper1.run();
 			//see if done or if timedout
 			if((stepper1.currentPosition()==targetPos)){
-				newState = idleActuator(man_idle);
+				newState = TwoSAidleActuator(man_idle);
 			}
 			if((millis()-deviceResponseTime)>EEPROMdata.timeOut*1000){
 				EEPROMdata.deviceTimedOut = true;
-				newState = idleActuator(man_idle);
+				newState = TwoSAidleActuator(man_idle);
 			}
 		}else{
 			if (stepper1.speed() != MAX_SPEED)
@@ -684,7 +667,7 @@ trueState moveCW()
 			//see if timedout
 			if(((millis()-deviceResponseTime)>EEPROMdata.timeOut*1000)){
 				EEPROMdata.deviceTimedOut = true;
-				newState = idleActuator(man_idle);
+				newState = TwoSAidleActuator(man_idle);
 			}
 		}
 	}
@@ -692,9 +675,9 @@ trueState moveCW()
 }
 //CUSTOM DEVICE FUNCTION - INTERNAL
 //this function swaps the state (makes open command go CW) if CW is defined as open by openIsCCW=false
-bool whichWay(bool in){
+bool TwoSAwhichWay(bool in){
 	bool ret=in;
-	if(EEPROMdeviceData.openIsCCW==false){
+	if(TwoSAEEPROMdeviceData.openIsCCW==false){
 		ret = !ret;
 	}
 	return ret;
@@ -703,9 +686,9 @@ bool whichWay(bool in){
 //this function changes goto commmand values to their
 //complement (100-original value) if CW is defined as 
 //open by openIsCCW
-int whichWayGoto(int in){
+int TwoSAwhichWayGoto(int in){
 	int ret=in;
-	if(EEPROMdeviceData.openIsCCW==true){
+	if(TwoSAEEPROMdeviceData.openIsCCW==true){
 		ret = 100-ret;
 	}
 	return ret;
@@ -713,14 +696,14 @@ int whichWayGoto(int in){
 //CUSTOM DEVICE FUNCTION - INTERNAL
 //put the actuator/stepper-motor in an idle state, store position in EEPROM, 
 //and annonuce the final position to the MASTER
-trueState idleActuator(trueState idleState)
+trueState TwoSAidleActuator(trueState idleState)
 {
 	targetPos = -1;
 	stepper1.stop();
 	stepper1.setSpeed(0);
 	stepper1.disableOutputs();
 	deviceTrueState = idleState;
-	EEPROMdeviceData.motorPos = int(stepper1.currentPosition());
+	TwoSAEEPROMdeviceData.motorPos = int(stepper1.currentPosition());
 	storeDataToEEPROM();
 	UDPpollReply(masterIP); //tell the Master Node the new info
 	updateClients("Stopped.", true);
@@ -730,16 +713,16 @@ trueState idleActuator(trueState idleState)
 //this detemines which way to goto to get to a commanded position
 //sets targetPos and commands open or close
 //motor CCW limit = 0, motor CW limit = range, if no target set targetPos = -1
-trueState openPercentActuator(int percent)
+trueState TwoSAopenPercentActuator(int percent)
 {
 	trueState newState;
-	int newMotorPos = (int)(EEPROMdeviceData.range * percent / 100);
+	int newMotorPos = (int)(TwoSAEEPROMdeviceData.range * percent / 100);
 	targetPos = newMotorPos;
 	
 	//get CURRENT position of the switches as wired they should be 1=switch open (not at limit)
 	int CCWlimSensorVal=1;
 	int CWlimSensorVal=1;
-	if (EEPROMdeviceData.swapLimSW == false) { //fix in case switches are miswired (easy to get confused on linear actuator)
+	if (TwoSAEEPROMdeviceData.swapLimSW == false) { //fix in case switches are miswired (easy to get confused on linear actuator)
 		CCWlimSensorVal = digitalRead(SWpinLimitCCW);
 		CWlimSensorVal = digitalRead(SWpinLimitCW);
 	}else{
@@ -749,7 +732,7 @@ trueState openPercentActuator(int percent)
 
 	if (DEBUG_MESSAGES)
 	{
-		Serial.printf("[openPercentActuator] Going to %d percent open. New Pos: %d\n", percent, newMotorPos);
+		Serial.printf("[TwoSAopenPercentActuator] Going to %d percent open. New Pos: %d\n", percent, newMotorPos);
 	}
 	if (newMotorPos < stepper1.currentPosition())
 	{ //NEED TO MOVE CCW
@@ -758,7 +741,7 @@ trueState openPercentActuator(int percent)
 			newState = opening;
 			if (DEBUG_MESSAGES)
 			{
-				Serial.printf("[openPercentActuator] Moving CCW -> NEWSTATE: %s, Pos: %d, Target: %d\n", trueState_String[newState], stepper1.currentPosition(), newMotorPos);
+				Serial.printf("[TwoSAopenPercentActuator] Moving CCW -> NEWSTATE: %s, Pos: %d, Target: %d\n", trueState_String[newState], stepper1.currentPosition(), newMotorPos);
 			}
 			stepper1.enableOutputs();
 			stepper1.moveTo(newMotorPos);
@@ -766,10 +749,10 @@ trueState openPercentActuator(int percent)
 		}
 		else
 		{
-			newState = idleActuator(opened);
+			newState = TwoSAidleActuator(opened);
 			if (DEBUG_MESSAGES)
 			{
-				Serial.printf("[openPercentActuator] Reached CCW limit. Pos: %d\n", stepper1.currentPosition());
+				Serial.printf("[TwoSAopenPercentActuator] Reached CCW limit. Pos: %d\n", stepper1.currentPosition());
 			}
 		}
 		return newState;
@@ -782,7 +765,7 @@ trueState openPercentActuator(int percent)
 			newState = closing;
 			if (DEBUG_MESSAGES)
 			{
-				Serial.printf("[openPercentActuator] Moving CW -> NEWSTATE: %s, Pos: %d, Target: %d\n", trueState_String[newState], stepper1.currentPosition(), newMotorPos);
+				Serial.printf("[TwoSAopenPercentActuator] Moving CW -> NEWSTATE: %s, Pos: %d, Target: %d\n", trueState_String[newState], stepper1.currentPosition(), newMotorPos);
 			}
 			stepper1.enableOutputs();
 			stepper1.moveTo(newMotorPos);
@@ -790,16 +773,15 @@ trueState openPercentActuator(int percent)
 		}
 		else
 		{
-			EEPROMdeviceData.range = stepper1.currentPosition();
-			newState = idleActuator(closed);
+			TwoSAEEPROMdeviceData.range = stepper1.currentPosition();
+			newState = TwoSAidleActuator(closed);
 			if (DEBUG_MESSAGES)
 			{
-				Serial.printf("[openPercentActuator] Reached CW limit. Pos: %d\n", stepper1.currentPosition());
+				Serial.printf("[TwoSAopenPercentActuator] Reached CW limit. Pos: %d\n", stepper1.currentPosition());
 			}
 		}
 		return newState;
 	}
 }
-
 
 //====================================================================================================================================

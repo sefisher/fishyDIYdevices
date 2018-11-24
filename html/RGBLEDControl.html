@@ -1,0 +1,283 @@
+<!--------------------------------------------------------------------------------------------------------
+This is the development web file for the control panel for each device (stored in webresources.h in parts). 
+This is what will likely get updated the most (along with the styles). Style data is kept in styles.css 
+(which is embedded into the webresources.h file(s) in a string and served if a clinet requests /styles.css).
+To incorporate this file intp the code for compiling after updating it do the following:
+ 1) copy the HTML (from below this comment to the next comment where the JSON is defined).
+ 2) put it through a minifier (like https://kangax.github.io/html-minifier/) and then through a String builder
+ (like http://buildmystring.com/ with "strip out carriage returns" on) to create a single string with no tabs and one line.
+ 3) paste that into the WEBCTRLSTR After "PROGMEM" in the webresources.h file.
+ 4) copy the second block (from below the JSON definition to the end).
+ --------------------------------------------------------------------------------------------------------
+ Thanks to Taufik Nurrohman for https://github.com/tovic/color-picker embedded within (License: MIT)
+ -------------------------------------------------------------------------------------------------------->
+<!DOCTYPE html>
+<html>
+<head>
+    <title>fishDIY RGB LED</title>
+    <meta name='viewport' content='initial-scale=1.0'>
+    
+    <link id='styles' rel="stylesheet" href="/styles.css"> <!-- this is required for styles served by fishyDIY devices -->
+    <link rel="stylesheet" href="styles.css"> <!-- this will cause a warning but is intentionally left for testing -->
+
+    <!-- BEGIN custom styles for color-picker for RGBLED -->
+    <style>
+    .color-picker,.color-picker *,.color-picker ::after,.color-picker ::before,.color-picker::after,.color-picker::before{-webkit-box-sizing:border-box;-moz-box-sizing:border-box;box-sizing:border-box}.color-picker{position:absolute;top:0;left:0;z-index:10}.color-picker-container{background:#000;color:#000;padding:1px;-webkit-box-shadow:1px 5px 10px rgba(0,0,0,.5);-moz-box-shadow:1px 5px 10px rgba(0,0,0,.5);box-shadow:1px 5px 10px rgba(0,0,0,.5);width:calc(11.5em + 3px)}.color-picker-container *,.color-picker-container ::after,.color-picker-container ::before{border-color:inherit}.color-picker-container::after{content:"";display:table;clear:both}.color-picker i{font:inherit;font-size:12px}.color-picker-h{position:relative;width:1.5em;height:10em;float:right;cursor:ns-resize;background:url(color-picker-h.png)50% 50% no-repeat;background:-webkit-linear-gradient(to top,red 0,#ff0 17%,#0f0 33%,#0ff 50%,#00f 67%,#f0f 83%,red 100%)50% 50%/100% 100% no-repeat;background-image:-moz-linear-gradient(to top,red 0,#ff0 17%,#0f0 33%,#0ff 50%,#00f 67%,#f0f 83%,red 100%);background-image:linear-gradient(to top,red 0,#ff0 17%,#0f0 33%,#0ff 50%,#00f 67%,#f0f 83%,red 100%);-webkit-background-size:100% 100%;-moz-background-size:100% 100%;overflow:hidden}.color-picker-h i{position:absolute;top:-.25em;right:0;left:0;z-index:3;display:block;height:.5em}.color-picker-h i::before{content:"";position:absolute;top:0;right:0;bottom:0;left:0;display:block;border:.25em solid;border-color:transparent;border-right-color:inherit;border-left-color:inherit}.color-picker-sv{position:relative;width:10em;height:10em;float:left;margin-right:1px;background:url(color-picker-sv.png)50% 50% no-repeat;background-image:-webkit-linear-gradient(to top,#000,rgba(0,0,0,0)),linear-gradient(to right,#fff,rgba(255,255,255,0));background-image:-moz-linear-gradient(to top,#000,rgba(0,0,0,0)),linear-gradient(to right,#fff,rgba(255,255,255,0));background-image:linear-gradient(to top,#000,rgba(0,0,0,0)),linear-gradient(to right,#fff,rgba(255,255,255,0));-webkit-background-size:100% 100%;-moz-background-size:100% 100%;background-size:100% 100%;cursor:crosshair}.color-picker-sv i{position:absolute;top:-.4em;right:-.4em;z-index:3;display:block;width:.8em;height:.8em}.color-picker-sv i::after,.color-picker-sv i::before{content:"";position:absolute;top:0;right:0;bottom:0;left:0;display:block;border:1px solid;border-color:inherit;-webkit-border-radius:100%;-moz-border-radius:100%;border-radius:100%}.color-picker-sv i::before{top:-1px;right:-1px;bottom:-1px;left:-1px;border-color:#fff}.color-picker-h,.color-picker-sv{-webkit-touch-callout:none;-webkit-user-select:none;-moz-user-select:none;-ms-user-select:none;user-select:none;-webkit-tap-highlight-color:transparent}.color-picker.static {display:inline-block;position:static;}.color-picker.static .color-picker-container {-webkit-box-shadow:none;-moz-box-shadow:none;box-shadow:none;}
+    </style>
+    <!-- END custom styles for color-picker for RGBLED -->
+  
+</head>
+<body>
+    <div id='flex-container' class='flex-grid-outer'>
+    <div class='fishyHdr' id='deviceStatus'><table width=100%><tr><td><div class='info-icon' id='info-icon' onclick='showDetails()'>&#9432;</div></td><td><div class='flex-grid' style="padding:6px"><table><tr><td style="font-size:12px">Color:</td></tr><tr><td id=mainTxt>...Loading...</td></tr></table></div></td></tr></table></div>
+    <!-- <p> tag needed for color-picker for RGBLED -->
+    <p></p>
+    <div class='buttonSet'>
+        <div class='flex-grid' >
+            <div class='button' onclick='sendCmd("ON")'><span class='buttonTxt'>ON</span></div>
+            <div class='button' onclick='sendCmd("OFF")'><span class='buttonTxt'>OFF</span></div>
+        </div>
+    </div>
+    <div class='swPanel'>
+            <div class='flex-grid'>
+                <div class='swRow'><label class='sw' id='sw'><input type='checkbox' id='swChck' onchange='openIsCCWUpd()'><span
+                            class='sldSw'></span></label><span class='swLab' id='swLab'>Open CW</span></div>
+                <div class='swRow'><label class='sw' id='swMstr'><input type='checkbox' id='swMstrChck' checked=''
+                            onchange='swMstrUpd()'><span class='sldSw'></span></label><span class='swLab' id='swMstrLab'>Master
+                        Node</span></div>
+                <div class='swRow'><label class='sw' id='swSwap'><input type='checkbox' id='swSwapChck' checked=''
+                            onchange='swSwapUpd()'><span class='sldSw'></span></label><span class='swLab' id='swSwapLab'>Swapped
+                        Lim SW</span></div>
+            </div>
+    </div>
+    <div class='configPanel'>
+            <label class='cfgInpLab' for='devIP'>IP Address:<input class='cfgInp' disabled id='devIP' value='...Loading...'
+                    maxlength='40'></label><br>
+            <label class='cfgInpLab' for='devName'>Name:<input class='cfgInp' onkeypress='return blockSpecialChar(event)'
+                    id='devName' value='...Loading...' maxlength='40'></label><br>
+            <label class='cfgInpLab' for='groupName'>Group:<input class='cfgInp' onkeypress='return blockSpecialChar(event)'
+                    id='groupName' value='...Loading...' maxlength='40'></label><br>
+            <label class='cfgInpLab' for='devType'>Type:<input class='cfgInp' onkeypress='return blockSpecialChar(event)'
+                    id='devType' value='...Loading...' maxlength='20'></label><br>
+            <label class='cfgInpLab' for='devNote'>Note:<input class='cfgInp' onkeypress='return blockSpecialChar(event)'
+                    id='devNote' value='...Loading...' maxlength='55'></label><br>
+            <label class='cfgInpLab' for='timeOut'>Time-Out:<input class='cfgInpNum' onkeypress='return numberCharOnly(event)'
+                    id='timeOut' value='00' maxlength='5' title='Enter a time (in seconds) to wait for the actuator to respond before stopped and displaying an error message (assuming the actuator got stuck).'></label>
+        </div>
+    <div class='fishyFtrSw'>
+            <div class='flex-grid'>
+                <input class='cfgbuttonY' id='updCfgBtn' type='button' value='UPDATE SETTINGS' onclick='sendCmd("config")' title='This will save new settings in the device. New settings should be displayed on next refresh.  If trying to adjust mulitple settings it is recommended that you temporarily turn off Auto-refresh.'>
+                <input class='cfgbuttonY' id='updCfgBtn' type='button' value='REBOOT DEVICE' onclick='sendCmd("reboot")' title='This will reboot the device.'>
+            </div>
+            <div class='flex-grid'>
+                 <input class='cfgbuttonR' id='rstWifiBtn' type='button' value='RESET WIFI' onclick='sendCmd("rstWifi")' title='WARNING:Reset Wifi will attempt to delete your network SSID and passwordand put the device into wifi-server mode to learn new wifi SSID and password. To teach a reset device a new wifi network go to the device IP address using a mobile phone or computer.'>
+            </div>
+        </div>    
+    </div>
+    <script>
+        //utility function for RGBLED
+        function invertColor(hex) {
+            if (hex.indexOf('#') === 0) {
+                hex = hex.slice(1);
+            }   
+            // convert 3-digit hex to 6-digits.
+            if (hex.length === 3) {
+                hex = hex[0] + hex[0] + hex[1] + hex[1] + hex[2] + hex[2];
+            }   
+            if (hex.length !== 6) {
+                throw new Error('Invalid HEX color.');
+            }
+            // invert color components
+            var r = (255 - parseInt(hex.slice(0, 2), 16)).toString(16),
+            g = (255 - parseInt(hex.slice(2, 4), 16)).toString(16),
+            b = (255 - parseInt(hex.slice(4, 6), 16)).toString(16);
+            // pad each with zeros and return
+            return '#' + padZero(r) + padZero(g) + padZero(b);
+        }
+        //utility function for RGBLED
+        function padZero(str, len) {
+            len = len || 2;
+            var zeros = new Array(len).join('0');
+            return (zeros + str).slice(-len);
+        }
+        //utility function for all fishyDIY devices (called on to open infoText Modal with device data)
+        function showDetails() {
+                document.getElementById('infoDiv').innerHTML = infoText;
+                document.getElementById('infoPanel').style.display = 'block';
+        }
+        //utility function for all fishyDIY devices (extract after MSG:and before ~*~*)
+        function getMsg(data) {
+            var start = data.indexOf("MSG:") + 4;
+            var end = data.indexOf("~*~*");
+            return data.substring(start, end);
+        }
+        //utility function for all fishyDIY devices (extract after ~*~*DAT):
+        function getNodeJSONtext(data) {
+            var start = data.indexOf("~*~*DAT:") + 8;
+            return data.substring(start, data.length);
+}
+        //utility function for all fishyDIY devices (called on windows load)
+        function start() {
+            // TEST - TODO turn off when not testing
+            //if(document.domain=="localhost"){websock = new WebSocket('ws://10.203.1.197:81/');}
+            if(document.domain=="localhost"){websock = new WebSocket('ws://10.0.0.14:81/');}
+            else{websock = new WebSocket('ws://' + window.location.hostname + ':81/');};
+            
+            websock.onopen = function(evt) { console.log('websock open'); websock.send('Connect ' + new Date());};
+            websock.onclose = function(evt) { console.log('websock close'); };
+            websock.onerror = function(evt) { console.log(evt); };
+            websock.onmessage = function(evt) {
+                //process incoming messages(from device) - used to keep the control webpage in-sync with device state changes
+                //if messages in the device follow standard formatting  nothing here needs changing - the custom control updating 
+                //occurs in processJSON();
+                var payload = evt.data;
+                if(payload.indexOf("~*~*")<0){ //normal payload received with device update message
+                    if(payload.indexOf('{"fishyDevices"')==0){
+                        processJSON(payload);
+                    }else{
+                        console.log(payload);
+                    }
+                }else{ //some other message received.  Display it in the console and request a formatted JSON update from the device.
+                    var msgText = getMsg(payload); 
+                    console.log(msgText);
+                    var nodeJSONtext = getNodeJSONtext(payload); 
+                    console.log(nodeJSONtext);
+                    processJSON(nodeJSONtext);
+                    
+                    //if this control panel has a place to display generic messages - do that
+                    // setOtherTxt(msgText);
+                }
+            };
+        }
+        //utility function for all fishyDIY devices (updates main text with status in the header)
+        function setMainTxt(text){
+            var obj=document.getElementById("mainTxt");
+            obj.innerHTML = text;
+            obj.style.backgroundColor = newcolor;
+            obj.style.color = invertColor(newcolor);
+        }
+        //utility function for all fishyDIY devices (called on to restore normal background color after a message is sent)
+        function returnColor(){
+            document.body.style.backgroundColor = "var(--bg-col)";
+        }
+        //utility function for all fishyDIY devices (sends Commands - commands and messages are customized for each device)
+        function sendCmd(command){
+            if (command == 'ON') {
+                cmd = 'on';
+                document.body.style.backgroundColor = "var(--bg-col-ack)"; //make the BG color change to flash when a command is sent - but only for on/off/config commands. Not for newcolor which might be continuous.
+            } else if (command == 'OFF') {
+                cmd = 'off';
+                document.body.style.backgroundColor = "var(--bg-col-ack)"; //make the BG color change to flash when a command is sent - but only for on/off/config commands. Not for newcolor which might be continuous.
+            } else if (command == 'config') { //make the BG color change to flash when a command is sent - but only for on/off/config commands. Not for newcolor which might be continuous.
+                var isMstr = 'false';
+                var ccwIsOpen = 'false';
+                var swapLimSW = 'false';
+                if (document.getElementById('swMstrChck').checked) isMstr = 'true';
+                if (document.getElementById('swChck').checked) ccwIsOpen = 'true';
+                if (document.getElementById('swSwapChck').checked) swapLimSW = 'true';
+                cmd = 'config';
+                cmd += ';isMaster=' + isMstr;
+                cmd += ';devName=' + document.getElementById('devName').value;
+                cmd += ';groupName=' + document.getElementById('groupName').value;
+                cmd += ';devType=' + document.getElementById('devType').value;
+                cmd += ';note=' + document.getElementById('devNote').value;
+                cmd += ';timeOut=' + document.getElementById('timeOut').value;
+            } else {
+                websock.send(newcolor);
+            }
+        }
+        //utility function for all fishyDIY devices (takes the device status info - parses to a JSON object and sends on to do stuff)
+        function processJSON(JSONstr){
+            var data = JSON.parse(JSONstr);
+            doStuffWithJSON(data.fishyDevices);
+        }
+        //utility function for all fishyDIY devices 
+        //('Only letters, numbers, underscore, space, comma, period, and dash are allowed.');
+        function blockSpecialChar(e) {
+            var k = e.keyCode;
+            return ((k > 64 && k < 91) || (k > 96 && k < 123) || k == 8 || k == 16 || k == 95  || k == 32 || (k > 43 && k < 47)  || (k >= 48 && k <= 57));
+        }
+        //utility function for all fishyDIY devices 
+        //('Only numbers are allowed.');
+        function numberCharOnly(e) {
+            var k = e.keyCode;
+            return (k == 8 || k == 16 || (k >= 48 && k <= 57));
+        }
+        //utility function for all fishyDIY devices (moves the master checkbox to match status);
+        function swMstrUpd() {
+            var label = document.getElementById('swMstrLab');
+            var sw = document.getElementById('swMstrChck');
+            if (sw.checked == true) {label.innerHTML = 'Master Node'; } else { label.innerHTML = 'Slave Node'; }
+        }
+        //variable for all fishyDIY devices - holds data for device info modal
+        var infoText='...Loading...';
+        //utility function for all fishyDIY devices (takes the device status info from the JSON and processes it - highly customized for each control interface)
+        function doStuffWithJSON(DA){
+           
+           var addDiv = '';
+           var mstrTxt = '';
+           var calTxt = '';
+           var inErr=false;
+           var errTxt = '';
+           d=DA[0];
+           
+           returnColor();
+           if (d.deviceTimedOut == 'true') {inErr=true;errTxt=errTxt + 'ERROR - DEVICE TIMED OUT\n';}
+           if (d.isMaster == 'true') { mstrTxt = ' (MASTER)';document.getElementById('swMstrChck').checked=true; } else { mstrTxt = '';document.getElementById('swMstrChck').checked=false;}
+           swMstrUpd();
+           infoText = 'DEVICE TYPE: ' + d.devType + '<br>\n' +
+                      'NAME: ' + d.deviceName + '<br>\n' +
+                      'IP ADDRESS: ' + d.ip + mstrTxt + '<hr>\n' +
+                      'SOFTWARE VERSION: ' + d.swVer + '<br>\n' +
+                      'INIT STR: ' + d.initStamp + '\n\n\n<hr>' + calTxt + '<br>\n' + errTxt;
+           if(inErr){
+               document.getElementById("info-icon").className="info-icon-blink";
+           }else{
+               document.getElementById("info-icon").className="info-icon";
+           }
+           setMainTxt(newcolor);
+           document.getElementById('devIP').value = d.ip + mstrTxt;
+           document.getElementById('devNote').value = d.note;
+           document.getElementById('timeOut').value = d.timeOut;
+           document.getElementById('devName').value = d.deviceName;
+           document.getElementById('groupName').value = d.group;
+           document.getElementById('devType').value = d.devType;           
+       }
+    </script>
+    
+    <script>
+    !function(t,n,e){function r(t){return void 0!==t}function i(t){return"string"==typeof t}function o(t){return"object"==typeof t}function u(t){return Object.keys(t).length}function c(t,n,e){return n>t?n:t>e?e:t}function s(t,n){return parseInt(t,n||10)}function a(t){return Math.round(t)}function f(t){var n,e,r,i,o,u,c,s,f=+t[0],l=+t[1],h=+t[2];switch(i=Math.floor(6*f),o=6*f-i,u=h*(1-l),c=h*(1-o*l),s=h*(1-(1-o)*l),i=i||0,c=c||0,s=s||0,i%6){case 0:n=h,e=s,r=u;break;case 1:n=c,e=h,r=u;break;case 2:n=u,e=h,r=s;break;case 3:n=u,e=c,r=h;break;case 4:n=s,e=u,r=h;break;case 5:n=h,e=u,r=c}return[a(255*n),a(255*e),a(255*r)]}function l(t){return p(f(t))}function h(t){var n,e=+t[0],r=+t[1],i=+t[2],o=Math.max(e,r,i),u=Math.min(e,r,i),c=o-u,s=0===o?0:c/o,a=o/255;switch(o){case u:n=0;break;case e:n=r-i+c*(i>r?6:0),n/=6*c;break;case r:n=i-e+2*c,n/=6*c;break;case i:n=e-r+4*c,n/=6*c}return[n,s,a]}function p(t){var n=+t[2]|+t[1]<<8|+t[0]<<16;return n="000000"+n.toString(16),n.slice(-6)}function v(t){return h(d(t))}function d(t){return 3===t.length&&(t=t.replace(/./g,"$&$&")),[s(t[0]+t[1],16),s(t[2]+t[3],16),s(t[4]+t[5],16)]}function g(t){return[+t[0]/360,+t[1]/100,+t[2]/100]}function y(t){return[a(360*+t[0]),a(100*+t[1]),a(100*+t[2])]}function x(t){return[+t[0]/255,+t[1]/255,+t[2]/255]}function H(t){if(o(t))return t;var n=/\s*rgb\s*\(\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+)\s*\)\s*$/i.exec(t),e=/\s*hsv\s*\(\s*(\d+)\s*,\s*(\d+)%\s*,\s*(\d+)%\s*\)\s*$/i.exec(t),r="#"===t[0]&&t.match(/^#([\da-f]{3}|[\da-f]{6})$/i);return r?v(t.slice(1)):e?g([+e[1],+e[2],+e[3]]):n?h([+n[1],+n[2],+n[3]]):[0,1,1]}var b="__instance__",m="firstChild",k=setTimeout;!function(t){t.version="1.4.1",t[b]={},t.each=function(n,e){return k(function(){var e,r=t[b];for(e in r)n.call(r[e],e,r)},0===e?0:e||1),t},t.parse=H,t._HSV2RGB=f,t._HSV2HEX=l,t._RGB2HSV=h,t._HEX2HSV=v,t._HEX2RGB=function(t){return x(d(t))},t.HSV2RGB=function(t){return f(g(t))},t.HSV2HEX=function(t){return l(g(t))},t.RGB2HSV=function(t){return y(h(t))},t.RGB2HEX=p,t.HEX2HSV=function(t){return y(v(t))},t.HEX2RGB=d}(t[e]=function(s,a,h){function p(t,n,e){t=t.split(/\s+/);for(var r=0,i=t.length;i>r;++r)n.addEventListener(t[r],e,!1)}function v(t,n,e){t=t.split(/\s+/);for(var r=0,i=t.length;i>r;++r)n.removeEventListener(t[r],e)}function d(t,n){var e="touches",r="clientX",i="clientY",o=n[e]?n[e][0][r]:n[r],u=n[e]?n[e][0][i]:n[i],c=g(t);return{x:o-c.l,y:u-c.t}}function g(n){var e,r,i;return n===t?(e=t.pageXOffset||M.scrollLeft,r=t.pageYOffset||M.scrollTop):(i=n.getBoundingClientRect(),e=i.left,r=i.top),{l:e,t:r}}function y(t,n){for(;(t=t.parentElement)&&t!==n;);return t}function x(t){t&&t.preventDefault()}function H(n){return n===t?{w:t.innerWidth,h:t.innerHeight}:{w:n.offsetWidth,h:n.offsetHeight}}function w(t){return j||(r(t)?t:!1)}function E(t){j=t}function S(t,n,e){return r(t)?r(n)?(r(O[t])||(O[t]={}),r(e)||(e=u(O[t])),O[t][e]=n,$):O[t]:O}function X(t,n){return r(t)?r(n)?(delete O[t][n],$):(O[t]={},$):(O={},$)}function _(t,n,e){if(!r(O[t]))return $;if(r(e))r(O[t][e])&&O[t][e].apply($,n);else for(var i in O[t])O[t][i].apply($,n);return $}function B(t,n){t&&"h"!==t||_("change:h",n),t&&"sv"!==t||_("change:sv",n),_("change",n)}function R(){return T.parentNode}function V(e,r){function i(t){var n=t.target,e=n===s||y(n,s)===s;e?(V(),_("enter")):$.exit()}function o(t){var n=(f(I),f([I[0],1,1]));q.style.backgroundColor="rgb("+n.join(",")+")",E(I),x(t)}function u(t){var n=c(d(P,t).y,0,L);I[0]=(L-n)/L,F.style.top=n-D/2+"px",o(t)}function g(t){var n=d(q,t),e=c(n.x,0,j),r=c(n.y,0,O);I[1]=1-(j-e)/j,I[2]=(O-r)/O,J.style.right=j-e-tn/2+"px",J.style.top=r-nn/2+"px",o(t)}function b(t){U&&(u(t),on=[l(I)],K||(_("drag:h",on),_("drag",on),B("h",on))),Z&&(g(t),on=[l(I)],Q||(_("drag:sv",on),_("drag",on),B("sv",on))),K=0,Q=0}function m(t){var n=t.target,e=U?"h":"sv",r=[l(I),$],i=n===s||y(n,s)===s,o=n===T||y(n,T)===T;i||o?o&&(_("stop:"+e,r),_("stop",r),B(e,r)):R()&&a!==!1&&($.exit(),B(0,r)),U=0,Z=0}function k(t){K=1,U=1,b(t),x(t),_("start:h",on),_("start",on),B("h",on)}function S(t){Q=1,Z=1,b(t),x(t),_("start:sv",on),_("start",on),B("sv",on)}e||((h||r||C).appendChild(T),$.visible=!0),en=H(T).w,rn=H(T).h;var X=H(q),M=H(J),L=H(P).h,j=X.w,O=X.h,D=H(F).h,tn=M.w,nn=M.h;e?(T.style.left=T.style.top="-9999px",a!==!1&&p(a,s,i),$.create=function(){return V(1),_("create"),$},$.destroy=function(){return a!==!1&&v(a,s,i),$.exit(),E(!1),_("destroy"),$}):G(),A=function(){I=w(I),o(),F.style.top=L-D/2-L*+I[0]+"px",J.style.right=j-tn/2-j*+I[1]+"px",J.style.top=O-nn/2-O*+I[2]+"px"},$.exit=function(){return R()&&(R().removeChild(T),$.visible=!1),v(N,P,k),v(N,q,S),v(W,n,b),v(Y,n,m),v(z,t,G),_("exit"),$},A(),e||(p(N,P,k),p(N,q,S),p(W,n,b),p(Y,n,m),p(z,t,G))}function G(){return $.fit()}var C=n.body,M=n.documentElement,$=this,L=t[e],j=!1,O={},T=n.createElement("div"),N="touchstart mousedown",W="touchmove mousemove",Y="touchend mouseup",z="orientationchange resize";if(!($ instanceof L))return new L(s,a);L[b][s.id||s.name||u(L[b])]=$,r(a)&&a!==!0||(a=N),E(L.parse(s.getAttribute("data-color")||s.value||[0,1,1])),T.className="color-picker",T.innerHTML='<div class="color-picker-container"><span class="color-picker-h"><i></i></span><span class="color-picker-sv"><i></i></span></div>';var A,D=T[m].children,I=w([0,1,1]),P=D[0],q=D[1],F=P[m],J=q[m],K=0,Q=0,U=0,Z=0,tn=0,nn=0,en=0,rn=0,on=[l(I)];return V(1),k(function(){var t=[l(I)];_("create",t),B(0,t)},0),$.fit=function(n){var e=H(t),i=H(M),u=e.w-i.w,a=e.h-M.clientHeight,f=g(t),l=g(s);if(tn=l.l+f.l,nn=l.t+f.t+H(s).h,o(n))r(n[0])&&(tn=n[0]),r(n[1])&&(nn=n[1]);else{var h=f.l,p=f.t,v=f.l+e.w-en-u,d=f.t+e.h-rn-a;tn=c(tn,h,v)>>0,nn=c(nn,p,d)>>0}return T.style.left=tn+"px",T.style.top=nn+"px",_("fit"),$},$.set=function(t){return r(t)?(i(t)&&(t=L.parse(t)),E(t),A(),$):w()},$.get=function(t){return w(t)},$.source=s,$.self=T,$.visible=!1,$.on=S,$.off=X,$.fire=_,$.hooks=O,$.enter=function(t){return V(0,t),_("enter"),$},$})}(window,document,"CP");
+    var p = document.querySelectorAll('p')[0], // put color picker panel in the second `<p>` element
+    picker = new CP(document.querySelector('input'), false, p);
+    picker.on("change", function(color) {
+        newcolor = '#' + color;
+        setMainTxt(newcolor);
+        sendCmd(newcolor);
+    });
+    picker.fit = function() { // do nothing ...
+        this.self.style.left = this.self.style.top = "";
+    };
+    // add a `static` class to the color picker panel
+    picker.self.classList.add('static');
+    // force to show the color picker panel
+    picker.enter();
+    var newcolor = '#';
+    window.onload = start();
+    </script>
+    
+    <!-- Overlay Modal for device information-->
+    <div id='infoPanel' class='infoPanel'>
+        <div id='infoDiv' class='infoDiv'></div>
+        <!-- Close button for overlay modal panel.  -->
+        <input type='button' class='infoOKbtn' onclick='closeCtrlModal()' value='OK'>    
+    </div>
+        
+    </body>
+    <script>
+    var ctrlModal = document.getElementById('infoPanel');
+    // When the user clicks the X
+    function closeCtrlModal() {
+        ctrlModal.style.display='none';
+    }
+    </script>
+</html>

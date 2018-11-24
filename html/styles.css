@@ -252,6 +252,7 @@ body {
 	width:var(--cp-sz);
 	height:340px;   
 	margin-left:calc(-1*var(--cp-sz)/2);   /* negative half of width above */
+	z-index: 999;
 }
 .infoDiv{
 	height: 300px;

@@ -9,281 +9,314 @@ To build this template file intp the code after updating it do the following:
  3) paste that into the WEBCTRLSTR After "PROGMEM" in the webresources.h file.
  4) copy the second block (from below the JSON definition to the end).
  ------------------------------------------------------------------------------------------------------ -->
- <!DOCTYPE html>
- <html>
- <head>
-     <title>fishDIY 2-State Actuator</title>
-     <meta name='viewport' content='initial-scale=1.0'>
-    
-     <link id='styles' rel="stylesheet" href="/styles.css">
-     <link rel="stylesheet" href="styles.css"> <!-- intentionally left for testing -->
-    
-    </head>
-    <body><div class='main' id='myBody'>
-    <script>
-        var websock;
-        function showDetails(){
-            document.getElementById('infoDiv').innerHTML = infoText;
-            document.getElementById('infoPanel').style.display='block';  
-        }
-        //extract after MSG:and before ~*~*
-        function getMsg(data){
-            var start = data.indexOf("MSG:") + 4;
-            var end = data.indexOf("~*~*");
-            return data.substring(start,end);
-        }
-        //extract after ~*~*DAT:
-        function getNodeJSONtext(data){
-            var start = data.indexOf("~*~*DAT:")+8;
-            return data.substring(start,data.length);
-        }
-        function start() {
-            
-            // TEST - TODO turn off when not testing
-            if(document.domain=="localhost"){websock = new WebSocket('ws://10.203.1.33:81/');}
-            else{websock = new WebSocket('ws://' + window.location.hostname + ':81/');};
-            
-            websock.onopen = function(evt) { console.log('websock open'); };
-            websock.onclose = function(evt) { console.log('websock close'); };
-            websock.onerror = function(evt) { console.log(evt); };
-            websock.onmessage = function(evt) {
-  
-            var payload = evt.data;
-            if(payload.indexOf("~*~*")<0){
-                if(payload.indexOf('{"fishyDevices"')==0){
-                    processJSON(payload);
-                }else{
-                    console.log(payload);
+<!DOCTYPE html>
+<html>
+
+<head>
+    <title>fishDIY 2-State Actuator</title>
+    <meta name='viewport' content='initial-scale=1.0'>
+
+    <link id='styles' rel="stylesheet" href="/styles.css">
+    <link rel="stylesheet" href="styles.css"> <!-- intentionally left for testing -->
+
+</head>
+
+<body>
+    <div class='main' id='myBody'>
+        <script>
+            var websock;
+            function showDetails() {
+                document.getElementById('infoDiv').innerHTML = infoText;
+                document.getElementById('infoPanel').style.display = 'block';
+            }
+            //extract after MSG:and before ~*~*
+            function getMsg(data) {
+                var start = data.indexOf("MSG:") + 4;
+                var end = data.indexOf("~*~*");
+                return data.substring(start, end);
+            }
+            //extract after ~*~*DAT:
+            function getNodeJSONtext(data) {
+                var start = data.indexOf("~*~*DAT:") + 8;
+                return data.substring(start, data.length);
+            }
+            function start() {
+
+                // TEST - TODO turn off when not testing
+                if (document.domain == "localhost") { websock = new WebSocket('ws://10.203.1.23:81/'); }
+                else { websock = new WebSocket('ws://' + window.location.hostname + ':81/'); };
+
+                websock.onopen = function (evt) { console.log('websock open'); };
+                websock.onclose = function (evt) { console.log('websock close'); };
+                websock.onerror = function (evt) { console.log(evt); };
+                websock.onmessage = function (evt) {
+
+                    var payload = evt.data;
+                    if (payload.indexOf("~*~*") < 0) {
+                        if (payload.indexOf('{"fishyDevices"') == 0) {
+                            processJSON(payload);
+                        } else {
+                            console.log(payload);
+                        }
+                    } else {
+                        var msgText = getMsg(payload);
+                        console.log(msgText);
+                        setOtherTxt(msgText);
+                        var nodeJSONtext = getNodeJSONtext(payload);
+                        console.log(nodeJSONtext);
+                        processJSON(nodeJSONtext);
+                    }
+                };
+            }
+            function setMainTxt(text) {
+                document.getElementById("mainTxt").innerHTML = text + "%";
+            }
+            function setOtherTxt(text) {
+                document.getElementById("otherTxt").innerHTML = text;
+            }
+            function syncPO() {
+                var slider = document.getElementById('pctOpenSld');
+                var btn = document.getElementById('pobtntxt');
+                btn.innerHTML = slider.value + '%';
+            }
+            function openIsCCWUpd() {
+                var label = document.getElementById('swLab');
+                var sw = document.getElementById('swChck');
+                if (sw.checked == true) { label.innerHTML = 'Open CCW'; } else { label.innerHTML = 'Open CW'; }
+            }
+            function swMstrUpd() {
+                var label = document.getElementById('swMstrLab');
+                var sw = document.getElementById('swMstrChck');
+                if (sw.checked == true) { label.innerHTML = 'Master Node'; } else { label.innerHTML = 'Slave Node'; }
+            }
+            function swSwapUpd() {
+                var label = document.getElementById('swSwapLab');
+                var sw = document.getElementById('swSwapChck');
+                if (sw.checked == true) { label.innerHTML = 'Swapped Lim Sw'; } else { label.innerHTML = 'Normal Lim Sw'; }
+            }
+            function sendCmd(command) {
+                if (websock.readyState != 1) {
+                    alert("This control panel is no longer connected to the device.  Please close this window and reopen the control panel.");
+                    return 0;
                 }
-            }else{
-                var msgText = getMsg(payload); 
-                console.log(msgText);
-                setOtherTxt(msgText);
-                var nodeJSONtext = getNodeJSONtext(payload); 
-                console.log(nodeJSONtext);
-                processJSON(nodeJSONtext);
-                
+                var cmd = '';
+                if (command == 'O') {
+                    cmd = 'open';
+                } else if (command == 'C') {
+                    cmd = 'close';
+                } else if (command == 'S') {
+                    cmd = 'stop';
+                } else if (command == 'cal') {
+                    cmd = 'calibrate';
+                } else if (command == 'reboot') {
+                    cmd = 'reset';
+                } else if (command == 'rstWifi') {
+                    cmd = 'reset_wifi';
+                } else if (command == 'G') {
+                    var pos;
+                    cmd = 'goto';
+                    pos = document.getElementById('pctOpenSld').value;
+                    while (pos.length < 3) pos = '0' + pos;
+                    cmd += pos;
+                } else if (command == 'config') {
+                    var isMstr = 'false';
+                    var ccwIsOpen = 'false';
+                    var swapLimSW = 'false';
+                    if (document.getElementById('swMstrChck').checked) isMstr = 'true';
+                    if (document.getElementById('swChck').checked) ccwIsOpen = 'true';
+                    if (document.getElementById('swSwapChck').checked) swapLimSW = 'true';
+                    cmd = 'config';
+                    cmd += ';openIsCCW=' + ccwIsOpen;
+                    cmd += ';isMaster=' + isMstr;
+                    cmd += ';devName=' + document.getElementById('devName').value;
+                    cmd += ';groupName=' + document.getElementById('groupName').value;
+                    cmd += ';devType=' + document.getElementById('devType').value;
+                    cmd += ';note=' + document.getElementById('devNote').value;
+                    cmd += ';swapLimSW=' + swapLimSW;
+                    cmd += ';timeOut=' + document.getElementById('timeOut').value;
+                }
+                document.body.style.backgroundColor = "var(--bg-col-ack)";
+                websock.send(cmd);
             }
-            };
-        }
-        function setMainTxt(text){
-            document.getElementById("mainTxt").innerHTML = text + "%";
-        }
-        function setOtherTxt(text){
-            document.getElementById("otherTxt").innerHTML = text;
-        }
-        function syncPO() {
-            var slider = document.getElementById('pctOpenSld');
-            var btn = document.getElementById('pobtntxt');
-            btn.innerHTML= slider.value + '%';
-        }
-        
-        function openIsCCWUpd() {
-            var label = document.getElementById('swLab');
-            var sw = document.getElementById('swChck');
-            if (sw.checked == true) { label.innerHTML = 'Open CCW'; } else { label.innerHTML = 'Open CW'; }
-        }
-        
-        function swMstrUpd() {
-            var label = document.getElementById('swMstrLab');
-            var sw = document.getElementById('swMstrChck');
-            if (sw.checked == true) {label.innerHTML = 'Master Node'; } else { label.innerHTML = 'Slave Node'; }
-        }
-        
-        function swSwapUpd() {
-            var label = document.getElementById('swSwapLab');
-            var sw = document.getElementById('swSwapChck');
-            if (sw.checked == true) { label.innerHTML = 'Swapped Lim Sw'; } else { label.innerHTML = 'Normal Lim Sw'; }
-        }
-        
-        function sendCmd(command) {
-            if (websock.readyState != 1){
-                alert("This control panel is no longer connected to the device.  Please close this window and reopen the control panel.");
-                return 0;
-            }
-            var cmd = '';
-            if (command == 'O') {
-                cmd = 'open';
-            } else if (command == 'C') {
-                cmd = 'close';
-            } else if (command == 'S') {
-                cmd = 'stop';
-            } else if (command == 'cal') {
-                cmd = 'calibrate';
-            } else if (command == 'reboot') {
-                cmd = 'reset';
-            } else if (command == 'rstWifi') {
-                cmd = 'reset_wifi';
-            } else if (command == 'G') {
-                var pos;
-                cmd = 'goto';
-                pos = document.getElementById('pctOpenSld').value;
-                while (pos.length < 3) pos = '0' + pos;
-                cmd += pos;
-            } else if (command == 'config') {
-                var isMstr = 'false';
-                var ccwIsOpen = 'false';
-                var swapLimSW = 'false';
-                if (document.getElementById('swMstrChck').checked) isMstr = 'true';
-                if (document.getElementById('swChck').checked) ccwIsOpen = 'true';
-                if (document.getElementById('swSwapChck').checked) swapLimSW = 'true';
-                cmd = 'config';
-                cmd += ';openIsCCW=' + ccwIsOpen;
-                cmd += ';isMaster=' + isMstr;
-                cmd += ';devName=' + document.getElementById('devName').value;
-                cmd += ';groupName=' + document.getElementById('groupName').value;
-                cmd += ';devType=' + document.getElementById('devType').value;
-                cmd += ';note=' + document.getElementById('devNote').value;
-                cmd += ';swapLimSW=' + swapLimSW;
-                cmd += ';timeOut=' + document.getElementById('timeOut').value;
-            }
-            document.body.style.backgroundColor = "var(--bg-col-ack)";
-            websock.send(cmd);
-        }
-        
-        function returnColor(){
-            document.body.style.backgroundColor = "var(--bg-col)";
-        }
-        
-        //replaces jquery .get function
-        function httpGetAsync(theUrl, callback)
-        {
-            var xmlHttp = new XMLHttpRequest();
-            xmlHttp.onreadystatechange = function() { 
-                if (xmlHttp.readyState == 4 && xmlHttp.status == 200)
-                    callback(xmlHttp.responseText);
-            }
-            xmlHttp.open("GET", theUrl, true); // true for asynchronous 
-            xmlHttp.send(null);
-        }
-        
-        function processJSON(JSONstr){
-            var data = JSON.parse(JSONstr);
-            doStuffWithJSON(data.fishyDevices);
-        }
 
-        function doStuffWithJSON(DA){
-           
-            var addDiv = '';
-            var mstrTxt = '';
-            var calTxt = '';
-            var inErr=false;
-            var errTxt = '';
-            d=DA[0];
-            
-            returnColor();
-            if (d.isMaster == 'true') { mstrTxt = ' (MASTER)';document.getElementById('swMstrChck').checked=true; } else { mstrTxt = '';document.getElementById('swMstrChck').checked=false;}
-            if (d.openIsCCW == 'true') { document.getElementById('swChck').checked=true; } else { chckTxt = '';document.getElementById('swChck').checked=false;}
-            if (d.swapLimSW == 'true') { document.getElementById('swSwapChck').checked=true;} else { document.getElementById('swSwapChck').checked=false;}
-            if (d.motorPosAtCWset == 'true' && d.motorPosAtCCWset == 'true') { calTxt = '';} else { inErr=true;errTxt='UNCALIBRATED\n'; calTxt = '**HARDWARE LIMITS ARE UNCALIBRATED**\n(AUTOCAL IS RECOMMENDED)\n';}
-            if (d.deviceTimedOut == 'true') {inErr=true;errTxt=errTxt + 'ERROR - DEVICE TIMED OUT\n';}
-            openIsCCWUpd(); swMstrUpd(); swSwapUpd();
-
-            infoText = 'DEVICE TYPE: ' + d.devType + '<br>\n' +
-                       'NAME: ' + d.deviceName + '<br>\n' +
-                       'IP ADDRESS: ' + d.ip + mstrTxt + '<hr>\n' +
-                       'MOTOR POSITION: ' + d.motorPos + '<br>\n' +
-                       'MOTOR HARDWARE LIMITS: CCW=0 CW= ' + d.range + '<hr>\n' +
-                       'SOFTWARE VERSION: ' + d.swVer + '<br>\n' +
-                       'INIT STR: ' + d.initStamp + '\n\n\n<hr>' + calTxt + '<br>\n' + errTxt;
-            if(inErr){
-                document.getElementById("info-icon").className="info-icon-blink";
-            }else{
-                document.getElementById("info-icon").className="info-icon";
+            function returnColor() {
+                document.body.style.backgroundColor = "var(--bg-col)";
             }
-            setMainTxt(posPct(d.motorPos,d.range,d.openIsCCW));
-            document.getElementById('devIP').value = d.ip + mstrTxt;
-            document.getElementById('devNote').value = d.note;
-            document.getElementById('timeOut').value = d.timeOut;
-            document.getElementById('devName').value = d.deviceName;
-            document.getElementById('groupName').value = d.group;
-            document.getElementById('devType').value = d.devType;           
-        }
-        
-        function posPct(motPos, range, openIsCCW) {
-            if(range==0) return 0;
-            var ret = Math.round(100 * ((motPos ) / (range)));
-            //correct if CW = open
-            if(openIsCCW=='true') ret = 100-ret;
-            return ret;
-        }
-        //('Only letters, numbers, underscore, space, comma, period, and dash are allowed.');
-        function blockSpecialChar(e) {
-            var k = e.keyCode;
-            return ((k > 64 && k < 91) || (k > 96 && k < 123) || k == 8 || k == 16 || k == 95  || k == 32 || (k > 43 && k < 47)  || (k >= 48 && k <= 57));
-        }
-        //('Only numbers are allowed.');
-        function numberCharOnly(e) {
-            var k = e.keyCode;
-            return (k == 8 || k == 16 || (k >= 48 && k <= 57));
-        }
-              
-        var infoText='...Loading...';
-        
-        //TODO - add listener that will detect a document hight change to 0 - then close the websocket. 
-        //      - or add a change to the master to destroy the modal page rather than just close the iframe to zero.
-        window.onload = start();
-    </script>
 
-</div>
-<div id='flex-container' class='flex-grid-outer'>
-        <div class='fishyHdr' id='deviceStatus'><table width=100%><tr><td><div class='info-icon' id='info-icon' onclick='showDetails()'>&#9432;</div></td><td><div class='flex-grid' style="padding:6px"><table><tr><td style="font-size:12px">Position:</td></tr><tr><td id=mainTxt>100%</td></tr></table><span class=otherTxt id='otherTxt'></span></div></td></tr></table></div>
-       <div>
-    <div class='buttonSet'>
-      <div class='flex-grid'>
-        <div class='sliderDiv'><input class='slider' id='pctOpenSld' type='range' value='50' max='100' min='0' oninput='syncPO()'></div>
-        <div class='button' onclick='sendCmd("G")'><table width=100%><tr><td class='lilButtonTxt'>GOTO</td></tr><tr><td class='buttonTxt'><span id='pobtntxt'>50%</span></td></tr></table></div>
-      </div>
-      <div class='flex-grid' >
-        <div class='button' onclick='sendCmd("O")'><span class='buttonTxt'>OPEN</span></div>
-        <div class='button' onclick='sendCmd("S")'><span class='buttonTxt'>STOP</span></div>
-        <div class='button' onclick='sendCmd("C")'><span class='buttonTxt'>CLOSE</span></div>
-      </div>
+
+            function processJSON(JSONstr) {
+                var data = JSON.parse(JSONstr);
+                doStuffWithJSON(data.fishyDevices);
+            }
+
+            function doStuffWithJSON(DA) {
+
+                var addDiv = '';
+                var mstrTxt = '';
+                var calTxt = '';
+                var inErr = false;
+                var errTxt = '';
+                d = DA[0];
+
+                returnColor();
+                if (d.isMaster == 'true') { mstrTxt = ' (MASTER)'; document.getElementById('swMstrChck').checked = true; } else { mstrTxt = ''; document.getElementById('swMstrChck').checked = false; }
+                if (d.openIsCCW == 'true') { document.getElementById('swChck').checked = true; } else { chckTxt = ''; document.getElementById('swChck').checked = false; }
+                if (d.swapLimSW == 'true') { document.getElementById('swSwapChck').checked = true; } else { document.getElementById('swSwapChck').checked = false; }
+                if (d.motorPosAtCWset == 'true' && d.motorPosAtCCWset == 'true') { calTxt = ''; } else { inErr = true; errTxt = 'UNCALIBRATED\n'; calTxt = '**HARDWARE LIMITS ARE UNCALIBRATED**\n(AUTOCAL IS RECOMMENDED)\n'; }
+                if (d.deviceTimedOut == 'true') { inErr = true; errTxt = errTxt + 'ERROR - DEVICE TIMED OUT\n'; }
+                openIsCCWUpd(); swMstrUpd(); swSwapUpd();
+
+                infoText = 'DEVICE TYPE: ' + d.devType + '<br>\n' +
+                    'NAME: ' + d.deviceName + '<br>\n' +
+                    'IP ADDRESS: ' + d.ip + mstrTxt + '<hr>\n' +
+                    'MOTOR POSITION: ' + d.motorPos + '<br>\n' +
+                    'MOTOR HARDWARE LIMITS: CCW=0 CW= ' + d.range + '<hr>\n' +
+                    'SOFTWARE VERSION: ' + d.swVer + '<br>\n' +
+                    'INIT STR: ' + d.initStamp + '\n\n\n<hr>' + calTxt + '<br>\n' + errTxt;
+                if (inErr) {
+                    document.getElementById("info-icon").className = "info-icon-blink";
+                } else {
+                    document.getElementById("info-icon").className = "info-icon";
+                }
+                setMainTxt(posPct(d.motorPos, d.range, d.openIsCCW));
+                document.getElementById('devIP').value = d.ip + mstrTxt;
+                document.getElementById('devNote').value = d.note;
+                document.getElementById('timeOut').value = d.timeOut;
+                document.getElementById('devName').value = d.deviceName;
+                document.getElementById('groupName').value = d.group;
+                document.getElementById('devType').value = d.devType;
+            }
+
+            function posPct(motPos, range, openIsCCW) {
+                if (range == 0) return 0;
+                var ret = Math.round(100 * ((motPos) / (range)));
+                //correct if CW = open
+                if (openIsCCW == 'true') ret = 100 - ret;
+                return ret;
+            }
+            //('Only letters, numbers, underscore, space, comma, period, and dash are allowed.');
+            function blockSpecialChar(e) {
+                var k = e.keyCode;
+                return ((k > 64 && k < 91) || (k > 96 && k < 123) || k == 8 || k == 16 || k == 95 || k == 32 || (k > 43 && k < 47) || (k >= 48 && k <= 57));
+            }
+            //('Only numbers are allowed.');
+            function numberCharOnly(e) {
+                var k = e.keyCode;
+                return (k == 8 || k == 16 || (k >= 48 && k <= 57));
+            }
+
+            var infoText = '...Loading...';
+
+            //TODO - add listener that will detect a document hight change to 0 - then close the websocket. 
+            //      - or add a change to the master to destroy the modal page rather than just close the iframe to zero.
+            window.onload = start();
+        </script>
+
     </div>
-
-    <div class='swPanel' >
-            <div class='flex-grid'>
-                <div class='swRow'><label class='sw' id='sw'><input type='checkbox' id='swChck' onchange='openIsCCWUpd()'><span class='sldSw'></span></label><span class='swLab' id='swLab'>Open CW</span></div>
-                <div class='swRow'><label class='sw' id='swMstr'><input type='checkbox' id='swMstrChck' checked='' onchange='swMstrUpd()'><span class='sldSw'></span></label><span class='swLab' id='swMstrLab'>Master Node</span></div>
-                <div class='swRow'><label class='sw' id='swSwap'><input type='checkbox' id='swSwapChck' checked='' onchange='swSwapUpd()'><span class='sldSw'></span></label><span class='swLab' id='swSwapLab'>Swapped Lim SW</span></div>
+    <div id='flex-container' class='flex-grid-outer'>
+        <div class='fishyHdr' id='deviceStatus'>
+            <table width=100%>
+                <tr>
+                    <td>
+                        <div class='info-icon' id='info-icon' onclick='showDetails()'>&#9432;</div>
+                    </td>
+                    <td>
+                        <div class='flex-grid' style="padding:6px">
+                            <table>
+                                <tr>
+                                    <td style="font-size:12px">Position:</td>
+                                </tr>
+                                <tr>
+                                    <td id=mainTxt>100%</td>
+                                </tr>
+                            </table><span class=otherTxt id='otherTxt'></span>
+                        </div>
+                    </td>
+                </tr>
+            </table>
+        </div>
+        <div>
+            <div class='buttonSet'>
+                <div class='flex-grid'>
+                    <div class='sliderDiv'><input class='slider' id='pctOpenSld' type='range' value='50' max='100' min='0'
+                            oninput='syncPO()'></div>
+                    <div class='button' onclick='sendCmd("G")'>
+                        <table width=100%>
+                            <tr>
+                                <td class='lilButtonTxt'>GOTO</td>
+                            </tr>
+                            <tr>
+                                <td class='buttonTxt'><span id='pobtntxt'>50%</span></td>
+                            </tr>
+                        </table>
+                    </div>
+                </div>
+                <div class='flex-grid'>
+                    <div class='button' onclick='sendCmd("O")'><span class='buttonTxt'>OPEN</span></div>
+                    <div class='button' onclick='sendCmd("S")'><span class='buttonTxt'>STOP</span></div>
+                    <div class='button' onclick='sendCmd("C")'><span class='buttonTxt'>CLOSE</span></div>
+                </div>
             </div>
-    </div>
-    </div>
-    <div class='configPanel'>
-            <label class='cfgInpLab' for='devIP'>IP Address:<input class='cfgInp' disabled id='devIP' value='...Loading...' maxlength='40'></label><br>
-            <label class='cfgInpLab' for='devName'>Name:<input class='cfgInp' onkeypress='return blockSpecialChar(event)' id='devName' value='...Loading...' maxlength='40'></label><br>
-            <label class='cfgInpLab' for='groupName'>Group:<input class='cfgInp' onkeypress='return blockSpecialChar(event)' id='groupName' value='...Loading...' maxlength='40'></label><br>
-            <label class='cfgInpLab' for='devType'>Type:<input class='cfgInp' onkeypress='return blockSpecialChar(event)' id='devType' value='...Loading...' maxlength='20'></label><br>
-            <label class='cfgInpLab' for='devNote'>Note:<input class='cfgInp' onkeypress='return blockSpecialChar(event)' id='devNote' value='...Loading...' maxlength='55'></label><br>
-            <label class='cfgInpLab' for='timeOut'>Time-Out:<input class='cfgInpNum' onkeypress='return numberCharOnly(event)' id='timeOut' value='00' maxlength='5' title='Enter a time (in seconds) to wait for the actuator to respond before stopped and displaying an error message (assuming the actuator got stuck).'></label>
-    </div>
-    
 
-    <div class='fishyFtrSw'>
-        <div class='flex-grid'>
-            <input class='cfgbuttonY' id='updCfgBtn' type='button' value='UPDATE SETTINGS' onclick='sendCmd("config")' title='This will save new settings in the device. New settings should be displayed on next refresh.  If trying to adjust mulitple settings it is recommended that you temporarily turn off Auto-refresh.'>
-            <input class='cfgbuttonY' id='updCfgBtn' type='button' value='REBOOT DEVICE' onclick='sendCmd("reboot")' title='This will reboot the device.'>
+            <div class='swPanel'>
+                <div class='flex-grid'>
+                    <div class='swRow'><label class='sw' id='sw'><input type='checkbox' id='swChck' onchange='openIsCCWUpd()'><span
+                                class='sldSw'></span></label><span class='swLab' id='swLab'>Open CW</span></div>
+                    <div class='swRow'><label class='sw' id='swMstr'><input type='checkbox' id='swMstrChck' checked=''
+                                onchange='swMstrUpd()'><span class='sldSw'></span></label><span class='swLab' id='swMstrLab'>Master
+                            Node</span></div>
+                    <div class='swRow'><label class='sw' id='swSwap'><input type='checkbox' id='swSwapChck' checked=''
+                                onchange='swSwapUpd()'><span class='sldSw'></span></label><span class='swLab' id='swSwapLab'>Swapped
+                            Lim SW</span></div>
+                </div>
+            </div>
         </div>
-        <div class='flex-grid'>
-            <input class='cfgbuttonR' id='updCfgBtn' type='button' value='AUTO-CAL. HW LIM' onclick='sendCmd("cal")' title='WARNING:Auto-Cal will attempt to cycle your actuator full open and shut to determine  hardware limit switch positions. Ensure that range is possible to prevent damage.'>
-            <input class='cfgbuttonR' id='rstWifiBtn' type='button' value='RESET WIFI' onclick='sendCmd("rstWifi")' title='WARNING:Reset Wifi will attempt to delete your network SSID and passwordand put the device into wifi-server mode to learn new wifi SSID and password. To teach a reset device a new wifi network go to the device IP address using a mobile phone or computer.'>
+        <div class='configPanel'>
+            <label class='cfgInpLab' for='devIP'>IP Address:<input class='cfgInp' disabled id='devIP' value='...Loading...'
+                    maxlength='40'></label><br>
+            <label class='cfgInpLab' for='devName'>Name:<input class='cfgInp' onkeypress='return blockSpecialChar(event)'
+                    id='devName' value='...Loading...' maxlength='40'></label><br>
+            <label class='cfgInpLab' for='groupName'>Group:<input class='cfgInp' onkeypress='return blockSpecialChar(event)'
+                    id='groupName' value='...Loading...' maxlength='40'></label><br>
+            <label class='cfgInpLab' for='devType'>Type:<input class='cfgInp' onkeypress='return blockSpecialChar(event)'
+                    id='devType' value='...Loading...' maxlength='20'></label><br>
+            <label class='cfgInpLab' for='devNote'>Note:<input class='cfgInp' onkeypress='return blockSpecialChar(event)'
+                    id='devNote' value='...Loading...' maxlength='55'></label><br>
+            <label class='cfgInpLab' for='timeOut'>Time-Out:<input class='cfgInpNum' onkeypress='return numberCharOnly(event)'
+                    id='timeOut' value='00' maxlength='5' title='Enter a time (in seconds) to wait for the actuator to respond before stopped and displaying an error message (assuming the actuator got stuck).'></label>
         </div>
-    </div>    
-</div>
 
-<!-- Overlay Modal -->
-<div id='infoPanel' class='infoPanel'>
-    <div id='infoDiv' class='infoDiv'></div>
-    <!-- Close button for overlay modal panel.  -->
-    <input type='button' class='infoOKbtn' onclick='closeCtrlModal()' value='OK'>    
-</div>
-  
+
+        <div class='fishyFtrSw'>
+            <div class='flex-grid'>
+                <input class='cfgbuttonY' id='updCfgBtn' type='button' value='UPDATE SETTINGS' onclick='sendCmd("config")'
+                    title='This will save new settings in the device. New settings should be displayed on next refresh.  If trying to adjust mulitple settings it is recommended that you temporarily turn off Auto-refresh.'>
+                <input class='cfgbuttonY' id='updCfgBtn' type='button' value='REBOOT DEVICE' onclick='sendCmd("reboot")'
+                    title='This will reboot the device.'>
+            </div>
+            <div class='flex-grid'>
+                <input class='cfgbuttonR' id='updCfgBtn' type='button' value='AUTO-CAL. HW LIM' onclick='sendCmd("cal")'
+                    title='WARNING:Auto-Cal will attempt to cycle your actuator full open and shut to determine  hardware limit switch positions. Ensure that range is possible to prevent damage.'>
+                <input class='cfgbuttonR' id='rstWifiBtn' type='button' value='RESET WIFI' onclick='sendCmd("rstWifi")'
+                    title='WARNING:Reset Wifi will attempt to delete your network SSID and passwordand put the device into wifi-server mode to learn new wifi SSID and password. To teach a reset device a new wifi network go to the device IP address using a mobile phone or computer.'>
+            </div>
+        </div>
+    </div>
+
+    <!-- Overlay Modal for device information-->
+    <div id='infoPanel' class='infoPanel'>
+        <div id='infoDiv' class='infoDiv'></div>
+        <!-- Close button for overlay modal panel.  -->
+        <input type='button' class='infoOKbtn' onclick='closeCtrlModal()' value='OK'>
+    </div>
+
 </body>
 <script>
-var ctrlModal = document.getElementById('infoPanel');
-// When the user clicks the X
-function closeCtrlModal() {
-    ctrlModal.style.display='none';
-}
+    var ctrlModal = document.getElementById('infoPanel');
+    // When the user clicks the X
+    function closeCtrlModal() {
+        ctrlModal.style.display = 'none';
+    }
 </script>
+
 </html>

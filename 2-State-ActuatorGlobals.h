@@ -4,14 +4,14 @@
 
 //This says EEPROM since it is extracted from the 255 char (max) string stored in the EEPROMdata struct
 //that is stored in EEPROM.  This struct is dynamic (not stored), but is encoded into the char[] then stored.
-struct EEPROMdeviceData{
+struct TwoSAEEPROMdeviceData{
 	bool swapLimSW = false;					//1 byte     //unique to 2-state-actuator
 	bool openIsCCW = true;					//1 byte     //unique to 2-state-actuator
 	bool motorPosAtCCWset = false;			//1 byte	 //unique to 2-state-actuator
 	bool motorPosAtCWset = false;			//1 byte     //unique to 2-state-actuator
 	int motorPos = 0; 						//4 bytes    //unique to 2-state-actuator
 	int range = 0; 							//4 bytes    //unique to 2-state-actuator
-}EEPROMdeviceData;
+}TwoSAEEPROMdeviceData;
 
 int targetPos = -1; //meaning no target
 enum trueState //enum used to define stages of both static and transient status - tracked in the device only

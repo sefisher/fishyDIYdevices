@@ -306,9 +306,9 @@ void handleCtrl(AsyncWebServerRequest *request)
 	if (DEBUG_MESSAGES)
 	{
 		Serial.println("\n[handleCtrl]\n");
-		Serial.println(String(WEBCTRLSTR));
+		Serial.println(String(WEBCTRLSTR[caseNum()]));
 	}
-	request->send_P(200,"text/html",WEBCTRLSTR);
+	request->send_P(200,"text/html",WEBCTRLSTR[caseNum()]);
 }
 
 //show the SW update form for the specifc device (function for every device webserver)

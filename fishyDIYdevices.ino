@@ -40,16 +40,16 @@ Notes:
 //TODO - see if I can delete
 #include <StreamString.h>
 
-//custom definitions
+//common fishyDIYdevice definitions
 #include "CommonDeviceDefinitions.h"  		// device settings common to all devices (names, debug paramters, etc)
 #include "CommonGlobals.h"					// global variables
 #include "CommonWebresources.h"				// strings for device served webpages
 
-//TODO - make the following comment true
 //Device Type Definitions - CommonDeviceTranslator.ino takes the external function calls and calls all the internal device specific functions
-#define DEVICETYPES "{2-State-Actuator}" 	//the list of device types incoroprated into this build
 #include "2-State-ActuatorGlobals.h" 		// global variables specific to 2-state-actuators
 #include "2-State-ActuatorWebresources.h" 	// webresources specific to 2-state-actuators
+#include "RGBLEDGlobals.h" 		// global variables specific to 2-state-actuators
+#include "RGBLEDWebresources.h" 	// webresources specific to 2-state-actuators
 
 //this is the base setup routine called first on power up or reboot
 void setup()

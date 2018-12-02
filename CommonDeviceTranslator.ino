@@ -1,6 +1,6 @@
 /*
-THIS FILE PROVIDES TAKES GENERIC DEVICE FUNCTION CALLS AND MAKES SPECIFIC DEVICE FUNCTION CALLS (TRANSLATING FOR EACH DEVICE).  THE SPECIFIC FUNCTION NAMES FOR EACH DEVICE MUST BE INCLUDED BELOW. THE STANDARD FUNCTION CALLS ARE:
-1)  operateDevice() - JUST RUNS EVERY LOOP FOR STATE MACHINE OPERATIONS IF NEEDED 
+THIS FILE TAKES GENERIC DEVICE FUNCTION CALLS AND MAKES SPECIFIC DEVICE FUNCTION CALLS (TRANSLATING FOR EACH DEVICE).  THE SPECIFIC FUNCTION NAMES FOR EACH DEVICE MUST BE INCLUDED BELOW. THE STANDARD FUNCTION CALLS ARE:
+1)  operateDevice() - JUST RUNS EVERY LOOP FOR STATE MACHINE OPERATIONS OR EEPROM STATE SAVING IF NEEDED 
 2)  deviceSetup() - RUN AT STARTUP TO PREPARE THE DEVICE FOLLOWING BOOT
 3)  executeCommands(char inputMsg[MAXCMDSZ], IPAddress remote)) - REAL TIME RESPONSE TO DIRECT COMMANDS FROM NETWORK
 4)  executeState(bool state) - RESPONSE TO VOICE COMMANDS (FAUXMO INTERFACE)
@@ -17,7 +17,6 @@ For each of these functions add a case statement below when adding a new device 
 Case numbers are in order devices are listed below (2-State-Actuator = 0)
 */
 
-//i'm here - try the funnction list below - then call func[i]()
 char devices[][21] = {"2-State-Actuator", "RGBLED"};
 const char * WEBCTRLSTR[] = {TwoSAWEBCTRLSTR,RGBWEBCTRLSTR};
 String (*getStatusStringCall[])() = {TwoSAgetStatusString, RGBgetStatusString};
@@ -30,61 +29,64 @@ String (*getDeviceSpecificJSONCall[])() = {TwoSAgetDeviceSpecificJSON, RGBgetDev
 void (*operateDeviceCall[])() = {TwoSAoperateDevice, RGBoperateDevice};
 void (*deviceSetupCall[])() = {TwoSAdeviceSetup, RGBdeviceSetup};
 void (*executeCommandsCall[])(char inputMsg[MAXCMDSZ], IPAddress remote) = {TwoSAexecuteCommands, RGBexecuteCommands};
-void (*UDPparseConfigResponseCall[])(String responseIn, IPAddress remote) = {TwoSAUDPparseConfigResponse, RGBUDPparseConfigResponse};
+void (*UDPparseConfigResponseCall[])(char inputMsg[MAXCMDSZ], IPAddress remote) = {TwoSAUDPparseConfigResponse, RGBUDPparseConfigResponse};
 void (*executeStateCall[])(bool state) = {TwoSAexecuteState, RGBexecuteState};
 
-int caseNum()
+//deviceNum returns the index of the device in the list to call the associated function
+int deviceNum()
 {
 	int arraySize = sizeof(devices) / sizeof(devices[0]);
-	for (int i = 0; i < arraySize; i++)
-		if (strcmp(EEPROMdata.typestr, devices[i]) == 0)
-			return i;
+	for (int i = 0; i < arraySize; i++){
+
+		if (strcmp(EEPROMdata.typestr, devices[i]) == 0){return i;}
+	}
+	return -1;
 }
 String getStatusString()
 {
-	return getStatusStringCall[caseNum()]();
+	return getStatusStringCall[deviceNum()]();
 }
 void initializeDeviceCustomData()
 {
-	initializeDeviceCustomDataCall[caseNum()]();
+	initializeDeviceCustomDataCall[deviceNum()]();
 }
 void extractDeviceCustomData()
 {
-	extractDeviceCustomDataCall[caseNum()]();
+	extractDeviceCustomDataCall[deviceNum()]();
 }
 void encodeDeviceCustomData()
 {
-	encodeDeviceCustomDataCall[caseNum()]();
+	encodeDeviceCustomDataCall[deviceNum()]();
 }
 void showEEPROMdevicePersonalityData()
 {
-	showEEPROMdevicePersonalityDataCall[caseNum()]();
+	showEEPROMdevicePersonalityDataCall[deviceNum()]();
 }
 bool isCustomDeviceReady()
 {
-	return isCustomDeviceReadyCall[caseNum()]();
+	return isCustomDeviceReadyCall[deviceNum()]();
 }
 String getDeviceSpecificJSON()
 {
-	return getDeviceSpecificJSONCall[caseNum()]();
+	return getDeviceSpecificJSONCall[deviceNum()]();
 }
 void operateDevice()
 {
-	operateDeviceCall[caseNum()]();
+	operateDeviceCall[deviceNum()]();
 }
 void deviceSetup()
 {
-	deviceSetupCall[caseNum()]();
+	deviceSetupCall[deviceNum()]();
 }
 void executeCommands(char inputMsg[MAXCMDSZ], IPAddress remote)
 {
-	executeCommandsCall[caseNum()](inputMsg, remote);
+	executeCommandsCall[deviceNum()](inputMsg, remote);
 }
-void UDPparseConfigResponse(String responseIn, IPAddress remote)
+void UDPparseConfigResponse(char inputMsg[MAXCMDSZ], IPAddress remote)
 {
-	UDPparseConfigResponseCall[caseNum()](responseIn, remote);
+	UDPparseConfigResponseCall[deviceNum()](inputMsg, remote);
 }
 void executeState(bool state)
 {
-	executeStateCall[caseNum()](state);
+	executeStateCall[deviceNum()](state);
 }

@@ -261,7 +261,7 @@ void TwoSAexecuteCommands(char inputMsg[MAXCMDSZ], IPAddress remote)
 	{ 
 		if (DEBUG_MESSAGES)
 		{
-			Serial.println("[executeCommands] Commanded OPEN");
+			Serial.println("[TwoSAexecuteCommands] Commanded OPEN");
 		}
 		updateClients("Open Received", true);
 		executeState(true); //WiFi "true" is open (going CCW to stop for OpenisCCW=true)
@@ -270,7 +270,7 @@ void TwoSAexecuteCommands(char inputMsg[MAXCMDSZ], IPAddress remote)
 	{
 		if (DEBUG_MESSAGES)
 		{
-			Serial.println("[executeCommands] Commanded CLOSE");
+			Serial.println("[TwoSAexecuteCommands] Commanded CLOSE");
 		}
 		updateClients("Close Received", true);
 		executeState(false); //WiFi "false" is close (going CW to stop for OpenisCCW=true)
@@ -279,7 +279,7 @@ void TwoSAexecuteCommands(char inputMsg[MAXCMDSZ], IPAddress remote)
 	{
 		if (DEBUG_MESSAGES)
 		{
-			Serial.println("[executeCommands] Commanded STOP");
+			Serial.println("[TwoSAexecuteCommands] Commanded STOP");
 		}
 		updateClients("Stop Received", true);
 		TwoSAexecuteStop();
@@ -288,7 +288,7 @@ void TwoSAexecuteCommands(char inputMsg[MAXCMDSZ], IPAddress remote)
 	{ 
 		if (DEBUG_MESSAGES)
 		{
-			Serial.println("[executeCommands] Commanded GOTO (" + cmd + ")");
+			Serial.println("[TwoSAexecuteCommands] Commanded GOTO (" + cmd + ")");
 		}
 		updateClients("Goto (" + cmd + ") Received", true);
 		TwoSAexecuteGoto(cmd); 
@@ -297,9 +297,9 @@ void TwoSAexecuteCommands(char inputMsg[MAXCMDSZ], IPAddress remote)
 	{
 		if (DEBUG_MESSAGES)
 		{
-			Serial.println("[executeCommands] Hello! My IP is:");
+			Serial.println("[TwoSAexecuteCommands] Hello! My IP is:");
 			Serial.println(WiFi.localIP().toString());
-			Serial.println("[executeCommands] Here is my personality info (ignore the [Setup] tag):");
+			Serial.println("[TwoSAexecuteCommands] Here is my personality info (ignore the [Setup] tag):");
 			showEEPROMPersonalityData();
 		}
 	}
@@ -307,7 +307,7 @@ void TwoSAexecuteCommands(char inputMsg[MAXCMDSZ], IPAddress remote)
 	{
 		if (DEBUG_MESSAGES)
 		{
-			Serial.println("[executeCommands] Commanded RESET_WIFI");
+			Serial.println("[TwoSAexecuteCommands] Commanded RESET_WIFI");
 		}
 		updateClients("Resetting WiFi",true);
 		
@@ -322,7 +322,7 @@ void TwoSAexecuteCommands(char inputMsg[MAXCMDSZ], IPAddress remote)
 	{
 		if (DEBUG_MESSAGES)
 		{
-			Serial.println("[executeCommands] Commanded RESET");
+			Serial.println("[TwoSAexecuteCommands] Commanded RESET");
 		}
 		updateClients("Rebooting Device",true);
 		resetOnNextLoop=true;
@@ -331,13 +331,13 @@ void TwoSAexecuteCommands(char inputMsg[MAXCMDSZ], IPAddress remote)
 	{
 		if (DEBUG_MESSAGES)
 		{
-			Serial.println("[executeCommands] Commanded CALIBRATE");
+			Serial.println("[TwoSAexecuteCommands] Commanded CALIBRATE");
 		}
 
 		deviceCalStage = openingCal;
 		if (DEBUG_MESSAGES)
 		{
-			Serial.printf("[executeCommands] Going to calibration opening stage.\n");
+			Serial.printf("[TwoSAexecuteCommands] Going to calibration opening stage.\n");
 		}
 		updateClients("Calibrating", true);
 		executeState(true);
@@ -346,7 +346,7 @@ void TwoSAexecuteCommands(char inputMsg[MAXCMDSZ], IPAddress remote)
 	{
 		if (DEBUG_UDP_MESSAGES)
 		{
-			Serial.println("[executeCommands] Commanded ANYFISHYDEV_THERE");
+			Serial.println("[TwoSAexecuteCommands] Commanded ANYFISHYDEV_THERE");
 		}
 		UDPpollReply(remote);
 	}
@@ -354,7 +354,7 @@ void TwoSAexecuteCommands(char inputMsg[MAXCMDSZ], IPAddress remote)
 	{
 		if (DEBUG_UDP_MESSAGES)
 		{
-			Serial.println("[executeCommands] Commanded POLL_NET");
+			Serial.println("[TwoSAexecuteCommands] Commanded POLL_NET");
 		}
 		UDPbroadcast();
 	}
@@ -362,7 +362,7 @@ void TwoSAexecuteCommands(char inputMsg[MAXCMDSZ], IPAddress remote)
 	{
 		if (DEBUG_UDP_MESSAGES)
 		{
-			Serial.println("[executeCommands] Commanded POLL_RESPONSE");
+			Serial.println("[TwoSAexecuteCommands] Commanded POLL_RESPONSE");
 		}
 		UDPparsePollResponse(String(inputMsg), remote); //want the original case for this
 	}
@@ -370,7 +370,7 @@ void TwoSAexecuteCommands(char inputMsg[MAXCMDSZ], IPAddress remote)
 	{
 		if (DEBUG_UDP_MESSAGES)
 		{
-			Serial.println("[executeCommands] Commanded FISHYDIYMASTER");
+			Serial.println("[TwoSAexecuteCommands] Commanded FISHYDIYMASTER");
 		}
 		masterIP = remote; //update the master IP
 	}
@@ -378,95 +378,82 @@ void TwoSAexecuteCommands(char inputMsg[MAXCMDSZ], IPAddress remote)
 	{
 		if (DEBUG_MESSAGES)
 		{
-			Serial.println("[executeCommands] Commanded CONFIG");
+			Serial.println("[TwoSAexecuteCommands] Commanded CONFIG");
 		}
-		UDPparseConfigResponse(String(inputMsg), remote); //want the original case for this
+		UDPparseConfigResponse(inputMsg, remote); //want the original case for this
 		updateClients("Settings Updated.", true);
 	}
 	else
 	{
-		if (DEBUG_MESSAGES){Serial.printf("[executeCommands] Input: %s is not a recognized command.\n", inputMsg);}
+		if (DEBUG_MESSAGES){Serial.printf("[TwoSAexecuteCommands] Input: %s is not a recognized command.\n", inputMsg);}
 	}
 }
 
-//CUSTOM DEVICE FUNCTION - EXTERNAL (SAME FUNCTION CALLED BY ALL DEVICES)
-//THIS IS A FUNCTION FOR A 2-State Actuator
-//configuration response from web/udp - this preforms a configuration update to the device and stores it in EEPROM
-void TwoSAUDPparseConfigResponse(String responseIn, IPAddress remote){
-	String response = responseIn.substring(7); //strip off "CONFIG"
-	int strStrt, strStop;
+void TwoSAUDPparseConfigResponse(char inputMsg[MAXCMDSZ], IPAddress remote){
+	char response[MAXCMDSZ] = "";
+	strncpy(response,inputMsg+7,MAXCMDSZ-7); //strip off "CONFIG;"
+	
+	//parseString in this order: {openIsCCW, isMaster, devName, groupName, note, swapLimSW, timeOut}
+	//example string = "isMaster=false;devName=RGB LED Test;groupName=;note=;timeOut=60";
+    char *strings[14]; //one string for each label and one string for each value
+    char *ptr = NULL;
+    byte index = 0;
+    
+	if(DEBUG_MESSAGES){Serial.println("[TwoSAUDPparseConfigResponse] Got this: " + String(response));}
+    
+	ptr = strtok(response, "=;");  // takes a list of delimiters and points to the first token
+    while(ptr != NULL)
+    {
+        strings[index] = ptr;
+        index++;
+        ptr = strtok(NULL, "=;");  // goto the next token
+    }
+    
+    if(DEBUG_MESSAGES){for(int n = 0; n < index; n++){Serial.print(n);Serial.print(") ");Serial.println(strings[n]);}}
 
-	//parseString in this order: {openIsCCW, isMaster, devName, groupName, devType, note}
-	if (DEBUG_MESSAGES && UDP_PARSE_MESSAGES)
-	{
-		Serial.println("[UDPparseConfigResponse] Got this: " + responseIn);
-	}	
+	//names are even (0,2,4..), data is odd(1,3,5..)
 	//openIsCCW
-	strStrt = response.indexOf("=", strStop)+1;
-	strStop = response.indexOf(";", strStrt);
-	TwoSAEEPROMdeviceData.openIsCCW = (response.substring(strStrt, strStop) == "false") ? false : true;
-	if (DEBUG_MESSAGES && UDP_PARSE_MESSAGES)
-	{
-		Serial.print("[UDPparseConfigResponse] openIsCCW: ");
+	TwoSAEEPROMdeviceData.openIsCCW = strcmp(strings[1],"false")==0 ? false : true;
+	if (DEBUG_MESSAGES && UDP_PARSE_MESSAGES){
+		Serial.print("[TwoSAUDPparseConfigResponse] isMaster: ");
 		Serial.println(TwoSAEEPROMdeviceData.openIsCCW ? "true" : "false");
 	}
 	//isMaster
-	strStrt = response.indexOf("=", strStop)+1;
-	strStop = response.indexOf(";", strStrt);
-	EEPROMdata.master = (response.substring(strStrt, strStop) == "false") ? false : true;
-	if (DEBUG_MESSAGES && UDP_PARSE_MESSAGES)
-	{
-		Serial.print("[UDPparseConfigResponse] isMaster: ");
+	EEPROMdata.master = strcmp(strings[3],"false")==0 ? false : true;
+	if (DEBUG_MESSAGES && UDP_PARSE_MESSAGES){
+		Serial.print("[TwoSAUDPparseConfigResponse] isMaster: ");
 		Serial.println(EEPROMdata.master ? "true" : "false");
 	}
 	//devName
-	strStrt = response.indexOf("=", strStop)+1;
-	strStop = response.indexOf(";", strStrt);
-	strncpy(EEPROMdata.namestr, response.substring(strStrt, strStop).c_str(), 41);
+	strncpy(EEPROMdata.namestr, strings[5], 41);
 	if (DEBUG_MESSAGES && UDP_PARSE_MESSAGES)
 	{
-		Serial.println("[UDPparseConfigResponse] devName: " + String(EEPROMdata.namestr));
+		Serial.println("[TwoSAUDPparseConfigResponse] devName: " + String(EEPROMdata.namestr));
 	}
 	//groupName
-	strStrt = response.indexOf("=", strStop)+1;
-	strStop = response.indexOf(";", strStrt);
-	strncpy(EEPROMdata.groupstr, response.substring(strStrt, strStop).c_str(), 41);
+	strncpy(EEPROMdata.groupstr, strings[7], 41);
 	if (DEBUG_MESSAGES && UDP_PARSE_MESSAGES)
 	{
-		Serial.println("[UDPparseConfigResponse] groupName: " + String(EEPROMdata.groupstr));
-	}
-	//devType
-	strStrt = response.indexOf("=", strStop)+1;
-	strStop = response.indexOf(";", strStrt);
-	strncpy(EEPROMdata.typestr, response.substring(strStrt, strStop).c_str(), 21);
-	if (DEBUG_MESSAGES && UDP_PARSE_MESSAGES)
-	{
-		Serial.println("[UDPparseConfigResponse] devType: " + String(EEPROMdata.typestr));
+		Serial.println("[RGBUDPparseConfigResponse] groupName: " + String(EEPROMdata.groupstr));
 	}
 	//note
-	strStrt = response.indexOf("=", strStop)+1;
-	strStop = response.indexOf(";", strStrt);
-	strncpy(EEPROMdata.note, response.substring(strStrt, strStop).c_str(), 56);
+	strncpy(EEPROMdata.note, strings[9], 56);
 	if (DEBUG_MESSAGES && UDP_PARSE_MESSAGES)
 	{
-		Serial.println("[UDPparseConfigResponse] note: " + String(EEPROMdata.note));
+		Serial.println("[RGBUDPparseConfigResponse] note: " + String(EEPROMdata.note));
 	}
 	//swapLimSW
-	strStrt = response.indexOf("=", strStop)+1;
-	strStop = response.indexOf(";", strStrt);
-	TwoSAEEPROMdeviceData.swapLimSW = (response.substring(strStrt, strStop) == "false") ? false : true;
+	TwoSAEEPROMdeviceData.swapLimSW = strcmp(strings[11],"false")==0 ? false : true;
 	if (DEBUG_MESSAGES && UDP_PARSE_MESSAGES)
 	{
 		Serial.print("[UDPparseConfigResponse] swapLimSW: ");
 		Serial.println(TwoSAEEPROMdeviceData.swapLimSW ? "true" : "false");
 	}
 	//timeOut
-	strStrt = response.indexOf("=", strStop)+1;
-	strStop = response.indexOf(";", strStrt);
-	EEPROMdata.timeOut = response.substring(strStrt, strStop).toInt();
+	EEPROMdata.timeOut = atoi(strings[13]);
 	if (DEBUG_MESSAGES && UDP_PARSE_MESSAGES)
 	{
-		Serial.println("[UDPparseConfigResponse] timeOut: " + String(EEPROMdata.timeOut));
+		Serial.println("[RGBUDPparseConfigResponse] timeOut: " + String(EEPROMdata.timeOut));
 	}
 	//inform the master of new settings
 	UDPpollReply(masterIP);

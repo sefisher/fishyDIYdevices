@@ -1,9 +1,7 @@
-//THIS FILE HAS CUSTOM GLOBAL VARIABLES, EXTERNAL, AND INTERNAL FUNCTIONS FOR 2-STATE-ACTUATORS
+//THIS FILE HAS CUSTOM GLOBAL VARIABLES, EXTERNAL, AND INTERNAL FUNCTIONS FOR RGBLED
 
 //=====================================================================================================================
-//BEGIN CUSTOM DEVICE FUNCTIONS - EXTERNAL - For RGBLED 
-//COMMON EXT functions are:
-// void {operateDevice(),deviceSetup(),executeCommands(char inputMsg[MAXCMDSZ], IPAddress remote)),executeState(bool state),UDPparseConfigResponse(String responseIn, IPAddress remote)}
+//BEGIN CUSTOM EXTERNAL DEVICE FUNCTIONS For RGBLED - (THESE ARE CALLED BY TRANSLATOR IN "CommonDeviceTranslator.ino")  
 
 //CUSTOM DEVICE FUNCTION - EXTERNAL (SAME FUNCTION CALLED BY ALL DEVICES)
 //THIS IS A FUNCTION FOR A RGBLED
@@ -13,7 +11,7 @@ String RGBgetStatusString(){
 	if(DEBUG_MESSAGES){Serial.println((String("[getStatusString]") + String(statusStr)));}
    	return statusStr;	
 }
-//CUSTOM DEVICE FUNCTION - EXTERNAL (SAME NAME CALLED IN ALL DEVICES)
+//CUSTOM DEVICE FUNCTION - EXTERNAL (CALLED BY TRANSLATOR FUNCTION)
 //THIS IS A FUNCTION FOR A RGBLED
 //encode compiled (settings) device data into the char[256] for storage in EEPROMdata for new devices
 void RGBinitializeDeviceCustomData(){
@@ -21,7 +19,7 @@ void RGBinitializeDeviceCustomData(){
 		strncpy(EEPROMdata.deviceCustomData, builder.c_str(), 256);		//copy into the main EEPROMdata storage struct
 		extractDeviceCustomData();	//decode the data into the custom device struct (initialize the device)
 }
-//CUSTOM DEVICE FUNCTION - EXTERNAL (SAME NAME CALLED IN ALL DEVICES)
+//CUSTOM DEVICE FUNCTION - EXTERNAL (CALLED BY TRANSLATOR FUNCTION)
 //THIS IS A FUNCTION FOR A RGBLED
 //extract custom device data from char[256] in EEPROMdata and put it into the device specific struct
 void RGBextractDeviceCustomData(){
@@ -30,7 +28,7 @@ void RGBextractDeviceCustomData(){
     char *ptr = NULL;
     byte index = 0;
     
-	if(DEBUG_MESSAGES){Serial.println("[extractDeviceCustomData]" + String(EEPROMdata.deviceCustomData));}
+	if(DEBUG_MESSAGES){Serial.println("[RGBextractDeviceCustomData]" + String(EEPROMdata.deviceCustomData));}
     
 	ptr = strtok(EEPROMdata.deviceCustomData, "=&");  // takes a list of delimiters and points to the first token
     while(ptr != NULL)
@@ -51,14 +49,14 @@ void RGBextractDeviceCustomData(){
 		showEEPROMdevicePersonalityData();
 	}
 }
-//CUSTOM DEVICE FUNCTION - EXTERNAL (SAME NAME CALLED IN ALL DEVICES)
+//CUSTOM DEVICE FUNCTION - EXTERNAL (CALLED BY TRANSLATOR FUNCTION)
 //THIS IS A FUNCTION FOR A RGBLED
 //encode dynamic device data into the char[256] for storage in EEPROMdata
 void RGBencodeDeviceCustomData(){
 	    String builder = "rgb=" + String(RGBEEPROMdeviceData.rgb);
 		strncpy(EEPROMdata.deviceCustomData, builder.c_str(), 256);
 }
-//CUSTOM DEVICE FUNCTION - EXTERNAL (SAME NAME CALLED IN ALL DEVICES)
+//CUSTOM DEVICE FUNCTION - EXTERNAL (CALLED BY TRANSLATOR FUNCTION)
 //THIS IS A FUNCTION FOR A RGBLED
 //encode dynamic device data into the char[256] for storage in EEPROMdata
 void RGBshowEEPROMdevicePersonalityData(){
@@ -66,13 +64,13 @@ void RGBshowEEPROMdevicePersonalityData(){
 		Serial.println("[SETUP-device] rgb: "+String(RGBEEPROMdeviceData.rgb));  	
 	}
 }
-//CUSTOM DEVICE FUNCTION - EXTERNAL (SAME NAME CALLED IN ALL DEVICES)
+//CUSTOM DEVICE FUNCTION - EXTERNAL (CALLED BY TRANSLATOR FUNCTION)
 //THIS IS A FUNCTION FOR A RGBLED
 //return if the device is calibrated (the common function checks for deviceTimedOut)
 bool RGBisCustomDeviceReady(){
 	return true; //N/A for this device
 }
-//CUSTOM DEVICE FUNCTION - EXTERNAL (SAME NAME CALLED IN ALL DEVICES)
+//CUSTOM DEVICE FUNCTION - EXTERNAL (CALLED BY TRANSLATOR FUNCTION)
 //THIS IS A FUNCTION FOR A RGBLED
 //return a JSON with data for device
 String RGBgetDeviceSpecificJSON(){
@@ -95,15 +93,21 @@ String RGBgetDeviceSpecificJSON(){
 	temp += "]}";
 	return temp;
 }
-//CUSTOM DEVICE FUNCTION - EXTERNAL (SAME NAME CALLED IN ALL DEVICES)
-//THIS IS A FUNCTION FOR A 2-State Actuator
+//CUSTOM DEVICE FUNCTION - EXTERNAL (CALLED BY TRANSLATOR FUNCTION)
+//THIS IS A FUNCTION FOR A RGBLED
 void RGBoperateDevice()
 {
-	//TODO - make this if needed operateRGBLED();
+	//if color is settled for COLOR_SAVE_WAIT mSec then encode the color into the deviceCustomData string 
+	if(!saveComplete && ((lastColorUpdateTime + COLOR_SAVE_WAIT) < millis())){
+		if(DEBUG_MESSAGES){Serial.println("[RGBoperateDevice] Saving color to EEPROM");}
+		RGBencodeDeviceCustomData();
+		storeDataToEEPROM();
+		saveComplete = true;
+	}
 }
 
-//CUSTOM DEVICE FUNCTION - EXTERNAL (SAME NAME CALLED IN ALL DEVICES)
-//THIS IS A FUNCTION FOR A 2-State Actuator
+//CUSTOM DEVICE FUNCTION - EXTERNAL (CALLED BY TRANSLATOR FUNCTION)
+//THIS IS A FUNCTION FOR A RGBLED
 void RGBdeviceSetup()
 {
 	//pinSetup:
@@ -113,13 +117,12 @@ void RGBdeviceSetup()
     pinMode(LED_BLUE, OUTPUT);
 
 	//test write
-    digitalWrite(LED_RED, 1);
-    digitalWrite(LED_GREEN, 1);
-    digitalWrite(LED_BLUE, 1);
+    digitalWrite(LED_RED, 0);
+    digitalWrite(LED_GREEN, 0);
+    digitalWrite(LED_BLUE, 0);
 }
 
-//CUSTOM DEVICE FUNCTION - EXTERNAL (SAME NAME AND PARAMETERS CALLED IN ALL DEVICES)
-//THIS IS A FUNCTION FOR A 2-State Actuator
+//CUSTOM DEVICE FUNCTION - EXTERNAL (CALLED BY TRANSLATOR FUNCTION)
 //This function takes messages from some remote address (if from another node)
 //that are of maximum lenght MAXCMDSZ and determines what actions are required.
 //Commands can come from other nodes via UDP messages or from the web
@@ -130,11 +133,24 @@ void RGBexecuteCommands(char inputMsg[MAXCMDSZ], IPAddress remote)
 {
 	String cmd = String(inputMsg);
 	cmd.toLowerCase();
-	if (cmd.startsWith("off"))
+	if (cmd.startsWith("#"))
+	{ 
+		if((lastColorUpdateTime + COLOR_DELAY) < millis()){
+			lastColorUpdateTime = millis();
+			if (DEBUG_MESSAGES)
+			{
+				Serial.println("[RGBexecuteCommands] Commanded new color");
+			}
+						
+			updateClients("Color Received", true);
+			RGBnewColor(cmd,true); //set new color
+		}
+	}
+	else if (cmd.startsWith("off"))
 	{ 
 		if (DEBUG_MESSAGES)
 		{
-			Serial.println("[executeCommands] Commanded OFF");
+			Serial.println("[RGBexecuteCommands] Commanded OFF");
 		}
 		updateClients("Off Received", true);
 		executeState(false); //WiFi "false" is off 
@@ -143,7 +159,7 @@ void RGBexecuteCommands(char inputMsg[MAXCMDSZ], IPAddress remote)
 	{
 		if (DEBUG_MESSAGES)
 		{
-			Serial.println("[executeCommands] Commanded ON");
+			Serial.println("[RGBexecuteCommands] Commanded ON");
 		}
 		updateClients("On Received", true);
 		executeState(true); //WiFi "true" is on
@@ -152,9 +168,9 @@ void RGBexecuteCommands(char inputMsg[MAXCMDSZ], IPAddress remote)
 	{
 		if (DEBUG_MESSAGES)
 		{
-			Serial.println("[executeCommands] Hello! My IP is:");
+			Serial.println("[RGBexecuteCommands] Hello! My IP is:");
 			Serial.println(WiFi.localIP().toString());
-			Serial.println("[executeCommands] Here is my personality info (ignore the [Setup] tag):");
+			Serial.println("[RGBexecuteCommands] Here is my personality info (ignore the [Setup] tag):");
 			showEEPROMPersonalityData();
 		}
 	}
@@ -162,7 +178,7 @@ void RGBexecuteCommands(char inputMsg[MAXCMDSZ], IPAddress remote)
 	{
 		if (DEBUG_MESSAGES)
 		{
-			Serial.println("[executeCommands] Commanded RESET_WIFI");
+			Serial.println("[RGBexecuteCommands] Commanded RESET_WIFI");
 		}
 		updateClients("Resetting WiFi",true);
 		
@@ -177,7 +193,7 @@ void RGBexecuteCommands(char inputMsg[MAXCMDSZ], IPAddress remote)
 	{
 		if (DEBUG_MESSAGES)
 		{
-			Serial.println("[executeCommands] Commanded RESET");
+			Serial.println("[RGBexecuteCommands] Commanded RESET");
 		}
 		updateClients("Rebooting Device",true);
 		resetOnNextLoop=true;
@@ -186,7 +202,7 @@ void RGBexecuteCommands(char inputMsg[MAXCMDSZ], IPAddress remote)
 	{
 		if (DEBUG_UDP_MESSAGES)
 		{
-			Serial.println("[executeCommands] Commanded ANYFISHYDEV_THERE");
+			Serial.println("[RGBexecuteCommands] Commanded ANYFISHYDEV_THERE");
 		}
 		UDPpollReply(remote);
 	}
@@ -194,7 +210,7 @@ void RGBexecuteCommands(char inputMsg[MAXCMDSZ], IPAddress remote)
 	{
 		if (DEBUG_UDP_MESSAGES)
 		{
-			Serial.println("[executeCommands] Commanded POLL_NET");
+			Serial.println("[RGBexecuteCommands] Commanded POLL_NET");
 		}
 		UDPbroadcast();
 	}
@@ -202,7 +218,7 @@ void RGBexecuteCommands(char inputMsg[MAXCMDSZ], IPAddress remote)
 	{
 		if (DEBUG_UDP_MESSAGES)
 		{
-			Serial.println("[executeCommands] Commanded POLL_RESPONSE");
+			Serial.println("[RGBexecuteCommands] Commanded POLL_RESPONSE");
 		}
 		UDPparsePollResponse(String(inputMsg), remote); //want the original case for this
 	}
@@ -210,7 +226,7 @@ void RGBexecuteCommands(char inputMsg[MAXCMDSZ], IPAddress remote)
 	{
 		if (DEBUG_UDP_MESSAGES)
 		{
-			Serial.println("[executeCommands] Commanded FISHYDIYMASTER");
+			Serial.println("[RGBexecuteCommands] Commanded FISHYDIYMASTER");
 		}
 		masterIP = remote; //update the master IP
 	}
@@ -218,87 +234,76 @@ void RGBexecuteCommands(char inputMsg[MAXCMDSZ], IPAddress remote)
 	{
 		if (DEBUG_MESSAGES)
 		{
-			Serial.println("[executeCommands] Commanded CONFIG");
+			Serial.println("[RGBexecuteCommands] Commanded CONFIG");
 		}
-		UDPparseConfigResponse(String(inputMsg), remote); //want the original case for this
+		UDPparseConfigResponse(inputMsg, remote); //want the original case for this
 		updateClients("Settings Updated.", true);
 	}
 	else
 	{
-		if (DEBUG_MESSAGES){Serial.printf("[executeCommands] Input: %s is not a recognized command.\n", inputMsg);}
+		if (DEBUG_MESSAGES){Serial.printf("[RGBexecuteCommands] Input: %s is not a recognized command.\n", inputMsg);}
 	}
 }
 
-//I'm here - TODO UPDATE THE PARSE FUNCTION AND KEEP UPDATING THIS FILE to MATCH RGBLED
-// (look for any 2-state-actuator functions and update them)
+//CUSTOM DEVICE FUNCTION - EXTERNAL (CALLED BY TRANSLATOR FUNCTION)
+//This function takes updated confiuguration messages from remote controllers and updates the device
+void RGBUDPparseConfigResponse(char inputMsg[MAXCMDSZ], IPAddress remote){
+	char response[MAXCMDSZ] = "";
+	strncpy(response,inputMsg+7,MAXCMDSZ-7); //strip off "CONFIG;"
+	
+	//example string = "isMaster=false;devName=RGB LED Test;groupName=;note=;timeOut=60";
+    char *strings[10]; //one string for each label and one string for each value
+    char *ptr = NULL;
+    byte index = 0;
+    
+	if(DEBUG_MESSAGES){Serial.println("[RGBUDPparseConfigResponse] Got this: " + String(response));}
+    
+	ptr = strtok(response, "=;");  // takes a list of delimiters and points to the first token
+    while(ptr != NULL)
+    {
+        strings[index] = ptr;
+        index++;
+        ptr = strtok(NULL, "=;");  // goto the next token
+    }
+    
+    if(DEBUG_MESSAGES){for(int n = 0; n < index; n++){Serial.print(n);Serial.print(") ");Serial.println(strings[n]);}}
 
-//CUSTOM DEVICE FUNCTION - EXTERNAL (SAME FUNCTION CALLED BY ALL DEVICES)
-//THIS IS A FUNCTION FOR A RGBLED
-//configuration response from web/udp - this performs a configuration update to the device and stores it in EEPROM
-void RGBUDPparseConfigResponse(String responseIn, IPAddress remote){
-	String response = responseIn.substring(7); //strip off "CONFIG"
-	int strStrt, strStop;
-
-	//parseString in this order: {isMaster, devName, groupName, devType, note, timeOut}
-	if (DEBUG_MESSAGES && UDP_PARSE_MESSAGES)
-	{
-		Serial.println("[UDPparseConfigResponse] Got this: " + responseIn);
-	}	
+	//names are even (0,2,4..), data is odd(1,3,5..)
 	//isMaster
-	strStrt = response.indexOf("=", strStop)+1;
-	strStop = response.indexOf(";", strStrt);
-	EEPROMdata.master = (response.substring(strStrt, strStop) == "false") ? false : true;
-	if (DEBUG_MESSAGES && UDP_PARSE_MESSAGES)
-	{
-		Serial.print("[UDPparseConfigResponse] isMaster: ");
+	EEPROMdata.master = strcmp(strings[1],"false")==0 ? false : true;
+	if (DEBUG_MESSAGES && UDP_PARSE_MESSAGES){
+		Serial.print("[RGBUDPparseConfigResponse] isMaster: ");
 		Serial.println(EEPROMdata.master ? "true" : "false");
 	}
 	//devName
-	strStrt = response.indexOf("=", strStop)+1;
-	strStop = response.indexOf(";", strStrt);
-	strncpy(EEPROMdata.namestr, response.substring(strStrt, strStop).c_str(), 41);
+	strncpy(EEPROMdata.namestr, strings[3], 41);
 	if (DEBUG_MESSAGES && UDP_PARSE_MESSAGES)
 	{
-		Serial.println("[UDPparseConfigResponse] devName: " + String(EEPROMdata.namestr));
+		Serial.println("[RGBUDPparseConfigResponse] devName: " + String(EEPROMdata.namestr));
 	}
 	//groupName
-	strStrt = response.indexOf("=", strStop)+1;
-	strStop = response.indexOf(";", strStrt);
-	strncpy(EEPROMdata.groupstr, response.substring(strStrt, strStop).c_str(), 41);
+	strncpy(EEPROMdata.groupstr, strings[5], 41);
 	if (DEBUG_MESSAGES && UDP_PARSE_MESSAGES)
 	{
-		Serial.println("[UDPparseConfigResponse] groupName: " + String(EEPROMdata.groupstr));
-	}
-	//devType
-	strStrt = response.indexOf("=", strStop)+1;
-	strStop = response.indexOf(";", strStrt);
-	strncpy(EEPROMdata.typestr, response.substring(strStrt, strStop).c_str(), 21);
-	if (DEBUG_MESSAGES && UDP_PARSE_MESSAGES)
-	{
-		Serial.println("[UDPparseConfigResponse] devType: " + String(EEPROMdata.typestr));
+		Serial.println("[RGBUDPparseConfigResponse] groupName: " + String(EEPROMdata.groupstr));
 	}
 	//note
-	strStrt = response.indexOf("=", strStop)+1;
-	strStop = response.indexOf(";", strStrt);
-	strncpy(EEPROMdata.note, response.substring(strStrt, strStop).c_str(), 56);
+	strncpy(EEPROMdata.note, strings[7], 56);
 	if (DEBUG_MESSAGES && UDP_PARSE_MESSAGES)
 	{
-		Serial.println("[UDPparseConfigResponse] note: " + String(EEPROMdata.note));
+		Serial.println("[RGBUDPparseConfigResponse] note: " + String(EEPROMdata.note));
 	}
 	//timeOut
-	strStrt = response.indexOf("=", strStop)+1;
-	strStop = response.indexOf(";", strStrt);
-	EEPROMdata.timeOut = response.substring(strStrt, strStop).toInt();
+	EEPROMdata.timeOut = atoi(strings[9]);
 	if (DEBUG_MESSAGES && UDP_PARSE_MESSAGES)
 	{
-		Serial.println("[UDPparseConfigResponse] timeOut: " + String(EEPROMdata.timeOut));
+		Serial.println("[RGBUDPparseConfigResponse] timeOut: " + String(EEPROMdata.timeOut));
 	}
 	//inform the master of new settings
 	UDPpollReply(masterIP);
 	//save them to EEPROM
 	storeDataToEEPROM();
 }
-
 
 //CUSTOM DEVICE FUNCTION - EXTERNAL (FOR ALL FAUXMO ENABLED DEVICES)
 // execute a WiFi received state change
@@ -312,17 +317,17 @@ void RGBexecuteState(bool state)
 	
 	if (DEBUG_MESSAGES)
 	{
-		Serial.printf("[executeState] Going to state: %s\n", state ? "ON" : "OFF");
+		Serial.printf("[RGBexecuteState] Going to state: %s\n", state ? "ON" : "OFF");
 	}
 	deviceState = state;
 
 	if (state)
 	{
-		
+		RGBnewColor(RGBEEPROMdeviceData.rgb,false);
 	}
 	else
 	{
-		
+		RGBnewColor("#000000",false);
 	}
 }
 //=====================================================================================================================
@@ -331,5 +336,20 @@ void RGBexecuteState(bool state)
 //=====================================================================================================================
 //BEGIN CUSTOM DEVICE FUNCTIONS - INTERNAL
 
+void RGBnewColor(String cmd,bool save){
+	uint32_t rgb = (uint32_t) strtol((const char *) &cmd[1], NULL, 16);
 
-//====================================================================================================================================
+	//use bit shift operations to get the 0-255 (0-FF in HEX) range for R, G, and B.  Multiply by 4 since ESP8266's have a 10bit PWM (instead of an 8 bit PWM in Arduino)
+	//so 4* scales it to 0-1020 (close enough to the 1023 max).  
+	analogWrite(LED_RED,    4*((rgb >> 16) & 0xFF)); 
+	analogWrite(LED_GREEN,  4*((rgb >> 8) & 0xFF));
+	analogWrite(LED_BLUE,   4*((rgb >> 0) & 0xFF));
+	if(DEBUG_MESSAGES){Serial.printf("RED %d, BLUE %d, GREEN %d\n",4*((rgb >> 16) & 0xFF),4*((rgb >> 8) & 0xFF),4*((rgb >> 0) & 0xFF));}
+
+	//if just turning off or on don't save
+	if(save){
+		strncpy(RGBEEPROMdeviceData.rgb, cmd.c_str(), 8);
+		saveComplete = false;
+	}
+}
+//=====================================================================================================================

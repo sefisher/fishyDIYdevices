@@ -4,7 +4,7 @@ This is what will likely get updated the most (along with the styles). Style dat
 (which is embedded into the webresources.h file(s) in a string and served if a clinet requests /styles.css).
 To incorporate this file intp the code for compiling after updating it do the following:
  1) copy the HTML (from below this comment to the next comment where the JSON is defined).
- 2) put it through a minifier (like https://kangax.github.io/html-minifier/) and then through a String builder
+ 2) put it through a minifier (like https://kangax.github.io/html-minifier/ with Decode Entity Characters OFF) and then through a String builder
  (like http://buildmystring.com/ with "strip out carriage returns" on) to create a single string with no tabs and one line.
  3) paste that into the WEBCTRLSTR After "PROGMEM" in the webresources.h file.
  4) copy the second block (from below the JSON definition to the end).
@@ -38,31 +38,25 @@ To incorporate this file intp the code for compiling after updating it do the fo
             <div class='button' onclick='sendCmd("OFF")'><span class='buttonTxt'>OFF</span></div>
         </div>
     </div>
-    <div class='swPanel'>
-            <div class='flex-grid'>
-                <div class='swRow'><label class='sw' id='sw'><input type='checkbox' id='swChck' onchange='openIsCCWUpd()'><span
-                            class='sldSw'></span></label><span class='swLab' id='swLab'>Open CW</span></div>
-                <div class='swRow'><label class='sw' id='swMstr'><input type='checkbox' id='swMstrChck' checked=''
-                            onchange='swMstrUpd()'><span class='sldSw'></span></label><span class='swLab' id='swMstrLab'>Master
-                        Node</span></div>
-                <div class='swRow'><label class='sw' id='swSwap'><input type='checkbox' id='swSwapChck' checked=''
-                            onchange='swSwapUpd()'><span class='sldSw'></span></label><span class='swLab' id='swSwapLab'>Swapped
-                        Lim SW</span></div>
-            </div>
-    </div>
+
     <div class='configPanel'>
+            <table style='max-width:315px;'><tr><td style='max-width:270px;'>
             <label class='cfgInpLab' for='devIP'>IP Address:<input class='cfgInp' disabled id='devIP' value='...Loading...'
-                    maxlength='40'></label><br>
+                    maxlength='25'></label><br>
             <label class='cfgInpLab' for='devName'>Name:<input class='cfgInp' onkeypress='return blockSpecialChar(event)'
                     id='devName' value='...Loading...' maxlength='40'></label><br>
             <label class='cfgInpLab' for='groupName'>Group:<input class='cfgInp' onkeypress='return blockSpecialChar(event)'
                     id='groupName' value='...Loading...' maxlength='40'></label><br>
-            <label class='cfgInpLab' for='devType'>Type:<input class='cfgInp' onkeypress='return blockSpecialChar(event)'
-                    id='devType' value='...Loading...' maxlength='20'></label><br>
             <label class='cfgInpLab' for='devNote'>Note:<input class='cfgInp' onkeypress='return blockSpecialChar(event)'
                     id='devNote' value='...Loading...' maxlength='55'></label><br>
-            <label class='cfgInpLab' for='timeOut'>Time-Out:<input class='cfgInpNum' onkeypress='return numberCharOnly(event)'
+            <label class='cfgInpLab' for='timeOut'>Stall:<input class='cfgInpNum' onkeypress='return numberCharOnly(event)'
                     id='timeOut' value='00' maxlength='5' title='Enter a time (in seconds) to wait for the actuator to respond before stopped and displaying an error message (assuming the actuator got stuck).'></label>
+                </td>
+            <td style='max-width:45px;'>
+                <div class='swRow'><label class='sw' id='swMstr'><input type='checkbox' id='swMstrChck' checked=''
+                    onchange='swMstrUpd()'><span class='sldSw'></span></label><p class='swLab' id='swMstrLab'>Master
+                Node</p></div>
+            </td></tr></table>
         </div>
     <div class='fishyFtrSw'>
             <div class='flex-grid'>
@@ -119,12 +113,14 @@ To incorporate this file intp the code for compiling after updating it do the fo
         //utility function for all fishyDIY devices (called on windows load)
         function start() {
             // TEST - TODO turn off when not testing
-            //if(document.domain=="localhost"){websock = new WebSocket('ws://10.203.1.197:81/');}
-            if(document.domain=="localhost"){websock = new WebSocket('ws://10.0.0.14:81/');}
+            if(document.domain=="localhost"){websock = new WebSocket('ws://10.203.1.197:81/');}
+            //if(document.domain=="localhost"){websock = new WebSocket('ws://10.0.0.14:81/');}
             else{websock = new WebSocket('ws://' + window.location.hostname + ':81/');};
             
             websock.onopen = function(evt) { console.log('websock open'); websock.send('Connect ' + new Date());};
-            websock.onclose = function(evt) { console.log('websock close'); };
+            websock.onclose = function(evt) { console.log('websock close');    
+                    alert("This control panel is no longer connected to the device.  Please close this window and reopen the control panel.");
+                    return 0;};
             websock.onerror = function(evt) { console.log(evt); };
             websock.onmessage = function(evt) {
                 //process incoming messages(from device) - used to keep the control webpage in-sync with device state changes
@@ -162,29 +158,29 @@ To incorporate this file intp the code for compiling after updating it do the fo
         }
         //utility function for all fishyDIY devices (sends Commands - commands and messages are customized for each device)
         function sendCmd(command){
-            if (command == 'ON') {
-                cmd = 'on';
+            var tmpStr='';
+            var cmd='';
+            if(command[0]=="#"){
+                cmd=newcolor;
+            }else if (command == 'ON'||command=='OFF') {
                 document.body.style.backgroundColor = "var(--bg-col-ack)"; //make the BG color change to flash when a command is sent - but only for on/off/config commands. Not for newcolor which might be continuous.
-            } else if (command == 'OFF') {
-                cmd = 'off';
-                document.body.style.backgroundColor = "var(--bg-col-ack)"; //make the BG color change to flash when a command is sent - but only for on/off/config commands. Not for newcolor which might be continuous.
+                cmd=command;
+            } else if (command == 'reboot') {
+                cmd = 'reset';
+            } else if (command == 'rstWifi') {
+                cmd = 'reset_wifi';
             } else if (command == 'config') { //make the BG color change to flash when a command is sent - but only for on/off/config commands. Not for newcolor which might be continuous.
+                //don't send zero length strings from input - it will break parsing functions
                 var isMstr = 'false';
-                var ccwIsOpen = 'false';
-                var swapLimSW = 'false';
                 if (document.getElementById('swMstrChck').checked) isMstr = 'true';
-                if (document.getElementById('swChck').checked) ccwIsOpen = 'true';
-                if (document.getElementById('swSwapChck').checked) swapLimSW = 'true';
                 cmd = 'config';
                 cmd += ';isMaster=' + isMstr;
-                cmd += ';devName=' + document.getElementById('devName').value;
-                cmd += ';groupName=' + document.getElementById('groupName').value;
-                cmd += ';devType=' + document.getElementById('devType').value;
-                cmd += ';note=' + document.getElementById('devNote').value;
-                cmd += ';timeOut=' + document.getElementById('timeOut').value;
-            } else {
-                websock.send(newcolor);
+                tmpStr = document.getElementById('devName').value==""?" ":document.getElementById('devName').value; cmd += ';devName=' + tmpStr;
+                tmpStr = document.getElementById('groupName').value==""?" ":document.getElementById('groupName').value; cmd += ';groupName=' + tmpStr;
+                tmpStr = document.getElementById('devNote').value==""?" ":document.getElementById('devNote').value; cmd += ';note=' + tmpStr;
+                tmpStr = document.getElementById('timeOut').value==""?"60":document.getElementById('timeOut').value; cmd += ';timeOut=' + tmpStr;
             }
+            websock.send(cmd);
         }
         //utility function for all fishyDIY devices (takes the device status info - parses to a JSON object and sends on to do stuff)
         function processJSON(JSONstr){
@@ -221,7 +217,7 @@ To incorporate this file intp the code for compiling after updating it do the fo
            var errTxt = '';
            d=DA[0];
            
-           returnColor();
+           returnColor(); //set background color to normal to show user the device responded
            if (d.deviceTimedOut == 'true') {inErr=true;errTxt=errTxt + 'ERROR - DEVICE TIMED OUT\n';}
            if (d.isMaster == 'true') { mstrTxt = ' (MASTER)';document.getElementById('swMstrChck').checked=true; } else { mstrTxt = '';document.getElementById('swMstrChck').checked=false;}
            swMstrUpd();
@@ -235,13 +231,13 @@ To incorporate this file intp the code for compiling after updating it do the fo
            }else{
                document.getElementById("info-icon").className="info-icon";
            }
+           newcolor = d.rgb;    
            setMainTxt(newcolor);
            document.getElementById('devIP').value = d.ip + mstrTxt;
            document.getElementById('devNote').value = d.note;
            document.getElementById('timeOut').value = d.timeOut;
            document.getElementById('devName').value = d.deviceName;
-           document.getElementById('groupName').value = d.group;
-           document.getElementById('devType').value = d.devType;           
+           document.getElementById('groupName').value = d.group;          
        }
     </script>
     

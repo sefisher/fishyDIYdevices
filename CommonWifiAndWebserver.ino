@@ -306,16 +306,16 @@ void handleCtrl(AsyncWebServerRequest *request)
 	if (DEBUG_MESSAGES)
 	{
 		Serial.println("\n[handleCtrl]\n");
-		Serial.println(String(WEBCTRLSTR[caseNum()]));
+		Serial.println(String(WEBCTRLSTR[deviceNum()]));
 	}
-	request->send_P(200,"text/html",WEBCTRLSTR[caseNum()]);
+	request->send_P(200,"text/html",WEBCTRLSTR[deviceNum()]);
 }
 
 //show the SW update form for the specifc device (function for every device webserver)
 void handleSWupdateDevForm(AsyncWebServerRequest *request)
 {
   	//build the device info string
- 	String WEBSTR_SWUPDATE_DEVICE_INFO = "Type: " + String(EEPROMdata.typestr) + "<br>Software Version:" + String(EEPROMdata.swVer) + "<br>Initialization String:" + String(EEPROMdata.initstr) + "<br>";
+ 	String WEBSTR_SWUPDATE_DEVICE_INFO = "Type: " + String(EEPROMdata.typestr) + "<br>Software Version:" + String(EEPROMdata.swVer) + "<br>Initialization String:" + String(EEPROMdata.initstr) + "<br><script>var SWDELAY=" + String(SW_UPDATE_DELAY)+ ";</script>";
 
 	String responseStr;
 	responseStr = String(WEBSTR_SWUPDATE_PT1) + String(WEBSTR_SWUPDATE_DEVICE_INFO) +  String(WEBSTR_SWUPDATE_PT2);

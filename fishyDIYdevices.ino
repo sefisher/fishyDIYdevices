@@ -107,7 +107,7 @@ void initializePersonalityIfNew(){
 	{
 		if (DEBUG_MESSAGES)
 		{
-			Serial.println("[SETUP] Updating...");
+			Serial.println("[initializePersonalityIfNew] Updating...");
 		}
 
 		//store specified personality data
@@ -126,7 +126,7 @@ void initializePersonalityIfNew(){
 
 		if (MASTER_NODE)
 		{
-			if (DEBUG_MESSAGES)	{Serial.println("[SETUP] Setting this node as MASTER.");}
+			if (DEBUG_MESSAGES)	{Serial.println("[initializePersonalityIfNew] Setting this node as MASTER.");}
 			EEPROMdata.master = true;
 		}
 		else
@@ -141,11 +141,11 @@ void initializePersonalityIfNew(){
 		strncpy(EEPROMdata.swVer, SW_VER, 11);
 		if (DEBUG_MESSAGES)	
 		{
-			Serial.println("[SETUP] Actual swVER: " + String(EEPROMdata.swVer));
+			Serial.println("[initializePersonalityIfNew] Actual swVER: " + String(EEPROMdata.swVer));
 		}
 		if (DEBUG_MESSAGES)
 		{
-			Serial.println("[SETUP] Nothing else to update.");
+			Serial.println("[initializePersonalityIfNew] Nothing else to update.");
 		}
 		storeDataToEEPROM();
 	}
@@ -156,8 +156,8 @@ void showEEPROMPersonalityData()
 {	
 	if (DEBUG_MESSAGES)
 	{
-		Serial.println("[SETUP] Init string: "+String(EEPROMdata.initstr)+", Name string: "+String(EEPROMdata.namestr)+", Master: " + String(EEPROMdata.master?"True":"False")+", Group name string: "+String(EEPROMdata.groupstr)+",Type string: "+String(EEPROMdata.typestr)+",Note string: "+String(EEPROMdata.note)+", SW Version string: "+String(EEPROMdata.swVer) + ", Motor Timeout "+String(EEPROMdata.timeOut)+ ", Device Timedout "+String(EEPROMdata.deviceTimedOut));
-		Serial.println("[SETUP-device] Compiled init string: " + String(INITIALIZE) + ". Stored init string: " + String(EEPROMdata.initstr));
+		Serial.println("[showEEPROMPersonalityData] Init string: "+String(EEPROMdata.initstr)+", Name string: "+String(EEPROMdata.namestr)+", Master: " + String(EEPROMdata.master?"True":"False")+", Group name string: "+String(EEPROMdata.groupstr)+",Type string: "+String(EEPROMdata.typestr)+",Note string: "+String(EEPROMdata.note)+", SW Version string: "+String(EEPROMdata.swVer) + ", Motor Timeout "+String(EEPROMdata.timeOut)+ ", Device Timedout "+String(EEPROMdata.deviceTimedOut));
+		Serial.println("[showEEPROMPersonalityData] Compiled init string: " + String(INITIALIZE) + ". Stored init string: " + String(EEPROMdata.initstr));
 		
 		showEEPROMdevicePersonalityData();		
 	}
@@ -166,7 +166,7 @@ void showEEPROMPersonalityData()
 void showThisNode(fishyDevice holder){
 	if (DEBUG_MESSAGES)
 	{
-		Serial.println("[SETUP] IP: "+holder.ip.toString()+", Name string: "+String(holder.name)+", Master: " + String(holder.isMaster?"True":"False")+", Group name string: "+String(holder.groupstr)+",Type string: "+String(holder.typestr)+",Status string: "+String(holder.statusstr)+", Error state: "+String(holder.inError?"True":"False") + ", Dead state: "+String(holder.dead?"True":"False") + ", Time Stamp: "+String(holder.timeStamp));
+		Serial.println("[showThisNode] IP: "+holder.ip.toString()+", Name string: "+String(holder.name)+", Master: " + String(holder.isMaster?"True":"False")+", Group name string: "+String(holder.groupstr)+",Type string: "+String(holder.typestr)+",Status string: "+String(holder.statusstr)+", Error state: "+String(holder.inError?"True":"False") + ", Dead state: "+String(holder.dead?"True":"False") + ", Time Stamp: "+String(holder.timeStamp));
 	}
 }
 
@@ -263,6 +263,7 @@ void checkResetOnLoop(){
 void showPersonalityDataSize(){
 	if (DEBUG_MESSAGES)
 	{
+		Serial.println("[SETUP] Device Type: " + String(EEPROMdata.typestr));
 		Serial.println("[SETUP] The personality data needs " + String(sizeof(EEPROMdata)) + " Bytes in EEPROM.");
 		Serial.println("[SETUP] initstr " + String(sizeof(EEPROMdata.initstr)));
 		Serial.println("[SETUP] namestr " + String(sizeof(EEPROMdata.namestr)));

@@ -39,6 +39,18 @@ To build this template file intp the code after updating it do the following:
         animation: spin 2s linear infinite
     }
 
+    #countdown {
+        position: absolute;
+        width: 60px;
+        height: 60px;
+        margin: -30px 0 0 -30px;
+        left: 50%;
+        top: 50%;
+        z-index: 10;
+        font-size: 50px;
+        color: #3498db;
+    }
+
     @-webkit-keyframes spin {
         0% {
             -webkit-transform: rotate(0)
@@ -60,12 +72,22 @@ To build this template file intp the code after updating it do the following:
     }
 </style>
 <script>
-
-function showLoader(){
+//duration in seconds
+function showLoader(duration){
     document.getElementById("loader").style.display="block";
+    document.getElementById("countdown").style.display="block";
     document.getElementById("formDiv").style.display="none";
     document.getElementById("SWinfoDiv").style.display="none";
-    setTimeout("location.href = '/SWupdateGetForm';", 8000);
+    setTimeout("location.href = '/SWupdateGetForm';", duration*1000);
+    var timer = duration, seconds;
+    setInterval(function () {
+        seconds = timer;
+        seconds = seconds < 10 ? "0" + seconds : seconds;
+        document.getElementById("countdown").innerHTML = seconds;
+        if (--timer < 0) {
+            timer = 0;document.getElementById("countdown").innerHTML="Wait";
+        }
+    }, 1000);
 }
 
 function _(el) {
@@ -96,7 +118,7 @@ function progressHandler(event) {
   _("status").innerHTML = Math.round(percent) + "% uploaded...";
   if(_("progressBar").value  == 100){
     _("status").innerHTML = "Done. Rebooting.";
-    showLoader();
+    showLoader(SWDELAY);
   }
 }
 
@@ -115,10 +137,10 @@ function abortHandler(event) {
 
 </script>
 </head>
-<body style="margin:0px;"><div id=loader style=display:none></div>
+<body style="margin:0px;"><div id=loader style=display:none></div><div id=countdown style=display:none>10</div>
 <div id="SWinfoDiv">
 <!--PART 1 END -->
-<p>dynamic content on SW version</p>
+<p>dynamic content on SW version</p><script>var SWDELAY=10;</script>
 <!--PART 2 START-->  
 </div>
 <div id=formDiv>

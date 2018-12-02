@@ -11,10 +11,10 @@ void storeDataToEEPROM(){
 void retrieveDataFromEEPROM(){
 	uint addr = 0;
 	EEPROM.begin(1024);
-	// load EEPROM data into RAM, see it
+  // load EEPROM data into RAM, see it
 	EEPROM.get(addr, EEPROMdata);
-	extractDeviceCustomData(); //get the device custom data from the EEPROM struct and move it to the EEPROMdeviceData struct
-	EEPROM.end();
+  extractDeviceCustomData(); //get the device custom data from the EEPROM struct and move it to the EEPROMdeviceData struct
+  EEPROM.end();
 }
 
 bool loadCredentials() {

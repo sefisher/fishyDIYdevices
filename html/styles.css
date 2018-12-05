@@ -25,8 +25,8 @@ This styles.css file is used by the other HTML pages and built into the code in 
 	--lab-sz: 90px;
 	--val-sz: 65px;
 	--sld-sz: 125px;
-	--rad-sz: 25px;
-	--hdr-ht: 75px;
+	--rad-sz: 10px;
+	--hdr-ht: 50px;
 	--smrad-sz: 7px;
 	--thm-sz: 25px;
 	--sld-ht: 10px;
@@ -66,7 +66,7 @@ body {
 .fishyFtrSw {
 	border-radius: 0 0 var(--rad-sz) var(--rad-sz);
 	font-size: var(--mid-fnt);
-	font-weight: bold;
+	/*font-weight: bold;*/
 	color: var(--lght-col);
 	background-color: var(--drk-col);
 	min-height: calc(var(--hdr-ht)/2);
@@ -82,10 +82,10 @@ body {
 .hdrIcon {
 	border-radius: var(--rad-sz) var(--rad-sz) 0 0;
 	font-size: var(--big-fnt);
-	font-weight: bold;
+	/*font-weight: bold;*/
 	color: var(--lght-col);
 	background-color: var(--drk-col);
-	height: var(--hdr-ht);
+	min-height: var(--hdr-ht);
 	/*vertical-align: middle;*/
 }
 .fishyHdr {
@@ -164,7 +164,7 @@ body {
 .cfgbuttonR {
 	cursor: pointer;
 	border: 2px solid var(--btnBorder-col);
-	border-radius: 5px;
+	border-radius: 0px;
 	background-color: var(--btn-col);
 	width: calc(var(--cp-sz)/3);
 	min-height: var(--btn-ht);

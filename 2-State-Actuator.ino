@@ -25,15 +25,15 @@ String TwoSAgetStatusString(){
 }
 //CUSTOM DEVICE FUNCTION - EXTERNAL (SAME NAME CALLED IN ALL DEVICES)
 //THIS IS A FUNCTION FOR A 2-State Actuator
-//encode compiled (settings) device data into the char[256] for storage in EEPROMdata for new devices
+//encode compiled (settings) device data into the char[MAXCUSTOMDATALEN] for storage in EEPROMdata for new devices
 void TwoSAinitializeDeviceCustomData(){
 	    String builder = String("openIsCCW=") + String(OPEN_IS_CCW?"1":"0") + String("&swapLimSW=") + String(SWAP_LIM_SW?"1":"0") + String("&motorPosAtCCWset=0&motorPosAtCWset=0&motorPos=0&range=") + String(FULL_SWING);
-		strncpy(EEPROMdata.deviceCustomData, builder.c_str(), 256);
+		strncpy(EEPROMdata.deviceCustomData, builder.c_str(), MAXCUSTOMDATALEN);
 		extractDeviceCustomData();
 }
 //CUSTOM DEVICE FUNCTION - EXTERNAL (SAME NAME CALLED IN ALL DEVICES)
 //THIS IS A FUNCTION FOR A 2-State Actuator
-//extract custom device data from char[256] in EEPROMdata and put it into the device specific struct
+//extract custom device data from char[MAXCUSTOMDATALEN] in EEPROMdata and put it into the device specific struct
 void TwoSAextractDeviceCustomData(){
 	//example EEPROMdata.deviceCustomData = "openIsCCW=1&swapLimSW=0&motorPosAtCCWset=0&motorPosAtCWset=0&motorPos=2340&range=8889";
     char *strings[12];
@@ -50,7 +50,7 @@ void TwoSAextractDeviceCustomData(){
         ptr = strtok(NULL, "=&");  // goto the next token
     }
     
-    if(DEBUG_MESSAGES){for(int n = 0; n < index; n++){Serial.print(n);Serial.print(") ");Serial.println(strings[n]);}}
+    //if(DEBUG_MESSAGES){for(int n = 0; n < index; n++){Serial.print(n);Serial.print(") ");Serial.println(strings[n]);}}
 
 	//names are even (0,2,4..), data is odd(1,3,5..)
 	TwoSAEEPROMdeviceData.openIsCCW = (String(strings[1])=="1")?true:false;		
@@ -69,14 +69,14 @@ void TwoSAextractDeviceCustomData(){
 }
 //CUSTOM DEVICE FUNCTION - EXTERNAL (SAME NAME CALLED IN ALL DEVICES)
 //THIS IS A FUNCTION FOR A 2-State Actuator
-//encode dynamic device data into the char[256] for storage in EEPROMdata
+//encode dynamic device data into the char[MAXCUSTOMDATALEN] for storage in EEPROMdata
 void TwoSAencodeDeviceCustomData(){
 	    String builder = "openIsCCW=" + String(TwoSAEEPROMdeviceData.openIsCCW?"1":"0") + "&swapLimSW=" + String(TwoSAEEPROMdeviceData.swapLimSW?"1":"0") + "&motorPosAtCCWset=" + String(TwoSAEEPROMdeviceData.motorPosAtCCWset?"1":"0") + "&motorPosAtCWset=" + String(TwoSAEEPROMdeviceData.motorPosAtCWset?"1":"0") + "&motorPos=" + String(TwoSAEEPROMdeviceData.motorPos) + "&range=" + String(TwoSAEEPROMdeviceData.range);
-		strncpy(EEPROMdata.deviceCustomData, builder.c_str(), 256);
+		strncpy(EEPROMdata.deviceCustomData, builder.c_str(), MAXCUSTOMDATALEN);
 }
 //CUSTOM DEVICE FUNCTION - EXTERNAL (SAME NAME CALLED IN ALL DEVICES)
 //THIS IS A FUNCTION FOR A 2-State Actuator
-//encode dynamic device data into the char[256] for storage in EEPROMdata
+//encode dynamic device data into the char[MAXCUSTOMDATALEN] for storage in EEPROMdata
 void TwoSAshowEEPROMdevicePersonalityData(){
 	if(DEBUG_MESSAGES){
 		Serial.println("[SETUP-device] OpenIsCCW: "+String(TwoSAEEPROMdeviceData.openIsCCW?"True":"False") + ", SwapLimSW: "+String(TwoSAEEPROMdeviceData.swapLimSW?"True":"False"));
@@ -250,7 +250,7 @@ void TwoSAdeviceSetup()
 //This function takes messages from some remote address (if from another node)
 //that are of maximum lenght MAXCMDSZ and determines what actions are required.
 //Commands can come from other nodes via UDP messages or from the web
-//REQD COMMANDS: {anyfishydev_there,fishydiymaster,poll_net,poll_response,reset_wifi,reset} -> needed to be a fishyDevice on the network
+//REQD COMMANDS: {~udp~anyfishydev_there,~udp~fishydiymaster,~udp~poll_net,~udp~poll_response,reset_wifi,reset} -> needed to be a fishyDevice on the network
 //VALID DEVICE COMMANDS: 
 // (open,close,stop,gotoXXX,{hi.hello},calibrate,config[;semi-colon-separated-parameters=values])
 void TwoSAexecuteCommands(char inputMsg[MAXCMDSZ], IPAddress remote)
@@ -342,35 +342,35 @@ void TwoSAexecuteCommands(char inputMsg[MAXCMDSZ], IPAddress remote)
 		updateClients("Calibrating", true);
 		executeState(true);
 	}
-	else if (cmd.startsWith("anyfishydev_there"))
+	else if (cmd.startsWith("~udp~anyfishydev_there"))
 	{
 		if (DEBUG_UDP_MESSAGES)
 		{
-			Serial.println("[TwoSAexecuteCommands] Commanded ANYFISHYDEV_THERE");
+			Serial.println("[TwoSAexecuteCommands] Commanded ~udp~ANYFISHYDEV_THERE");
 		}
 		UDPpollReply(remote);
 	}
-	else if (cmd.startsWith("poll_net"))
+	/*else if (cmd.startsWith("~udp~poll_net"))
 	{
 		if (DEBUG_UDP_MESSAGES)
 		{
-			Serial.println("[TwoSAexecuteCommands] Commanded POLL_NET");
+			Serial.println("[TwoSAexecuteCommands] Commanded ~udp~POLL_NET");
 		}
 		UDPbroadcast();
-	}
-	else if (cmd.startsWith("poll_response"))
+	}*/
+	else if (cmd.startsWith("~udp~poll_response"))
 	{
 		if (DEBUG_UDP_MESSAGES)
 		{
-			Serial.println("[TwoSAexecuteCommands] Commanded POLL_RESPONSE");
+			Serial.println("[TwoSAexecuteCommands] Commanded ~udp~POLL_RESPONSE");
 		}
 		UDPparsePollResponse(String(inputMsg), remote); //want the original case for this
 	}
-	else if (cmd.startsWith("fishydiymaster"))
+	else if (cmd.startsWith("~udp~fishydiymaster"))
 	{
 		if (DEBUG_UDP_MESSAGES)
 		{
-			Serial.println("[TwoSAexecuteCommands] Commanded FISHYDIYMASTER");
+			Serial.println("[TwoSAexecuteCommands] Commanded ~udp~FISHYDIYMASTER");
 		}
 		masterIP = remote; //update the master IP
 	}
@@ -425,7 +425,7 @@ void TwoSAUDPparseConfigResponse(char inputMsg[MAXCMDSZ], IPAddress remote){
 		Serial.println(EEPROMdata.master ? "true" : "false");
 	}
 	//devName
-	strncpy(EEPROMdata.namestr, strings[5], 41);
+	strncpy(EEPROMdata.namestr, strings[5], MAXNAMELEN);
 	if (DEBUG_MESSAGES && UDP_PARSE_MESSAGES)
 	{
 		Serial.println("[TwoSAUDPparseConfigResponse] devName: " + String(EEPROMdata.namestr));
@@ -437,7 +437,7 @@ void TwoSAUDPparseConfigResponse(char inputMsg[MAXCMDSZ], IPAddress remote){
 		Serial.println("[RGBUDPparseConfigResponse] groupName: " + String(EEPROMdata.groupstr));
 	}
 	//note
-	strncpy(EEPROMdata.note, strings[9], 56);
+	strncpy(EEPROMdata.note, strings[9], MAXNOTELEN);
 	if (DEBUG_MESSAGES && UDP_PARSE_MESSAGES)
 	{
 		Serial.println("[RGBUDPparseConfigResponse] note: " + String(EEPROMdata.note));

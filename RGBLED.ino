@@ -13,15 +13,15 @@ String RGBgetStatusString(){
 }
 //CUSTOM DEVICE FUNCTION - EXTERNAL (CALLED BY TRANSLATOR FUNCTION)
 //THIS IS A FUNCTION FOR A RGBLED
-//encode compiled (settings) device data into the char[256] for storage in EEPROMdata for new devices
+//encode compiled (settings) device data into the char[MAXCUSTOMDATALEN] for storage in EEPROMdata for new devices
 void RGBinitializeDeviceCustomData(){
 	    String builder = String("rgb=#000000"); //make the default string (off)
-		strncpy(EEPROMdata.deviceCustomData, builder.c_str(), 256);		//copy into the main EEPROMdata storage struct
+		strncpy(EEPROMdata.deviceCustomData, builder.c_str(), MAXCUSTOMDATALEN);		//copy into the main EEPROMdata storage struct
 		extractDeviceCustomData();	//decode the data into the custom device struct (initialize the device)
 }
 //CUSTOM DEVICE FUNCTION - EXTERNAL (CALLED BY TRANSLATOR FUNCTION)
 //THIS IS A FUNCTION FOR A RGBLED
-//extract custom device data from char[256] in EEPROMdata and put it into the device specific struct
+//extract custom device data from char[MAXCUSTOMDATALEN] in EEPROMdata and put it into the device specific struct
 void RGBextractDeviceCustomData(){
 	//example EEPROMdata.deviceCustomData = "rgb=#FF0000";
     char *strings[2]; //one string for each label and one string for each value
@@ -38,7 +38,7 @@ void RGBextractDeviceCustomData(){
         ptr = strtok(NULL, "=&");  // goto the next token
     }
     
-    if(DEBUG_MESSAGES){for(int n = 0; n < index; n++){Serial.print(n);Serial.print(") ");Serial.println(strings[n]);}}
+    //if(DEBUG_MESSAGES){for(int n = 0; n < index; n++){Serial.print(n);Serial.print(") ");Serial.println(strings[n]);}}
 
 	//names are even (0,2,4..), data is odd(1,3,5..)
 	strncpy(RGBEEPROMdeviceData.rgb, strings[1], 8);		
@@ -51,14 +51,14 @@ void RGBextractDeviceCustomData(){
 }
 //CUSTOM DEVICE FUNCTION - EXTERNAL (CALLED BY TRANSLATOR FUNCTION)
 //THIS IS A FUNCTION FOR A RGBLED
-//encode dynamic device data into the char[256] for storage in EEPROMdata
+//encode dynamic device data into the char[MAXCUSTOMDATALEN] for storage in EEPROMdata
 void RGBencodeDeviceCustomData(){
 	    String builder = "rgb=" + String(RGBEEPROMdeviceData.rgb);
-		strncpy(EEPROMdata.deviceCustomData, builder.c_str(), 256);
+		strncpy(EEPROMdata.deviceCustomData, builder.c_str(), MAXCUSTOMDATALEN);
 }
 //CUSTOM DEVICE FUNCTION - EXTERNAL (CALLED BY TRANSLATOR FUNCTION)
 //THIS IS A FUNCTION FOR A RGBLED
-//encode dynamic device data into the char[256] for storage in EEPROMdata
+//encode dynamic device data into the char[MAXCUSTOMDATALEN] for storage in EEPROMdata
 void RGBshowEEPROMdevicePersonalityData(){
 	if(DEBUG_MESSAGES){
 		Serial.println("[SETUP-device] rgb: "+String(RGBEEPROMdeviceData.rgb));  	
@@ -126,7 +126,7 @@ void RGBdeviceSetup()
 //This function takes messages from some remote address (if from another node)
 //that are of maximum lenght MAXCMDSZ and determines what actions are required.
 //Commands can come from other nodes via UDP messages or from the web
-//REQD COMMANDS: {anyfishydev_there,fishydiymaster,poll_net,poll_response,reset_wifi,reset} -> needed to be a fishyDevice on the network
+//REQD COMMANDS: {~udp~anyfishydev_there,~udp~fishydiymaster,~udp~poll_response,reset_wifi,reset} -> needed to be a fishyDevice on the network
 //VALID DEVICE COMMANDS: 
 // (open,close,stop,gotoXXX,{hi.hello},calibrate,config[;semi-colon-separated-parameters=values])
 void RGBexecuteCommands(char inputMsg[MAXCMDSZ], IPAddress remote)
@@ -198,35 +198,35 @@ void RGBexecuteCommands(char inputMsg[MAXCMDSZ], IPAddress remote)
 		updateClients("Rebooting Device",true);
 		resetOnNextLoop=true;
 	}
-	else if (cmd.startsWith("anyfishydev_there"))
+	else if (cmd.startsWith("~udp~anyfishydev_there"))
 	{
 		if (DEBUG_UDP_MESSAGES)
 		{
-			Serial.println("[RGBexecuteCommands] Commanded ANYFISHYDEV_THERE");
+			Serial.println("[RGBexecuteCommands] Commanded ~udp~ANYFISHYDEV_THERE");
 		}
 		UDPpollReply(remote);
 	}
-	else if (cmd.startsWith("poll_net"))
+	/*else if (cmd.startsWith("~udp~poll_net"))
 	{
 		if (DEBUG_UDP_MESSAGES)
 		{
-			Serial.println("[RGBexecuteCommands] Commanded POLL_NET");
+			Serial.println("[RGBexecuteCommands] Commanded ~udp~POLL_NET");
 		}
 		UDPbroadcast();
-	}
-	else if (cmd.startsWith("poll_response"))
+	}*/
+	else if (cmd.startsWith("~udp~poll_response"))
 	{
 		if (DEBUG_UDP_MESSAGES)
 		{
-			Serial.println("[RGBexecuteCommands] Commanded POLL_RESPONSE");
+			Serial.println("[RGBexecuteCommands] Commanded ~udp~POLL_RESPONSE");
 		}
 		UDPparsePollResponse(String(inputMsg), remote); //want the original case for this
 	}
-	else if (cmd.startsWith("fishydiymaster"))
+	else if (cmd.startsWith("~udp~fishydiymaster"))
 	{
 		if (DEBUG_UDP_MESSAGES)
 		{
-			Serial.println("[RGBexecuteCommands] Commanded FISHYDIYMASTER");
+			Serial.println("[RGBexecuteCommands] Commanded ~udp~FISHYDIYMASTER");
 		}
 		masterIP = remote; //update the master IP
 	}
@@ -276,7 +276,7 @@ void RGBUDPparseConfigResponse(char inputMsg[MAXCMDSZ], IPAddress remote){
 		Serial.println(EEPROMdata.master ? "true" : "false");
 	}
 	//devName
-	strncpy(EEPROMdata.namestr, strings[3], 41);
+	strncpy(EEPROMdata.namestr, strings[3], MAXNAMELEN);
 	if (DEBUG_MESSAGES && UDP_PARSE_MESSAGES)
 	{
 		Serial.println("[RGBUDPparseConfigResponse] devName: " + String(EEPROMdata.namestr));
@@ -288,7 +288,7 @@ void RGBUDPparseConfigResponse(char inputMsg[MAXCMDSZ], IPAddress remote){
 		Serial.println("[RGBUDPparseConfigResponse] groupName: " + String(EEPROMdata.groupstr));
 	}
 	//note
-	strncpy(EEPROMdata.note, strings[7], 56);
+	strncpy(EEPROMdata.note, strings[7], MAXNOTELEN);
 	if (DEBUG_MESSAGES && UDP_PARSE_MESSAGES)
 	{
 		Serial.println("[RGBUDPparseConfigResponse] note: " + String(EEPROMdata.note));

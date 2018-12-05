@@ -6,9 +6,9 @@ THIS FILE TAKES GENERIC DEVICE FUNCTION CALLS AND MAKES SPECIFIC DEVICE FUNCTION
 4)  executeState(bool state) - RESPONSE TO VOICE COMMANDS (FAUXMO INTERFACE)
 5)  UDPparseConfigResponse(String responseIn, IPAddress remote) - UPDATES CONFIG FROM NETORK COMMAND
 6)  getStatusString() - RETURNS A STRING SUMMARIZING THE DEVICE STATUS FOR DISPLAY
-7)  initializeDeviceCustomData() - encode *compiled* SETTINGS into the char[256] for storage in EEPROMdata for new devices
-8)  extractDeviceCustomData() - extract SETTINGS from char[256] in EEPROMdata and put it into EEPROMdeviceData for use
-9)  encodeDeviceCustomData() - encode *realtime* SETTINGS into the char[256] for storage in EEPROMdata for new devices
+7)  initializeDeviceCustomData() - encode *compiled* SETTINGS into the char[MAXCUSTOMDATALEN] for storage in EEPROMdata for new devices
+8)  extractDeviceCustomData() - extract SETTINGS from char[MAXCUSTOMDATALEN] in EEPROMdata and put it into EEPROMdeviceData for use
+9)  encodeDeviceCustomData() - encode *realtime* SETTINGS into the char[MAXCUSTOMDATALEN] for storage in EEPROMdata for new devices
 10) showEEPROMdevicePersonalityData() - debugging function to print data to serial
 11) isCustomDeviceReady() - returns true if calibrated (as needed)
 12) getDeviceSpecificJSON() - returns JSON formatted string with device status (for web, net, or internal use)
@@ -17,7 +17,7 @@ For each of these functions add a case statement below when adding a new device 
 Case numbers are in order devices are listed below (2-State-Actuator = 0)
 */
 
-char devices[][21] = {"2-State-Actuator", "RGBLED"};
+char devices[][MAXTYPELEN] = {"2-State-Actuator", "RGBLED"};
 const char * WEBCTRLSTR[] = {TwoSAWEBCTRLSTR,RGBWEBCTRLSTR};
 String (*getStatusStringCall[])() = {TwoSAgetStatusString, RGBgetStatusString};
 void (*initializeDeviceCustomDataCall[])() = {TwoSAinitializeDeviceCustomData, RGBinitializeDeviceCustomData};
@@ -80,6 +80,9 @@ void deviceSetup()
 }
 void executeCommands(char inputMsg[MAXCMDSZ], IPAddress remote)
 {
+	if(strncmp(inputMsg,"~UDP~",5)){ //don't record routine UDP network traffic
+		UDPreportCommandToMaster(EEPROMdata.namestr,  WiFi.localIP(), inputMsg);
+	}
 	executeCommandsCall[deviceNum()](inputMsg, remote);
 }
 void UDPparseConfigResponse(char inputMsg[MAXCMDSZ], IPAddress remote)

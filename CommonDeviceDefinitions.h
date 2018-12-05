@@ -6,10 +6,11 @@
 //You can update code - update this number - compile - and then load SW onto all the devices without
 //modifying the personality settings as long as INITIALIZE is the same on the devices (see below)
 //LIMITED to 10 alpanumeric characters
-#define SW_VER "20181201-2"
+#define SW_VER "20181202-1"
 
 //--------------------------PERSONALITY SETTINGS-----------------------------------//
 //Put in a time/date string to define the personality variables. 
+
 /*
 On load the device will look to see if this setting and that stored in EEPROM are 
 different; if so the rest of the settings will be will be loaded.  If not the new 
@@ -50,7 +51,7 @@ THEIR COMPILED DEVICE_TYPE AND OTHER DATA***
 //IF DESIRED, PICK A GROUP NAME FOR EACH DEVICE USING ONLY LETTERS/NUMBERS
 //LIMITED to 40 alpanumeric characters 
 //This creates a group of devices that can be controlled together.
-//TODO - use this option
+//TODO - delete this option - making new Group operation features
 #define CUSTOM_GROUP_NAME ""
 
 //IF DESIRED, ADD A NOTE ABOUT THIS DEVICE
@@ -91,6 +92,9 @@ THEIR COMPILED DEVICE_TYPE AND OTHER DATA***
 
 //For the MASTER NODE (webserver node) this sets the number of devices it can manage on the net
 #define MAX_DEVICE 24
+
+//how many of the last commands to store for use in making group command (applies to MASTER NODE)
+#define MAX_COMMANDS 5
 
 //Test switches for Serial output text (set to false to disable debug messages) and WiFi Functions
 #define DEBUG_MESSAGES false //debugging for device problems (movement, switches, etc)

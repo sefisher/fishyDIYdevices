@@ -146,18 +146,14 @@ void updateClients(String message,bool forceUpdate){
 //-----------------------------------------------------------------------------
 //-------------------------Web Server Functions--------------------------------
 //-----------------------------------------------------------------------------
-
 String _updaterError;
-
 //Web Server - provide a JSON structure with all the deviceArray data
 void handleNetworkJSON(AsyncWebServerRequest *request)
 {
-	
 	if (EEPROMdata.master || (masterIP.toString()=="0.0.0.0"))
 	{
 		UDPbroadcast();
 		request->send(200, "text/html", getNetworkJSON().c_str());
-
 	}
 	else
 	{
@@ -165,20 +161,33 @@ void handleNetworkJSON(AsyncWebServerRequest *request)
 	}
 }
 
+void handleGroupJSON(AsyncWebServerRequest *request)
+{
+		if (EEPROMdata.master || (masterIP.toString()=="0.0.0.0"))
+	{
+		UDPbroadcast();
+		request->send(200, "text/html", getGroupCommandsJSON().c_str());
+	}
+	else
+	{
+		handleNotMaster(request);
+	}
+}
 //Web Server - provide a JSON structure with all the deviceArray data
 void handleNodeJSON(AsyncWebServerRequest *request)
 {
 	request->send(200, "text/html", getNodeJSON().c_str());
 }
 
-//consider for DELETION******
+//When file isn't found or root is called for non-master this shows a link to the master.
+//Also provides link to this device's control panel.
 void handleNotMaster(AsyncWebServerRequest *request)
 {
 	String ipToShow = masterIP.toString();
 	if(ipToShow == "0.0.0.0") {
 		ipToShow = WiFi.localIP().toString();
 	}
-	String response = " <!DOCTYPE html> <html> <head> <title>fishDIY Device Network</title> <style> body {background-color: #edf3ff;font-family: \"Lucida Sans Unicode\", \"Lucida Grande\", sans-serif;}  .fishyHdr {align:center; border-radius:25px;font-size: 18px;     font-weight: bold;color: white;background: #3366cc; vertical-align: middle; } </style>  <body> <div class=\"fishyHdr\">Go to <a href=\"http://" + ipToShow + "\"> Master (" + ipToShow + ")</a></div> </body> </html> ";
+	String response = " <!DOCTYPE html> <html> <head> <title>fishDIY Device Network</title> <style> body {background-color: #edf3ff;font-family: \"Lucida Sans Unicode\", \"Lucida Grande\", sans-serif;}  .fishyHdr {align:center; border-radius:25px;font-size: 18px; font-weight: bold;color: white;background: #3366cc; vertical-align: middle; } </style>  <body> <div class=\"fishyHdr\">Not Master</div><p class='configPanel'>Go to <a href=\"http://" + ipToShow + "\"> Master (" + ipToShow + ")</a> for a list of devices.<br>Or go directly to this device's <a href=\"http://" + WiFi.localIP().toString() + "/control\"> control panel (http://" + WiFi.localIP().toString() + "/control)</a></p><div class='fishyFtrSw'></div></body> </html> ";
 	request->send(200, "text/html", response.c_str());
 }
 
@@ -209,13 +218,29 @@ if adding data elements all these may need updating.  This function sends data a
 
 	return temp;
 }
+
+//return the JSON data for a group stored in master network (limited data for each live node)
+String getGroupCommandsJSON(){
+	String response = "";
+	//TODO - produce the list of groups and then list of each groups commands in a JSON format
+	
+	//TODO - TEST CODE - this is just the last commads list
+	int index=lastCommandPtr;
+	for(int ii=MAX_COMMANDS;ii>0;ii--){
+			index=(index-1)<0?MAX_COMMANDS-1:index-1;
+			response = response + "[showCommandList] (" + String(index) + ") Device: " + String(latestDeviceCommands[index].name) + ", commanded to: " + String(latestDeviceCommands[index].command) + "<br>\n";
+	}
+	
+	return response;
+}
+
+
 //return the JSON data for this device from the device specific .ino file
 	// put this fishyDevice data in a string.
 	// Note - this is string will be parsed by scripts in webresources.h 
 	// and is paralleled by UDPpollReply and if configuration setting data updated by the website then UDPparseConfigResponse is affected; 
 	// if adding data elements all these may need updating.  This function sends data as follows (keep this list updated):
 	// {ip,motorPosAtCWset,motorPosAtCCWset,isMaster,motorPos,name,openIsCCW,port,group,note,swVer,devType,initStamp,range,timeOut,deviceTimedOut,swapLimSW}
-
 String getNodeJSON()
 {
 	return getDeviceSpecificJSON();
@@ -224,12 +249,22 @@ String getNodeJSON()
 //this creates the iframes for all the devices in the network, if /SWupdater then it loads those forms, otherwise it loads /ctrlPanels for each iframe
 void handleRoot(AsyncWebServerRequest *request)
 {
-	if (DEBUG_MESSAGES)
+	if (EEPROMdata.master || (masterIP.toString()=="0.0.0.0"))
 	{
-		Serial.println("\n[handleRoot]\n");
-		Serial.println(String(WEBROOTSTR));
+		if (DEBUG_MESSAGES)
+		{
+			Serial.println("\n[handleRoot]\n");
+			Serial.println(String(WEBROOTSTR));
+		}
+		request->send_P(200,"text/html",WEBROOTSTR);	}
+	else
+	{
+		if (DEBUG_MESSAGES)
+		{
+			Serial.println("\n[handleRoot] Not Master, showing link to Master.");
+		}
+		handleNotMaster(request);
 	}
-	request->send_P(200,"text/html",WEBROOTSTR);
 }
 
 // Wifi config page 
@@ -256,13 +291,13 @@ void handleWifiSave(AsyncWebServerRequest *request) {
     String n = request->arg("n");
     n.toCharArray(wifiConnect.ssid, sizeof(wifiConnect.ssid) - 1);
   }else{
-    //TODO - do something if we don't find the SSID arg - ignore for now
+    //do something if we don't find the SSID arg - ignored for now
   }
   if(request->hasParam("p", true)) {
     String p = request->arg("p");
     p.toCharArray(wifiConnect.password, sizeof(wifiConnect.password) - 1);
   }else{
-    //TODO - do something if we don't find the password arg - ignore for now
+    //do something if we don't find the password arg - ignored for now
   }
   if((wifiConnect.ssid=="")){resetWiFiCredentials();} //if SSID is blank, reset credentials
   
@@ -328,6 +363,13 @@ void handleCSS(AsyncWebServerRequest *request)
 {
  	if (DEBUG_MESSAGES){Serial.println("\n[handleCSS]\n");Serial.println(String(WEBSTYLESSTR));}
 	request->send_P(200, "text/css", WEBSTYLESSTR);
+}
+
+//show the SW update form for the specifc device (function for every device webserver)
+void handleJS(AsyncWebServerRequest *request)
+{
+ 	if (DEBUG_MESSAGES){Serial.println("\n[handleJS]\n");Serial.println(String(WEBSTR_COMMON_JS));}
+	request->send_P(200, "application/javascript", WEBSTR_COMMON_JS);
 }
 
 
@@ -415,7 +457,9 @@ void runNormalServer(){
 	httpServer.on("/SWupdatePostForm", HTTP_POST, handleSWupdateDevPostDone,  handleSWupdateDevPost);
 	httpServer.on("/network.JSON", handleNetworkJSON);
 	httpServer.on("/node.JSON", handleNodeJSON);
+	httpServer.on("/groups.JSON", handleGroupJSON);
 	httpServer.on("/styles.css",handleCSS);
+	httpServer.on("/CommonWebFunctions.js",handleJS);
 	httpServer.on("/wifi", handleWifi);
 	httpServer.on("/wifisave", handleWifiSave);
 	httpServer.on("/justreboot",handleJustReboot);	

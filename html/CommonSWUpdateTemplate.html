@@ -2,7 +2,7 @@
 This is the template file for the SW update panel for each device (stored in webresources.h in parts). 
 To build this template file intp the code after updating it do the following:
  1) copy the PART 1 (from below this comment to the next comment where the JSON is defined).
- 2) put it through a minifier (like https://kangax.github.io/html-minifier/) and then through a String builder
+ 2) put it through a minifier (like https://kangax.github.io/html-minifier/ with Decode Entity Characters OFF) and then through a String builder
  (like http://buildmystring.com/ with "strip out carriage returns" on) to create a single string with no tabs and one line.
  3) paste that into the WEBSTR_SWUPDATE_PT1 After "PROGMEM" in the webresources.h file.
  4) copy the second block (from below the part that says it is dynamically generated).
@@ -29,7 +29,7 @@ To build this template file intp the code after updating it do the following:
         z-index: 1;
         width: 150px;
         height: 150px;
-        margin: -75px 0 0 -75px;
+        margin: -75px 0 0 -82px;
         border: 16px solid #f3f3f3;
         border-radius: 50%;
         border-top: 16px solid #3498db;
@@ -85,7 +85,7 @@ function showLoader(duration){
         seconds = seconds < 10 ? "0" + seconds : seconds;
         document.getElementById("countdown").innerHTML = seconds;
         if (--timer < 0) {
-            timer = 0;document.getElementById("countdown").innerHTML="Wait";
+            timer = 0;document.getElementById("countdown").innerHTML="<span style='font-size:16px;'>Wait</span>";
         }
     }, 1000);
 }

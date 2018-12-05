@@ -1,12 +1,14 @@
 <!--------------------------------------------------------------------------------------------------------
-This is the development web file for the control panel for each device (stored in webresources.h in parts). 
-This is what will likely get updated the most (along with the styles). Style data is kept in styles.css 
-(which is embedded into the webresources.h file(s) in a string and served if a clinet requests /styles.css).
+This is the template file for the control panel for a RGB LED. You can use this to design control
+interface changes and then convert the HTML into a string embedded in the code. Style data is kept in styles.css 
+(which is embedded into webresources.h into a string and served if a clinet requests /styles.css).
+Common JS functions are stored in CommonWebFunction.js. 
 To incorporate this file intp the code for compiling after updating it do the following:
  1) copy the HTML (from below this comment to the next comment where the JSON is defined).
- 2) put it through a minifier (like https://kangax.github.io/html-minifier/ with Decode Entity Characters OFF) and then through a String builder
- (like http://buildmystring.com/ with "strip out carriage returns" on) to create a single string with no tabs and one line.
- 3) paste that into the WEBCTRLSTR After "PROGMEM" in the webresources.h file.
+ 2) put it through a minifier (like https://kangax.github.io/html-minifier/ with "Decode Entity Characters OFF") 
+ and then through a String builder (like http://buildmystring.com/ with "strip out carriage returns" on) to create 
+ a single string with no tabs and one line.
+ 3) paste that string into the RGBWEBCTRLSTR After "PROGMEM" in the RGBLEDWebresources.h file.
  4) copy the second block (from below the JSON definition to the end).
  --------------------------------------------------------------------------------------------------------
  Thanks to Taufik Nurrohman for https://github.com/tovic/color-picker embedded within (License: MIT)
@@ -17,8 +19,12 @@ To incorporate this file intp the code for compiling after updating it do the fo
     <title>fishDIY RGB LED</title>
     <meta name='viewport' content='initial-scale=1.0'>
     
-    <link id='styles' rel="stylesheet" href="/styles.css"> <!-- this is required for styles served by fishyDIY devices -->
-    <link rel="stylesheet" href="styles.css"> <!-- this will cause a warning but is intentionally left for testing -->
+    <!-- actual include files for devices -->
+    <script type="text/javascript" src="/CommonWebFunctions.js"></script>
+    <link id='styles' rel="stylesheet" href="/styles.css">
+    <!-- intentionally left for testing -->
+    <link rel="stylesheet" href="styles.css">
+    <script type="text/javascript" src="CommonWebFunctions.js"></script>
 
     <!-- BEGIN custom styles for color-picker for RGBLED -->
     <style>
@@ -69,6 +75,9 @@ To incorporate this file intp the code for compiling after updating it do the fo
         </div>    
     </div>
     <script>
+
+        //TODO - make a function to load and point to the right color when a color is sent to this page (e.g., on initial load)
+
         //utility function for RGBLED
         function invertColor(hex) {
             if (hex.indexOf('#') === 0) {
@@ -94,68 +103,25 @@ To incorporate this file intp the code for compiling after updating it do the fo
             var zeros = new Array(len).join('0');
             return (zeros + str).slice(-len);
         }
-        //utility function for all fishyDIY devices (called on to open infoText Modal with device data)
-        function showDetails() {
-                document.getElementById('infoDiv').innerHTML = infoText;
-                document.getElementById('infoPanel').style.display = 'block';
+        //required function name/paramaters (called by start() during onmessage event)
+        function dealWithMessagePayload(payload){
+            var msgText = getMsg(payload); 
+            console.log(msgText);
+            var nodeJSONtext = getNodeJSONtext(payload); 
+            console.log(nodeJSONtext);
+            processJSON(nodeJSONtext);
+
+            //if this control panel has a place to display generic messages - do that
+            // setOtherTxt(msgText);        
         }
-        //utility function for all fishyDIY devices (extract after MSG:and before ~*~*)
-        function getMsg(data) {
-            var start = data.indexOf("MSG:") + 4;
-            var end = data.indexOf("~*~*");
-            return data.substring(start, end);
-        }
-        //utility function for all fishyDIY devices (extract after ~*~*DAT):
-        function getNodeJSONtext(data) {
-            var start = data.indexOf("~*~*DAT:") + 8;
-            return data.substring(start, data.length);
-}
-        //utility function for all fishyDIY devices (called on windows load)
-        function start() {
-            // TEST - TODO turn off when not testing
-            if(document.domain=="localhost"){websock = new WebSocket('ws://10.203.1.197:81/');}
-            //if(document.domain=="localhost"){websock = new WebSocket('ws://10.0.0.14:81/');}
-            else{websock = new WebSocket('ws://' + window.location.hostname + ':81/');};
-            
-            websock.onopen = function(evt) { console.log('websock open'); websock.send('Connect ' + new Date());};
-            websock.onclose = function(evt) { console.log('websock close');    
-                    alert("This control panel is no longer connected to the device.  Please close this window and reopen the control panel.");
-                    return 0;};
-            websock.onerror = function(evt) { console.log(evt); };
-            websock.onmessage = function(evt) {
-                //process incoming messages(from device) - used to keep the control webpage in-sync with device state changes
-                //if messages in the device follow standard formatting  nothing here needs changing - the custom control updating 
-                //occurs in processJSON();
-                var payload = evt.data;
-                if(payload.indexOf("~*~*")<0){ //normal payload received with device update message
-                    if(payload.indexOf('{"fishyDevices"')==0){
-                        processJSON(payload);
-                    }else{
-                        console.log(payload);
-                    }
-                }else{ //some other message received.  Display it in the console and request a formatted JSON update from the device.
-                    var msgText = getMsg(payload); 
-                    console.log(msgText);
-                    var nodeJSONtext = getNodeJSONtext(payload); 
-                    console.log(nodeJSONtext);
-                    processJSON(nodeJSONtext);
-                    
-                    //if this control panel has a place to display generic messages - do that
-                    // setOtherTxt(msgText);
-                }
-            };
-        }
-        //utility function for all fishyDIY devices (updates main text with status in the header)
+        //required function for all fishyDIY devices (updates main text with status in the header)
         function setMainTxt(text){
             var obj=document.getElementById("mainTxt");
             obj.innerHTML = text;
             obj.style.backgroundColor = newcolor;
             obj.style.color = invertColor(newcolor);
         }
-        //utility function for all fishyDIY devices (called on to restore normal background color after a message is sent)
-        function returnColor(){
-            document.body.style.backgroundColor = "var(--bg-col)";
-        }
+
         //utility function for all fishyDIY devices (sends Commands - commands and messages are customized for each device)
         function sendCmd(command){
             var tmpStr='';
@@ -181,29 +147,6 @@ To incorporate this file intp the code for compiling after updating it do the fo
                 tmpStr = document.getElementById('timeOut').value==""?"60":document.getElementById('timeOut').value; cmd += ';timeOut=' + tmpStr;
             }
             websock.send(cmd);
-        }
-        //utility function for all fishyDIY devices (takes the device status info - parses to a JSON object and sends on to do stuff)
-        function processJSON(JSONstr){
-            var data = JSON.parse(JSONstr);
-            doStuffWithJSON(data.fishyDevices);
-        }
-        //utility function for all fishyDIY devices 
-        //('Only letters, numbers, underscore, space, comma, period, and dash are allowed.');
-        function blockSpecialChar(e) {
-            var k = e.keyCode;
-            return ((k > 64 && k < 91) || (k > 96 && k < 123) || k == 8 || k == 16 || k == 95  || k == 32 || (k > 43 && k < 47)  || (k >= 48 && k <= 57));
-        }
-        //utility function for all fishyDIY devices 
-        //('Only numbers are allowed.');
-        function numberCharOnly(e) {
-            var k = e.keyCode;
-            return (k == 8 || k == 16 || (k >= 48 && k <= 57));
-        }
-        //utility function for all fishyDIY devices (moves the master checkbox to match status);
-        function swMstrUpd() {
-            var label = document.getElementById('swMstrLab');
-            var sw = document.getElementById('swMstrChck');
-            if (sw.checked == true) {label.innerHTML = 'Master Node'; } else { label.innerHTML = 'Slave Node'; }
         }
         //variable for all fishyDIY devices - holds data for device info modal
         var infoText='...Loading...';
@@ -258,22 +201,21 @@ To incorporate this file intp the code for compiling after updating it do the fo
     // force to show the color picker panel
     picker.enter();
     var newcolor = '#';
-    window.onload = start();
+    window.onload = start(); //this is a common js function
     </script>
     
     <!-- Overlay Modal for device information-->
     <div id='infoPanel' class='infoPanel'>
-        <div id='infoDiv' class='infoDiv'></div>
-        <!-- Close button for overlay modal panel.  -->
-        <input type='button' class='infoOKbtn' onclick='closeCtrlModal()' value='OK'>    
+    <div id='infoDiv' class='infoDiv'></div>
+    <!-- Close button for overlay modal panel.  -->
+    <input type='button' class='infoOKbtn' onclick='closeCtrlModal()' value='OK'>    
     </div>
-        
     </body>
     <script>
     var ctrlModal = document.getElementById('infoPanel');
     // When the user clicks the X
     function closeCtrlModal() {
-        ctrlModal.style.display='none';
+    ctrlModal.style.display='none';
     }
     </script>
 </html>

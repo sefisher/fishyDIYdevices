@@ -28,9 +28,7 @@ Notes:
 //Libraries
 #include <Arduino.h>
 #include <ESP8266WiFi.h>  			//https://github.com/esp8266/Arduino
-#include <ESP8266mDNS.h>			//
-//#include <DNSServer.h>				
-
+#include <ESP8266mDNS.h>			//TODO - make links to each of these websites
 #include <ESPAsyncWebServer.h>
 #include <ESPAsyncTCP.h>
 #include <WebSocketsServer.h> 		//for ASYNC websockets - go into webSockets.h and uncomment #define WEBSOCKETS_NETWORK_TYPE NETWORK_ESP8266_ASYNC - comment out other #define WEBSOCKETS_NETWORK_TYPE lines
@@ -38,7 +36,7 @@ Notes:
 #include <AccelStepper.h>
 #include <EEPROM.h>
 //TODO - see if I can delete
-#include <StreamString.h>
+//#include <StreamString.h>
 
 //common fishyDIYdevice definitions
 #include "CommonDeviceDefinitions.h"  		// device settings common to all devices (names, debug paramters, etc)
@@ -113,15 +111,15 @@ void initializePersonalityIfNew(){
 		//store specified personality data
 		strncpy(EEPROMdata.swVer, SW_VER, 11);
 		strncpy(EEPROMdata.initstr, INITIALIZE, 13);
-		strncpy(EEPROMdata.namestr, CUSTOM_DEVICE_NAME, 41);
+		strncpy(EEPROMdata.namestr, CUSTOM_DEVICE_NAME, MAXNAMELEN);
 		strncpy(EEPROMdata.groupstr, CUSTOM_GROUP_NAME, 41);
-		strncpy(EEPROMdata.typestr, CUSTOM_DEVICE_TYPE, 21);
-		strncpy(EEPROMdata.note, CUSTOM_NOTE, 56);
+		strncpy(EEPROMdata.typestr, CUSTOM_DEVICE_TYPE, MAXTYPELEN);
+		strncpy(EEPROMdata.note, CUSTOM_NOTE, MAXNOTELEN);
 		EEPROMdata.timeOut = DEVICE_TIMEOUT;
 		EEPROMdata.deviceTimedOut = false;	//initialized to false on boot
 
 		//Get the default device specific data - load it into EEPROMdata, and decode it into the device specific EEPROMdeviceData
-		//this call also stores the encoded char[256] into EEPROMdata.deviceCustomData
+		//this call also stores the encoded char[MAXCUSTOMDATALEN] into EEPROMdata.deviceCustomData
 		initializeDeviceCustomData();
 
 		if (MASTER_NODE)
@@ -184,6 +182,13 @@ void WifiFauxmoAndDeviceSetup(){
 			fauxmo.enable(true);
 			// Add virtual device
 			fauxmo.addDevice(EEPROMdata.namestr);
+			
+			//---------------------------------
+			//TODO GET RID OF TEST CODE:
+			if(EEPROMdata.master){
+				fauxmo.addDevice("test extra");
+			}
+			//---------------------------------
 		}
 	}
 	
@@ -194,6 +199,7 @@ void WifiFauxmoAndDeviceSetup(){
 	}
 
 	if(FAUXMO_ENABLED){
+
 		// fauxmoESP 2.0.0 has changed the callback signature to add the device_id,
 		// this way it's easier to match devices to action without having to compare strings.
 		fauxmo.onSetState([](unsigned char device_id, const char *device_name, bool state) {
@@ -201,7 +207,22 @@ void WifiFauxmoAndDeviceSetup(){
 			{
 				Serial.printf("[SETUP] Device #%d (%s) state was set: %s\n", device_id, device_name, state ? "ON" : "OFF");
 			}
-			executeState(state);
+			
+			if(strcmp(device_name,EEPROMdata.namestr)){
+				executeState(state);
+			}else{
+				//---------------------------------
+				//TODO GET TRID OF TEST CODE:
+				if(DEBUG_MESSAGES){Serial.print("Searching for group \"");Serial.print(device_name);Serial.println("\".");}
+				IPAddress remoteDev;
+				remoteDev = IPAddress(10,203,1,23);
+				Udp.beginPacket(remoteDev, UDP_LOCAL_PORT);
+				Udp.write("open");
+				Udp.endPacket();
+			}
+			//---------------------------------
+			
+				
 
 		});
 
@@ -319,20 +340,6 @@ String paddedH3Name(String name)
 	}
 	return newName;
 }
-//return motor position as a [%] of allowed range
-/* String motPosStr(int intPadded, fishyDevice device)
-{
-	int relPos = device.motorPos;
-	//int range = device.motorPosAtCW - device.motorPosAtCCW;
-	int answer;
-	if (device.range > 0)
-	{
-		answer = (int)(100 * relPos / device.range);
-		return paddedInt(intPadded, answer);
-	}
-	else
-		return paddedInt(intPadded, 0);
-} */
 
 String threeDigits(int i)
 {

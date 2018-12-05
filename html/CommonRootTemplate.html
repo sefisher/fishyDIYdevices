@@ -1,11 +1,15 @@
 <!--------------------------------------------------------------------------------------------------------
-This is the template file for the master web site (stored in webresources.h in parts). It relies on styles.css (which is embedded into code - see that file for its instructions if you update styles.css).
-If updated, you also need to embedd "fishyDIYdeviceCtrlTemplate.html" into the webresources.h for handling individual or group processing (specific to each type of device).
+This is the template file for the master web site (stored in CommonWebresources.h in parts). It relies on
+styles.css (which is embedded into code - see that file for its instructions if you update styles.css).
+If you design a new page, you  need to embedd this HTML into the CommonWebresources.h as well as make sure it
+interacts with the other device controls (e.g., 2-State-Actuator-ContolTemplate.html) for handling 
+individual or group processing (specific to each type of device).
 To build it in the code do the following:
  1) Copy the HTML code below this comment.
- 2) Put it through a minifier (like https://kangax.github.io/html-minifier/) and then through a String builder
- (like http://buildmystring.com/ with "strip out carriage returns" on) to create a single string with no tabs and one line.
- 3) Paste that output into the WEBROOTSTRNEW after "PROGMEM" in the webresources.h file.
+ 2) Put it through a minifier (like https://kangax.github.io/html-minifier/ with "Decode Entity Characters OFF") 
+ and then through a String builder (like http://buildmystring.com/ with "strip out carriage returns" on) to create 
+ a single string with no tabs and one line.
+ 3) Paste that string into the WEBROOTSTR after "PROGMEM" in the webresources.h file.
 
  ------------------------------------------------------------------------------------------------------->
 
@@ -14,8 +18,11 @@ To build it in the code do the following:
 <head>
     <title>fishDIY Device Network</title>
     <meta name='viewport' content='width=device-width, initial-scale=1'>
-    <link rel="stylesheet" href="/styles.css"> 
-    <link rel="stylesheet" href="styles.css"> <!-- note this points to a file location on the local test server; it is intentionally placed here -->
+    <script type="text/javascript" src="/CommonWebFunctions.js"></script>
+    <link id='styles' rel="stylesheet" href="/styles.css">
+    <!-- intentionally left for testing -->
+    <link rel="stylesheet" href="styles.css">
+    <script type="text/javascript" src="CommonWebFunctions.js"></script>
 
 </head>
 <body>
@@ -64,25 +71,6 @@ To build it in the code do the following:
             }
         }
         
-        function loadJSON(path, success, error)
-            {
-            var xhr = new XMLHttpRequest();
-            xhr.onreadystatechange = function()
-            {
-                if (xhr.readyState === XMLHttpRequest.DONE) {
-                    if (xhr.status === 200) {
-                        if (success)
-                            success(JSON.parse(xhr.responseText));
-                    } else {
-                        if (error)
-                            error(xhr);
-                    }
-                }
-            };
-            xhr.open("GET", path, true);
-            xhr.send();
-        }
-
         function pollJSON() {
             var srcStr = './network.JSON?nocache=' + (new Date()).getTime();
             loadJSON(srcStr, 
@@ -138,6 +126,7 @@ To build it in the code do the following:
 
         var isCtrl = true;
         function buildPage() {
+             alertBadBrowser();
              //var data = JSON.parse(fishyNetJSON);
              var srcStr = './network.JSON?nocache=' + (new Date()).getTime();
              var DA;
@@ -167,8 +156,6 @@ To build it in the code do the following:
              theBody.appendChild(theFtr);
              theFtr.innerHTML = "<a href='/'>[Controls]</a>  <a href='/SWupdater'>[SW Update]</a>";                 
              
-             //TODO - make a funtion to parse the group names, and then make a group iframe
-             // alternatively add a "group" control option for group labelled devices
              loadJSON(srcStr, 
                 //load success function
                 function (data) {

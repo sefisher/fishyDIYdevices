@@ -2,7 +2,7 @@
 void UDPprocessPacket()
 {
 	//USED FOR UDP COMMS
-	char packetBuffer[MAXCMDSZ]; //buffer to hold incoming packet
+	char packetBuffer[MAXCMDSZ+56+MAXNAMELEN]; //buffer to hold incoming packet (MAXCMDSZ with potential to have MASTER_COMMAND_DATA and an IP added.)
 
 	// if there's data available, read a packet
 	int packetSize = Udp.parsePacket();
@@ -19,17 +19,23 @@ void UDPprocessPacket()
 			Serial.println(Udp.remotePort());
 		}
 		// read the packet into packetBufffer
-		int len = Udp.read(packetBuffer, MAXCMDSZ);
+		int len = Udp.read(packetBuffer, MAXCMDSZ+56+MAXNAMELEN);
 		if (len > 0)
 		{
 			packetBuffer[len] = 0;
 		}
 		if (DEBUG_UDP_MESSAGES)
 		{
-			Serial.print("[UDPprocessPacket] Executing:");
+			Serial.print("[UDPprocessPacket] Processing:");
 			Serial.println(packetBuffer);
 		}
-		executeCommands(packetBuffer, remoteIp);
+		//look for messages from other devices to copy commands sent for use in making group commands
+		if(strncmp(packetBuffer,"MASTER_COMMAND_DATA:",20)==0){
+			if(DEBUG_MESSAGES){Serial.print("[UDPprocessPacket] Master copied this: ");Serial.println(packetBuffer);}
+			recordCommand(packetBuffer);
+		}else{
+			executeCommands(packetBuffer, remoteIp);
+		}
 	}
 }
 
@@ -87,7 +93,7 @@ void UDPbroadcast()
 	dealWithThisNode(makeMyFishyDevice());
 
 	Udp.beginPacket(broadcast, UDP_LOCAL_PORT);
-	Udp.write("ANYFISHYDEV_THERE");
+	Udp.write("~UDP~ANYFISHYDEV_THERE");
 
 	Udp.endPacket();
 }
@@ -97,7 +103,7 @@ void UDPannounceMaster()
 	IPAddress broadcast = WiFi.localIP();
 	broadcast[3] = 255;
 	Udp.beginPacket(broadcast, UDP_LOCAL_PORT);
-	Udp.write("FISHYDIYMASTER");
+	Udp.write("~UDP~FISHYDIYMASTER");
 	Udp.endPacket();
 }
 
@@ -106,7 +112,7 @@ void UDPpollReply(IPAddress remote)
 {
 	fishyDevice holder; //temp
 	holder = makeMyFishyDevice();
-	String response = "POLL_RESPONSE ";
+	String response = "~UDP~POLL_RESPONSE ";
 	Udp.beginPacket(remote, UDP_LOCAL_PORT);
 /* 
 send fishyDevice data.
@@ -139,7 +145,10 @@ parse fishyDevice data.
 Note - this data set is sent by UDPparsePollResponse and getNetworkJSON; UDPparseConfigResponse may be affected as well (if data is added that needs set by configuration updates)
 it is also parsed by scripts in wifi-and-webserver.ino and webresources.h if adding data elements all these may need updating.  This function sends data as follows (keep this list updated):{ip,name,typestr,groupstr,statusstr,inError,isMaster}
 */
-		String response = responseIn.substring(14); //strip off "POLL RESPONSE"
+
+//TODO - convert to strtok()
+
+		String response = responseIn.substring(19); //strip off "~UDP~POLL RESPONSE"
 		fishyDevice holder;
 		holder.dead = false;
 
@@ -220,3 +229,15 @@ it is also parsed by scripts in wifi-and-webserver.ino and webresources.h if add
 	}
 }
 
+void UDPreportCommandToMaster(char devName[41], IPAddress devIP, char command[MAXCMDSZ]){
+	char msg[MAXCMDSZ+56+MAXNAMELEN] = ""; //40 characters of string text, MAXCMDSZ for the CMD, MAXNAMELEN for the name, and 16 for the IP 
+	sprintf(msg,"MASTER_COMMAND_DATA:devName=%s&devIP=%s&cmd=%s",devName,devIP.toString().c_str(),command);
+	//String msg = "MASTER_COMMAND_DATA:devName=" + String(devName) + "&devIP=" + devIP.toString() + "&cmd=" + String(command);
+	if(EEPROMdata.master){
+		recordCommand(msg);
+	} else{
+		Udp.beginPacket(masterIP, UDP_LOCAL_PORT);
+		Udp.write(msg);
+		Udp.endPacket();
+	}
+}

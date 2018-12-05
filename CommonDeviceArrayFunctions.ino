@@ -158,3 +158,53 @@ void cullDeadNodes(){
 		}
 	}
 }
+
+//record commands sent to the master from devices; store upto MAX_COMMANDS of them for use in bulding group commands
+void recordCommand(char command[MAXCMDSZ+56+MAXNAMELEN]){ //MAXCMDSZ+IP+MASTER_COMMAND_DATA and other string text+MAXNAMELEN
+	if(DEBUG_MESSAGES){Serial.print("[recordCommand]: ");}
+	char recordThis[MAXCMDSZ+36+MAXNAMELEN] = "";
+	strncpy(recordThis,command+20,MAXCMDSZ+36+MAXNAMELEN); //strip off "MASTER_COMMAND_DATA:"
+	// input msg format = "MASTER_COMMAND_DATA:devName=" + String(devName) + "&devIP=" + devIP.toString() + "&cmd=" + String(command);
+    char *strings[6]; //one string for each label and one string for each value
+    char *ptr = NULL;
+    byte index = 0;
+    
+	ptr = strtok(recordThis, "=&");  // takes a list of delimiters and points to the first token
+    while(ptr != NULL)
+    {
+        strings[index] = ptr;
+        index++;
+        ptr = strtok(NULL, "=&");  // goto the next token
+    }
+    
+	strncpy(latestDeviceCommands[lastCommandPtr].name, strings[1], MAXNAMELEN);
+	strncpy(latestDeviceCommands[lastCommandPtr].command, strings[5], MAXCMDSZ); //note ip isn't used
+	
+	if(DEBUG_MESSAGES){Serial.println("[recordCommand] Recorded: " + String(strings[5]) + " for " + String(strings[1]));}
+	
+	lastCommandPtr=lastCommandPtr+1;
+	if(lastCommandPtr>=MAX_COMMANDS){
+		lastCommandPtr = 0;
+	}
+	if(DEBUG_MESSAGES){showCommandList();}
+}
+
+//working on group implementation.
+/*I'm here - just got the list of commands to be managed dynamically.  Need to:
+1) make a JSON response with the command list - [part done see: getGroupCommandsJSON()]
+2) make a webinterface to name a group, select the commands to assign to the group, or edit the commands - on web explain this is intended for actions other than simple states; use a hub or alexa to name light groups to make them all on or off.  Use this to reposition a bunch of things. (turn on Winter for vent dampers, make a group of blinds go to 50%)
+3) make storage for the list of groups with the list of commands associated with each group
+4) make EEPROM storage for the list of groups and commands
+5) create the fauxmo devices from the list of groups - and then when called (ignoring state - always "on"?????? what about lights?).
+6) delete the old group name stuff
+*/
+
+void showCommandList(){
+	int index=lastCommandPtr;
+	if(DEBUG_MESSAGES){
+		for(int ii=MAX_COMMANDS;ii>0;ii--){
+			index=(index-1)<0?MAX_COMMANDS-1:index-1;
+			Serial.println("[showCommandList] (" + String(index) + ") Device: " + String(latestDeviceCommands[index].name) + ", commanded to: " + String(latestDeviceCommands[index].command));
+		}
+	}
+}

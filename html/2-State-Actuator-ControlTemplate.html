@@ -1,12 +1,14 @@
 <!--------------------------------------------------------------------------------------------------------
-This is the template file for the control panel for each device (stored in webresources.h in parts). This
-is what will likely get updated the most (along with the styles). Style data is kept in styles.css 
+This is the template file for the control panel for a 2-State-Actuator. You can use this to design control
+interface changes and then convert the HTML into a string embedded in the code. Style data is kept in styles.css 
 (which is embedded into webresources.h into a string and served if a clinet requests /styles.css).
+Common JS functions are stored in CommonWebFunction.js. 
 To build this template file intp the code after updating it do the following:
  1) copy the HTML (from below this comment to the next comment where the JSON is defined).
- 2) put it through a minifier (like https://kangax.github.io/html-minifier/ with Decode Entity Characters OFF) and then through a String builder 
- (like http://buildmystring.com/ with "strip out carriage returns" on) to create a single string with no tabs and one line.
- 3) paste that into the WEBCTRLSTR After "PROGMEM" in the webresources.h file.
+ 2) put it through a minifier (like https://kangax.github.io/html-minifier/ with "Decode Entity Characters OFF") 
+ and then through a String builder (like http://buildmystring.com/ with "strip out carriage returns" on) to create 
+ a single string with no tabs and one line.
+ 3) paste that string into the TwoSAWEBCTRLSTR After "PROGMEM" in the 2-State-ActuatorWebresources.h file.
  4) copy the second block (from below the JSON definition to the end).
  ------------------------------------------------------------------------------------------------------ -->
 <!DOCTYPE html>
@@ -16,84 +18,52 @@ To build this template file intp the code after updating it do the following:
     <title>fishDIY 2-State Actuator</title>
     <meta name='viewport' content='initial-scale=1.0'>
 
+    <script type="text/javascript" src="/CommonWebFunctions.js"></script>
     <link id='styles' rel="stylesheet" href="/styles.css">
-    <link rel="stylesheet" href="styles.css"> <!-- intentionally left for testing -->
-
+    <!-- intentionally left for testing -->
+    <link rel="stylesheet" href="styles.css">
+    <script type="text/javascript" src="CommonWebFunctions.js"></script>
 </head>
 
 <body>
     <div class='main' id='myBody'>
         <script>
-            var websock;
-            function showDetails() {
-                document.getElementById('infoDiv').innerHTML = infoText;
-                document.getElementById('infoPanel').style.display = 'block';
+            //required function name/paramaters (called by start() during onmessage event)
+            function dealWithMessagePayload(payload){
+                var msgText = getMsg(payload);
+                console.log(msgText);
+                setOtherTxt(msgText);
+                var nodeJSONtext = getNodeJSONtext(payload);
+                console.log(nodeJSONtext);
+                processJSON(nodeJSONtext);
             }
-            //extract after MSG:and before ~*~*
-            function getMsg(data) {
-                var start = data.indexOf("MSG:") + 4;
-                var end = data.indexOf("~*~*");
-                return data.substring(start, end);
-            }
-            //extract after ~*~*DAT:
-            function getNodeJSONtext(data) {
-                var start = data.indexOf("~*~*DAT:") + 8;
-                return data.substring(start, data.length);
-            }
-            function start() {
-
-                // TEST - TODO turn off when not testing
-                if (document.domain == "localhost") { websock = new WebSocket('ws://10.203.1.23:81/'); }
-                else { websock = new WebSocket('ws://' + window.location.hostname + ':81/'); };
-
-                websock.onopen = function (evt) { console.log('websock open'); };
-                websock.onclose = function (evt) { console.log('websock close'); };
-                websock.onerror = function (evt) { console.log(evt); };
-                websock.onmessage = function (evt) {
-
-                    var payload = evt.data;
-                    if (payload.indexOf("~*~*") < 0) {
-                        if (payload.indexOf('{"fishyDevices"') == 0) {
-                            processJSON(payload);
-                        } else {
-                            console.log(payload);
-                        }
-                    } else {
-                        var msgText = getMsg(payload);
-                        console.log(msgText);
-                        setOtherTxt(msgText);
-                        var nodeJSONtext = getNodeJSONtext(payload);
-                        console.log(nodeJSONtext);
-                        processJSON(nodeJSONtext);
-                    }
-                };
-            }
+            //required function for all fishyDIY devices (updates main text with status in the header)
             function setMainTxt(text) {
                 document.getElementById("mainTxt").innerHTML = text + "%";
             }
+            //utility function for 2-State-Actuator
             function setOtherTxt(text) {
                 document.getElementById("otherTxt").innerHTML = text;
             }
+            //utility function for 2-State-Actuator
             function syncPO() {
                 var slider = document.getElementById('pctOpenSld');
                 var btn = document.getElementById('pobtntxt');
                 btn.innerHTML = slider.value + '%';
             }
+            //utility function for 2-State-Actuator
             function openIsCCWUpd() {
                 var label = document.getElementById('swLab');
                 var sw = document.getElementById('swChck');
                 if (sw.checked == true) { label.innerHTML = 'Open CCW'; } else { label.innerHTML = 'Open CW'; }
             }
-            function swMstrUpd() {
-                var label = document.getElementById('swMstrLab');
-                var sw = document.getElementById('swMstrChck');
-                if (sw.checked == true) { label.innerHTML = 'Master Node'; } else { label.innerHTML = 'Slave Node'; }
-            }
+            //utility function for 2-State-Actuator
             function swSwapUpd() {
                 var label = document.getElementById('swSwapLab');
                 var sw = document.getElementById('swSwapChck');
                 if (sw.checked == true) { label.innerHTML = 'Swapped Lim Sw'; } else { label.innerHTML = 'Normal Lim Sw'; }
             }
+            //utility function for all fishyDIY devices (sends Commands - commands and messages are customized for each device)
             function sendCmd(command) {
                 if (websock.readyState != 1) {
                     alert("This control panel is no longer connected to the device.  Please close this window and reopen the control panel.");
@@ -138,17 +108,9 @@ To build this template file intp the code after updating it do the following:
                 document.body.style.backgroundColor = "var(--bg-col-ack)";
                 websock.send(cmd);
             }
-
-            function returnColor() {
-                document.body.style.backgroundColor = "var(--bg-col)";
-            }
-
-
-            function processJSON(JSONstr) {
-                var data = JSON.parse(JSONstr);
-                doStuffWithJSON(data.fishyDevices);
-            }
-
+            //variable for all fishyDIY devices - holds data for device info modal
+            var infoText = '...Loading...';
+            //utility function for all fishyDIY devices (takes the device status info from the JSON and processes it - highly customized for each control interface)
             function doStuffWithJSON(DA) {
 
                 var addDiv = '';
@@ -158,7 +120,7 @@ To build this template file intp the code after updating it do the following:
                 var errTxt = '';
                 d = DA[0];
 
-                returnColor();
+                returnColor(); //set background color to normal to show user the device responded
                 if (d.isMaster == 'true') { mstrTxt = ' (MASTER)'; document.getElementById('swMstrChck').checked = true; } else { mstrTxt = ''; document.getElementById('swMstrChck').checked = false; }
                 if (d.openIsCCW == 'true') { document.getElementById('swChck').checked = true; } else { chckTxt = ''; document.getElementById('swChck').checked = false; }
                 if (d.swapLimSW == 'true') { document.getElementById('swSwapChck').checked = true; } else { document.getElementById('swSwapChck').checked = false; }
@@ -186,7 +148,7 @@ To build this template file intp the code after updating it do the following:
                 document.getElementById('groupName').value = d.group;
                 document.getElementById('devType').value = d.devType;
             }
-
+            //utility function for 2-State-Actuator (calculates motor position as a %)
             function posPct(motPos, range, openIsCCW) {
                 if (range == 0) return 0;
                 var ret = Math.round(100 * ((motPos) / (range)));
@@ -194,21 +156,6 @@ To build this template file intp the code after updating it do the following:
                 if (openIsCCW == 'true') ret = 100 - ret;
                 return ret;
             }
-            //('Only letters, numbers, underscore, space, comma, period, and dash are allowed.');
-            function blockSpecialChar(e) {
-                var k = e.keyCode;
-                return ((k > 64 && k < 91) || (k > 96 && k < 123) || k == 8 || k == 16 || k == 95 || k == 32 || (k > 43 && k < 47) || (k >= 48 && k <= 57));
-            }
-            //('Only numbers are allowed.');
-            function numberCharOnly(e) {
-                var k = e.keyCode;
-                return (k == 8 || k == 16 || (k >= 48 && k <= 57));
-            }
-
-            var infoText = '...Loading...';
-
-            //TODO - add listener that will detect a document hight change to 0 - then close the websocket. 
-            //      - or add a change to the master to destroy the modal page rather than just close the iframe to zero.
             window.onload = start();
         </script>
 
@@ -305,18 +252,16 @@ To build this template file intp the code after updating it do the following:
 
     <!-- Overlay Modal for device information-->
     <div id='infoPanel' class='infoPanel'>
-        <div id='infoDiv' class='infoDiv'></div>
-        <!-- Close button for overlay modal panel.  -->
-        <input type='button' class='infoOKbtn' onclick='closeCtrlModal()' value='OK'>
+    <div id='infoDiv' class='infoDiv'></div>
+    <!-- Close button for overlay modal panel.  -->
+    <input type='button' class='infoOKbtn' onclick='closeCtrlModal()' value='OK'>
     </div>
-
-</body>
-<script>
+    </body>
+    <script>
     var ctrlModal = document.getElementById('infoPanel');
     // When the user clicks the X
     function closeCtrlModal() {
-        ctrlModal.style.display = 'none';
+    ctrlModal.style.display = 'none';
     }
-</script>
-
+    </script>
 </html>

@@ -183,12 +183,18 @@ void WifiFauxmoAndDeviceSetup(){
 			// Add virtual device
 			fauxmo.addDevice(EEPROMdata.namestr);
 			
-			//---------------------------------
-			//TODO GET RID OF TEST CODE:
-			if(EEPROMdata.master){
-				fauxmo.addDevice("test extra");
-			}
-			//---------------------------------
+			// //---------------------------------
+			// #ifdef ALT1_DEVICE_NAME
+			// 	fauxmo.addDevice(ALT1_DEVICE_NAME);
+			// #endif
+			// #ifdef ALT2_DEVICE_NAME
+			// 	fauxmo.addDevice(ALT2_DEVICE_NAME);
+			// #endif
+			// #ifdef ALT3_DEVICE_NAME
+			// 	fauxmo.addDevice(ALT3_DEVICE_NAME);
+			// #endif
+			// }
+			// //---------------------------------
 		}
 	}
 	
@@ -208,17 +214,8 @@ void WifiFauxmoAndDeviceSetup(){
 				Serial.printf("[SETUP] Device #%d (%s) state was set: %s\n", device_id, device_name, state ? "ON" : "OFF");
 			}
 			
-			if(strcmp(device_name,EEPROMdata.namestr)){
+			if(!strcmp(device_name,EEPROMdata.namestr)){
 				executeState(state);
-			}else{
-				//---------------------------------
-				//TODO GET TRID OF TEST CODE:
-				if(DEBUG_MESSAGES){Serial.print("Searching for group \"");Serial.print(device_name);Serial.println("\".");}
-				IPAddress remoteDev;
-				remoteDev = IPAddress(10,203,1,23);
-				Udp.beginPacket(remoteDev, UDP_LOCAL_PORT);
-				Udp.write("open");
-				Udp.endPacket();
 			}
 			//---------------------------------
 			

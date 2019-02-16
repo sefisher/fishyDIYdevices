@@ -26,13 +26,15 @@ wiping out stored motor info.
 THEIR COMPILED DEVICE_TYPE AND OTHER DATA***
 */
 //String format -> "YYYYMMDDHHmm" (where HHmm is 24 hr time). 
-#define INITIALIZE "201811302100"
+#define INITIALIZE "201812120600"
 
 //PICK A UNIQUE NAME FOR EACH DEVICE USING ONLY LETTERS AND NUMBERS
 // LIMITED to 40 alpanumeric characters (abcdefghijklmnopqrstuvwxyz0123456789)
-#define CUSTOM_DEVICE_NAME "Floor 1 Vent"
+#define CUSTOM_DEVICE_NAME "Floor 3 Vent"
+// #define CUSTOM_DEVICE_NAME "Floor 2 Vent"
+// #define CUSTOM_DEVICE_NAME "Floor 1 Vent"
 //#define CUSTOM_DEVICE_NAME "RGB LED Test"
-//#define CUSTOM_DEVICE_NAME "Test Device 23"
+// #define CUSTOM_DEVICE_NAME "Test Device 23"
 
 //ENTER THIS DEVICE'S TYPE USING ONLY LETTERS AND NUMBERS (NO SPACES)
 //TYPE MUST BE EXACTLY SAME AS TYPE LISTED IN CommonDeviceTranslator.ino
@@ -42,8 +44,8 @@ THEIR COMPILED DEVICE_TYPE AND OTHER DATA***
 
 //PICK ONLY ONE DEVICE ON THE NETWORK AS MASTER (and set this to true when you compile its code).  
 //IT WILL BE THE WEBSERVER AND CONTROLLER FOR ALL OTHER NODES.  Set false for all the others.
-//#define MASTER_NODE true
-#define MASTER_NODE false
+#define MASTER_NODE true
+// #define MASTER_NODE false
 
 //SET THE TIMEOUT (in seconds) FOR STOPPING THE ACTUATOR IF MOTION CONTINUES WITHOUT REACHING A HARDWARE LIMIT
 #define DEVICE_TIMEOUT 60
@@ -59,17 +61,23 @@ THEIR COMPILED DEVICE_TYPE AND OTHER DATA***
 //The note is displayed on the control panel for the device.
 #define CUSTOM_NOTE ""
 
+//TESTING THESE - ADDING ALTERNATE DEVICE NAMES FOR ALTERNATE VOICE COMMAND ACTIONS
+//IF defined THESE WILL BE NEW FAUXMO DEVICES.  Currently upto 3.
+//#define ALT1_DEVICE_NAME "Face Kitchen"
+//#define ALT2_DEVICE_NAME "Face Livingroom"
+//#define ALT3_DEVICE_NAME "Face Livingroom"
+
 //----------------------------2-state-actuator UNIQUE SETTINGS---------------------//
 //----------------------------IGNORED BY OTHER TYPES--------------------------------//
 
-//TODO - move these settigns to 2-state-actuator files
+//TODO - move these settings to 2-state-actuator files
 
 //FIGURE OUT WHAT DIRECTION YOU WANT TO PICK AS OPEN or CLOSE FOR YOUR DEVICE.  
 #define OPEN_IS_CCW true
 //#define OPEN_IS_CCW false
 
 //Software fix in case you miswired and swapped the hardware limit switches.  
-//#define SWAP_LIM_SW false 
+// #define SWAP_LIM_SW false 
 #define SWAP_LIM_SW true //Floor 3 Vent, Floor 1 Vent
 
 //----------------------------OTHER DEVICES SETTINGS-------------------------------//
@@ -97,7 +105,7 @@ THEIR COMPILED DEVICE_TYPE AND OTHER DATA***
 #define MAX_COMMANDS 5
 
 //Test switches for Serial output text (set to false to disable debug messages) and WiFi Functions
-#define DEBUG_MESSAGES false //debugging for device problems (movement, switches, etc)
+#define DEBUG_MESSAGES true //debugging for device problems (movement, switches, etc)
 #define DEBUG_UDP_MESSAGES false //debugging for network comms (MASTER - SLAVE issues with nodes on the network)
 #define UDP_PARSE_MESSAGES false //debugging for parsing messages - used after you've changed the message structures
 #define DEBUG_HEAP_MESSAGE false //just tracking the heap size for memory leak issues or overloaded nodeMCUs

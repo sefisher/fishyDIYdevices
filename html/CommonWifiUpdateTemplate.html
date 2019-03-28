@@ -1,0 +1,126 @@
+<!--------------------------------------------------------------------------------------------------------
+This is the template file for the master web site (stored in fishyDevice.h in parts). It relies on
+styles.css (which is embedded into code - see that file for its instructions if you update styles.css).
+If you design a new page, you  need to embedd this HTML into the CommonWebresources.h as well as make sure it
+interacts with the other device controls (e.g., Limit-Switch-Actuator-ContolTemplate.html) for handling 
+individual device processing (specific to each type of device).
+To build it in the code do the following:
+ 1) Copy the HTML code below this comment down to the END OF PART 1.
+ 2) Put it through a minifier (like https://kangax.github.io/html-minifier/ with "Decode Entity Characters OFF") 
+ and then through a String builder (like http://buildmystring.com/ with "strip out carriage returns" on) to create 
+ a single string with no tabs and one line.
+ 3) Paste that string into the WEBROOTSTRPT1 after "PROGMEM" in the fishyDevice.h file.
+ 4) Copy the HTML code below START OF PART 2 to the end.
+ 5) Repeat step 2.
+ 6) Paste that string into the WEBROOTSTRPT2 after "PROGMEM" in the fishyDevice.h file.
+
+ ------------------------------------------------------------------------------------------------------->
+
+<!DOCTYPE html>
+<html>
+
+<head>
+    <title>fishDIY Device Network</title>
+    <meta name='viewport' content='width=device-width, initial-scale=1'>
+    <script type="text/javascript" src="/CommonWebFunctions.js"></script>
+    <link id='styles' rel="stylesheet" href="/styles.css">
+    <!-- intentionally left for testing -->
+    <link rel="stylesheet" href="styles.css">
+    <script type="text/javascript" src="CommonWebFunctions.js"></script>
+
+</head>
+
+<body>
+    <div class='main' id='myBody'>
+        <script>
+            /**********************END OF PART 1*****************************/
+
+            //don't copy this - for testing
+            var pass = "";
+            var ssid = "";
+
+            /*********************START OF PART 2****************************/
+            function addDevice(d) {
+                var addDiv = "<div class='CPdevice' id='CP-" + d.ip + "'>";
+                addDiv += addInnerDevice(d);
+                addDiv += "</div>";
+                return addDiv;
+            }
+
+            function addWIFIMASTERDevice() {
+
+
+                var addDiv = "<div class='CPdevice' id='CP-MASTER'>";
+                var errTxt = 'CPhdErrClear';
+                addDiv += "<div class='CPhd' id='hd1-master'>Master Update</div>";
+                addDiv += "<form class='swUpdate' method='POST' action='WIFIupdater' ><h2>Prefill WIFI Credentials for All Devices:</h2><input type='text' placeholder='network' name='n' /><br /><input type='password' placeholder='password' name='p' '/><br /><input type='submit' value='Submit'/></form>";
+                addDiv += "<div class='CPft' id='CPft-master'></div>";
+                addDiv += "</div>";
+
+                return addDiv;
+
+            }
+
+            function addInnerDevice(d) {
+                var mstrTxt;
+                if (d.isMaster == 'true') { mstrTxt = 'MASTER:' + d.ip; } else { mstrTxt = d.ip; }
+
+                var addDiv = "<div class='CPhd' id='hd1-" + d.ip + "'>" + d.name + "</div>";
+                addDiv += "<iframe id='wifiUpdate-" + d.ip + "' class='swUpdate' src='http://" + d.ip + "/wifi?n='" + uriencode(ssid) + "'&p='" + pass + "'></iframe><br>";
+                addDiv += "<div class='CPft' id='CPft-" + d.ip + "'>" + mstrTxt + "</div>";
+                return addDiv;
+            }
+
+            function buildPage() {
+                alertBadBrowser();
+                var srcStr = './network.JSON?nocache=' + (new Date()).getTime();
+                var DA;
+                var items = [];
+                var addDiv = '';
+                var ii;
+                var theBody = _('myBody');
+                var newdiv = document.createElement('DIV');
+                var theFtr;
+                newdiv.className = 'fishyHdr';
+                theBody.appendChild(newdiv);
+                newdiv.innerHTML = 'fishyDevice WIFI Credentials Update';
+
+                newdiv = document.createElement('DIV');
+                newdiv.className = 'CPhd3';
+                theBody.appendChild(newdiv);
+
+                theFtr = document.createElement('DIV');
+                theFtr.className = 'fishyFtr';
+                theBody.appendChild(theFtr);
+                theFtr.innerHTML = "<a href='/'>[Controls]</a>  <a href='/SWupdater'>[SW Update]</a>  <a href='/WIFIupdater'>[WIFI Update]</a>";
+
+                loadJSON(srcStr,
+                    //load success function
+                    function (data) {
+                        DA = data.fishyDevices;
+                        items.push(addWIFIMASTERDevice());
+                        Array.prototype.forEach.call(DA,
+                            function (d, num) {
+                                items.push(addDevice(d));
+                            }
+                        );
+                        newdiv = document.createElement('DIV');
+                        newdiv.className = 'flex-container';
+                        newdiv.id = 'flex-container';
+                        newdiv.innerHTML = items.join('');
+                        theBody.insertBefore(newdiv, theFtr);
+                    }
+                );
+
+            }
+
+            window.onload = buildPage();
+
+        </script>
+
+    </div>
+
+
+</body>
+
+</html>

@@ -1,20 +1,22 @@
 <!--------------------------------------------------------------------------------------------------------
-This is the template file for the master web site (stored in CommonWebresources.h in parts). It relies on
+This is the template file for the master web site (stored in fishyDevice.h in parts). It relies on
 styles.css (which is embedded into code - see that file for its instructions if you update styles.css).
 If you design a new page, you  need to embedd this HTML into the CommonWebresources.h as well as make sure it
-interacts with the other device controls (e.g., 2-State-Actuator-ContolTemplate.html) for handling 
-individual or group processing (specific to each type of device).
+interacts with the other device controls (e.g., Limit-Switch-Actuator-ContolTemplate.html) for handling 
+individual device processing (specific to each type of device).
 To build it in the code do the following:
- 1) Copy the HTML code below this comment.
+ 1) Copy all the HTML code below this comment.
  2) Put it through a minifier (like https://kangax.github.io/html-minifier/ with "Decode Entity Characters OFF") 
  and then through a String builder (like http://buildmystring.com/ with "strip out carriage returns" on) to create 
  a single string with no tabs and one line.
- 3) Paste that string into the WEBROOTSTR after "PROGMEM" in the webresources.h file.
+ 3) Paste that string into the WEBROOTSTR after "PROGMEM" in the fishyDevice.h file.
+
 
  ------------------------------------------------------------------------------------------------------->
 
 <!DOCTYPE html>
 <html>
+
 <head>
     <title>fishDIY Device Network</title>
     <meta name='viewport' content='width=device-width, initial-scale=1'>
@@ -25,202 +27,194 @@ To build it in the code do the following:
     <script type="text/javascript" src="CommonWebFunctions.js"></script>
 
 </head>
+
 <body>
-    <div class='main' id='myBody'>   
-    <script>
-        
-        function addDevice(d){
-            var addDiv = "<div class='CPdevice' id='CP-" + d.ip + "'>";
-            addDiv += addInnerDevice(d);
-            addDiv += "</div>";      
-            return addDiv;
-        }
-        
-        function addInnerDevice(d){
-            var errTxt;
-            if (d.inError == 'true') { errTxt = 'CPhdErr'; } else { errTxt = 'CPhdErrClear'; }
-            var mstrTxt;
-            if (d.isMaster == 'true') { mstrTxt = 'MASTER:'+d.ip; } else { mstrTxt = d.ip; }
-            var addDiv = "<div class='CPhd' id='hd1-" + d.ip + "'>" + d.name + "</div>";
-            if(isCtrl){
-                addDiv += "<div id='CPerr-" + d.ip + "' class='" + errTxt + "'>ERROR</div>";
-                addDiv += "<div >" + d.statusstr + "</div>";
-                addDiv += "<button class='CPbutton' onclick='openModal(\"" + d.ip + "\")'; id='myBtn-" + d.ip + "'>Open Controls</button>";
-                addDiv += "<div class='CPdetails' >Group:" + d.groupstr + "</div>";
-                addDiv += "<div class='CPdetails' >Type:" + d.typestr + "</div>";
+    <div class='main' id='myBody'>
+        <script>
+            function addDevice(d) {
+                var addDiv = "<div class='CPdevice' id='CP-" + d.ip + "'>";
+                addDiv += addInnerDevice(d);
+                addDiv += "</div>";
+                return addDiv;
             }
-            else
-            {
-                addDiv += "<iframe id='swUpdate-" + d.ip + "' class='swUpdate' src='http://"+d.ip+"/SWupdateGetForm' ></iframe><br>";
-            }
-            addDiv += "<div class='CPft' id='CPft-" + d.ip + "'>"+mstrTxt+"</div>";
-            return addDiv;
-        }
-
-        function refreshToggle(){
-            var label = document.getElementById('swRefreshLab-1');
-            var sw = document.getElementById('swRefreshChck-1');
-            if (sw.checked == true) { 
-                label.innerHTML = 'Auto-refresh On';
-                pollTimer = setInterval(function () {
-                    pollJSON();
-                }, 10000);
-            } else { 
-                label.innerHTML = 'Auto-refresh Off'; 
-                clearInterval(pollTimer);
-            }
-        }
-        
-        function pollJSON() {
-            var srcStr = './network.JSON?nocache=' + (new Date()).getTime();
-            loadJSON(srcStr, 
-                //load success function
-                function (data) {
-                    var DA = data.fishyDevices;
-                    var addDiv = '';
-                    var mstrTxt = '&nbsp;';
-                    var errTxt = 'none';
-                    var cpnode;
-                    Array.prototype.forEach.call(DA, 
-                        function (d,num) {
-                            cpnode=document.getElementById('CP-'+d.ip);
-                            if (d.dead == '0') {
-                                //look for new devices in the JSON
-                                if(cpnode==null){
-                                    var newDiv = document.createElement("DIV");
-                                    newDiv.id='CP-'+d.ip;
-                                    newDiv.className = 'CPdevice';
-                                    cpnode = document.getElementById('flex-container').appendChild(newDiv);
-                                }
-                                cpnode.innerHTML = addInnerDevice(d);    
-                            }else{
-                                if(cpnode!=null){
-                                    document.getElementById('flex-container').removeChild(cpnode);
-                                }    
-                            }
-                        }
-                    );
-                    var gone;
-                    var elements = document.querySelectorAll('.CPdevice');
-                    Array.prototype.forEach.call(elements, 
-                        function(e, num){
-                            gone = true;
-                            Array.prototype.forEach.call(DA, 
-                                function (d,num) {
-                                    if((('CP-' + d.ip) == e.id) && (d.dead == 0)) gone=false;
-                                }
-                            );
-                            if(gone){
-                                document.getElementById('flex-container').removeChild(e);
-                            }
-                        }
-                    );
-                    console.log( "loadJSON and page update success");
-                },
-                //load failure function
-                function(xhr){
-                    console.log("Error with loadJSON")
+            function addInnerDevice(d) {
+                var errTxt;
+                if (d.inError == 'true') { errTxt = 'CPhdErr'; } else { errTxt = 'CPhdErrClear'; }
+                var mstrTxt;
+                if (d.isMaster == 'true') { mstrTxt = 'MASTER:' + d.ip; } else { mstrTxt = d.ip; }
+                var addDiv = "<div class='CPhd' id='hd1-" + d.ip + "'>" + d.name + "</div>";
+                if (isCtrl) {
+                    addDiv += "<div id='CPerr-" + d.ip + "' class='" + errTxt + "'>ERROR</div>";
+                    addDiv += "<div >" + d.statusstr + "</div>";
+                    addDiv += "<button class='CPbutton' onclick='openModal(\"" + d.ip + "\")'; id='myBtn-" + d.ip + "'>Open Controls</button>";
+                    addDiv += "<div class='CPdetails' >Type:" + d.typestr + "</div>";
+                }else {
+                    addDiv += "<iframe id='swUpdate-" + d.ip + "' class='swUpdate' src='http://" + d.ip + "/SWupdateGetForm' ></iframe><br>";
                 }
-            );
-        }
-
-        var isCtrl = true;
-        function buildPage() {
-             alertBadBrowser();
-             //var data = JSON.parse(fishyNetJSON);
-             var srcStr = './network.JSON?nocache=' + (new Date()).getTime();
-             var DA;
-             var items = [];
-             var addDiv = '';
-             var ii;
-             var theBody = document.getElementById('myBody');
-             var newdiv = document.createElement('DIV');
-             var theFtr;
-             newdiv.className = 'fishyHdr';
-             theBody.appendChild(newdiv);
-             if (location.pathname.slice(1,4) == "SWu"){ 
-                 isCtrl = false; //the page is a SW update page
-                 newdiv.innerHTML = 'fishyDevice Software Update';
-             }else{
-                newdiv.innerHTML = 'fishyDevice Controls';
-             }
-             newdiv = document.createElement('DIV');
-             newdiv.className = 'CPhd3';
-             theBody.appendChild(newdiv);
-             if(isCtrl){
-                 newdiv.innerHTML = "<span class='swRow'><label class='sw2' id='swRefresh-1'><input type='checkbox' checked id='swRefreshChck-1' onchange=refreshToggle()><span class='sldSw'></span></label><span class='swLabHdr' id='swRefreshLab-1'>Auto-refresh On</span></span>";
-             }
-            
-             theFtr = document.createElement('DIV');
-             theFtr.className = 'fishyFtr';
-             theBody.appendChild(theFtr);
-             theFtr.innerHTML = "<a href='/'>[Controls]</a>  <a href='/SWupdater'>[SW Update]</a>";                 
-             
-             loadJSON(srcStr, 
-                //load success function
-                function (data) {
-                    DA = data.fishyDevices;
-                    Array.prototype.forEach.call(DA, 
-                        function (d,num) {
-                            items.push(addDevice(d));
-                        }
-                    );
-                    newdiv = document.createElement('DIV');
-                    newdiv.className = 'flex-container';
-                    newdiv.id = 'flex-container';
-                    newdiv.innerHTML = items.join('');
-                    //theBody.appendChild(newdiv);
-                    theBody.insertBefore(newdiv,theFtr);
-                }
-            );
-       
-        }
-        
-        window.onload = buildPage();
-        var pollTimer;
-        if(isCtrl){
-            if(document.getElementById('swRefreshChck-1').checked){
-                pollTimer = setInterval(function () {
-                    pollJSON();
-                }, 10000);
+                addDiv += "<div class='CPft' id='CPft-" + d.ip + "'>" + mstrTxt + "</div>";
+                return addDiv;
             }
-        }
-    </script>
-       
+
+            function refreshToggle() {
+                var label = _('swRefreshLab-1');
+                var sw = _('swRefreshChck-1');
+                if (sw.checked == true) {
+                    label.innerHTML = 'Auto-refresh On';
+                    pollTimer = setInterval(function () {
+                        pollJSON();
+                    }, 10000);
+                } else {
+                    label.innerHTML = 'Auto-refresh Off';
+                    clearInterval(pollTimer);
+                }
+            }
+
+            function pollJSON() {
+                var srcStr = './network.JSON?nocache=' + (new Date()).getTime();
+                loadJSON(srcStr,
+                    //load success function
+                    function (data) {
+                        var DA = data.fishyDevices;
+                        var addDiv = '';
+                        var mstrTxt = '&nbsp;';
+                        var errTxt = 'none';
+                        var cpnode;
+                        Array.prototype.forEach.call(DA,
+                            function (d, num) {
+                                cpnode = _('CP-' + d.ip);
+                                if (d.dead == '0') {
+                                    //look for new devices in the JSON
+                                    if (cpnode == null) {
+                                        var newDiv = document.createElement("DIV");
+                                        newDiv.id = 'CP-' + d.ip;
+                                        newDiv.className = 'CPdevice';
+                                        cpnode = _('flex-container').appendChild(newDiv);
+                                    }
+                                    cpnode.innerHTML = addInnerDevice(d);
+                                } else {
+                                    if (cpnode != null) {
+                                        _('flex-container').removeChild(cpnode);
+                                    }
+                                }
+                            }
+                        );
+                        var gone;
+                        var elements = document.querySelectorAll('.CPdevice');
+                        Array.prototype.forEach.call(elements,
+                            function (e, num) {
+                                gone = true;
+                                Array.prototype.forEach.call(DA,
+                                    function (d, num) {
+                                        if ((('CP-' + d.ip) == e.id) && (d.dead == 0)) gone = false;
+                                    }
+                                );
+                                if (gone) {
+                                    _('flex-container').removeChild(e);
+                                }
+                            }
+                        );
+                        console.log("loadJSON and page update success");
+                    },
+                    //load failure function
+                    function (xhr) {
+                        console.log("Error with loadJSON")
+                    }
+                );
+            }
+            var isCtrl = true;
+            function buildPage() {
+                alertBadBrowser();
+                var srcStr = './network.JSON?nocache=' + (new Date()).getTime();
+                var DA;
+                var items = [];
+                var addDiv = '';
+                var ii;
+                var theBody = _('myBody');
+                var newdiv = document.createElement('DIV');
+                var theFtr;
+                newdiv.className = 'fishyHdr';
+                theBody.appendChild(newdiv);
+                if (location.pathname.slice(1, 4) == "SWu") {
+                    isCtrl = false; //the page is a SW update page or a Wifi page
+                    newdiv.innerHTML = 'fishyDevice Software Update';
+                } else {
+                    newdiv.innerHTML = 'fishyDevice Controls';
+                }
+                newdiv = document.createElement('DIV');
+                newdiv.className = 'CPhd3';
+                theBody.appendChild(newdiv);
+                if (isCtrl) {
+                    newdiv.innerHTML = "<span class='swRow'><label class='sw2' id='swRefresh-1'><input type='checkbox' checked id='swRefreshChck-1' onchange=refreshToggle()><span class='sldSw'></span></label><span class='swLabHdr' id='swRefreshLab-1'>Auto-refresh On</span></span>";
+                }
+
+                theFtr = document.createElement('DIV');
+                theFtr.className = 'fishyFtr';
+                theBody.appendChild(theFtr);
+                theFtr.innerHTML = "<a href='/'>[Controls]</a>  <a href='/SWupdater'>[SW Update]</a>  <a href='/WIFIupdater'>[WIFI Update]</a>";
+
+                loadJSON(srcStr,
+                    //load success function
+                    function (data) {
+                        DA = data.fishyDevices;
+                        Array.prototype.forEach.call(DA,
+                            function (d, num) {
+                                items.push(addDevice(d));
+                            }
+                        );
+                        newdiv = document.createElement('DIV');
+                        newdiv.className = 'flex-container';
+                        newdiv.id = 'flex-container';
+                        newdiv.innerHTML = items.join('');
+                        theBody.insertBefore(newdiv, theFtr);
+                    }
+                );
+
+            }
+
+            window.onload = buildPage();
+            var pollTimer;
+            if (isCtrl) {
+                if (_('swRefreshChck-1').checked) {
+                    pollTimer = setInterval(function () {
+                        pollJSON();
+                    }, 10000);
+                }
+            }
+        </script>
+
     </div>
-     
+
     <!-- The Modal -->
     <div id='myModal' class='overlay'>
         <!-- Close button for overlay modal panel.  -->
         <a href='javascript:void(0)' class='closebtn' onclick='closeModal()'>
-        <div id='closeBtn' class='closebtn'>&#10060;</div></a>
+            <div id='closeBtn' class='closebtn'>&#10060;</div>
+        </a>
         <!-- Modal Content-->
-        <div id='myIframeDiv' class='modal-body'><iframe id='myIframe' class='iframeBody' width=100% height=100% src=''></iframe></div>
+        <div id='myIframeDiv' class='modal-body'><iframe id='myIframe' class='iframeBody' width=100% height=100%
+                src=''></iframe></div>
     </div>
     <script>
-    // Get the modal
-    var modal = document.getElementById('myModal');
-    var closeBtn = document.getElementById('closeBtn');
-    // When the user clicks the X
-    function closeModal() {
-        modal.style.height = "0%";
-        closeBtn.style.display='none';
-        document.getElementById('myIframe').src='';
-    }
-    // Get the <span> element that closes the modal
-    var span = document.getElementsByClassName('close')[0];
-    
-    // Function to open the modal and iframe
-    function openModal(targetIP) {
-        //TEST CODE - TODO - remove this
-        if(document.domain=="localhost"){
-            document.getElementById('myIframeDiv').innerHTML = "<iframe  id='myIframe' class='iframeBody' width=100% height=100% src='http://localhost/test/fishyDIYdeviceCtrlTemplate.html'></iframe>";
-        }else{
-            document.getElementById('myIframeDiv').innerHTML = "<iframe  id='myIframe' class='iframeBody' width=100% height=100% src='http://" + targetIP    + "/control'></iframe>";
+        // Get the modal
+        var modal = _('myModal');
+        var closeBtn = _('closeBtn');
+        // When the user clicks the X
+        function closeModal() {
+            modal.style.height = "0%";
+            closeBtn.style.display = 'none';
+            _('myIframe').src = '';
         }
-        modal.style.height = '100%';  
-        closeBtn.style.display='block';
-    }
+        // Get the <span> element that closes the modal
+        var span = document.getElementsByClassName('close')[0];
+
+        // Function to open the modal and iframe
+        function openModal(targetIP) {
+            _('myIframeDiv').innerHTML = "<iframe  id='myIframe' class='iframeBody' width=100% height=100% src='http://" + targetIP + "/control'></iframe>";
+            //}
+            modal.style.height = '100%';
+            closeBtn.style.display = 'block';
+        }
     </script>
- </body>
- </html>
+</body>
+
+</html>

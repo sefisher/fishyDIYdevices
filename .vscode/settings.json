@@ -1,9 +1,0 @@
-{
-    "files.associations": {
-        "list": "cpp",
-        "typeinfo": "cpp",
-        "cstdlib": "cpp",
-        "array": "cpp",
-        "fstream": "cpp"
-    }
-}

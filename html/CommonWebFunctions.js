@@ -1,13 +1,23 @@
 // This is the template file for common JS scripts used by most fishyDIY device webpages.
 // To build this template file intp the code after updating it do the following:
-//  1) copy the PART 1 (from below this comment to the next comment where the JSON is defined).
+//  1) select all and copy this file (Ctrl-a ctrl-a on windows)
 //  2) put it through a minifier (like https://kangax.github.io/html-minifier/ with "Decode Entity Characters OFF") and 
 //  then through a String builder (like http://buildmystring.com/ with "strip out carriage returns" on) to create a 
 //  single string with no tabs and one line.
-//  3) paste that string into the WEBSTR_COMMON_JS After "PROGMEM" in the CommonWebresources.h file.
+//  3) paste that string into the WEBSTR_COMMON_JS After "PROGMEM" in the fishyDevices.h file.
+//-----
+// (NOTE: to run this .js file through https://kangax.github.io/html-minifier/ you'll need to enclose this file contents 
+// in <script></script> tags - it isn't set up to recognize javascript without that. Then REMOVE the 
+// <script></script> before pasting into http://buildmystring.com/).
+//-----
 
 //websocket variable
 var websock;
+
+//utility function to test for getElementById
+function _(el) {
+    return document.getElementById(el);
+}
 
 //utility function to test for a compatible browser
 function alertBadBrowser(){
@@ -15,13 +25,13 @@ function alertBadBrowser(){
     var isEdge = !isIE && !!window.StyleMedia;
 
     if(isIE||isEdge){
-        alert("Your browser may cause display problems. You should obtain a modern webkit browser.  While Microsoft Edge works, it can be buggy. Chrome, Firefox, Safari, and Opera all work consistently. Internet Explorer is not supported.");
+        alert("Your browser may cause display problems. You should obtain a modern webkit browser.  While some versions of Microsoft Edge work, it can be buggy. Chrome, Firefox, Safari, and Opera all work consistently. Internet Explorer is not supported.");
     }
 }
 //utility function for all fishyDIY devices (updates master switch on toggle)
 function swMstrUpd() {
-    var label = document.getElementById('swMstrLab');
-    var sw = document.getElementById('swMstrChck');
+    var label = _('swMstrLab');
+    var sw = _('swMstrChck');
     if (sw.checked == true) { label.innerHTML = 'Master Node'; } else { label.innerHTML = 'Slave Node'; }
 }
 //utility function for all fishyDIY devices (called on to restore normal background color after a message is sent)
@@ -65,8 +75,8 @@ function loadJSON(path, success, error){
 }
 //utility function for all fishyDIY devices (called on to open infoText Modal with device data)
 function showDetails() {
-    document.getElementById('infoDiv').innerHTML = infoText;
-    document.getElementById('infoPanel').style.display = 'block';
+    _('infoDiv').innerHTML = infoText;
+    _('infoPanel').style.display = 'block';
 }
 //utility function for all fishyDIY devices (extract after MSG:and before ~*~*)
 function getMsg(data) {
@@ -82,11 +92,11 @@ function getNodeJSONtext(data) {
 //utility function for all fishyDIY devices (extract after ~*~*DAT):
 function start() {
     // TEST - TODO turn off when not testing
-    //if(document.domain=="localhost"){websock = new WebSocket('ws://10.203.1.197:81/');}
-    //if (document.domain == "localhost"){websock = new WebSocket('ws://10.203.1.23:81/')}
-    //else { 
-        websock = new WebSocket('ws://' + window.location.hostname + ':81/'); 
-    //};
+    //if(document.domain=="localhost"){websock = new WebSocket('ws://10.203.1.197/ws');}
+    if (document.domain == "localhost"){websock = new WebSocket('ws://10.203.1.23/ws')}
+    else { 
+        websock = new WebSocket('ws://' + window.location.hostname + '/ws'); 
+    };
 
     websock.onopen = function(evt) { 
         console.log('websock open'); 

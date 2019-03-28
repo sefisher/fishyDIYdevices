@@ -4,7 +4,7 @@ To build this template file intp the code after updating it do the following:
  1) copy the PART 1 (from below this comment to the next comment where the JSON is defined).
  2) put it through a minifier (like https://kangax.github.io/html-minifier/ with Decode Entity Characters OFF) and then through a String builder
  (like http://buildmystring.com/ with "strip out carriage returns" on) to create a single string with no tabs and one line.
- 3) paste that into the WEBSTR_SWUPDATE_PT1 After "PROGMEM" in the webresources.h file.
+ 3) paste that into the WEBSTR_SWUPDATE_PT1 After "PROGMEM" in the fishyDevices.h file.
  4) copy the second block (from below the part that says it is dynamically generated).
  5) minify and stringify it - then paste it into WEBSTR_SWUPDATE_PT2
  ------------------------------------------------------------------------------------------------------ -->
@@ -43,7 +43,7 @@ To build this template file intp the code after updating it do the following:
         position: absolute;
         width: 60px;
         height: 60px;
-        margin: -30px 0 0 -30px;
+        margin: -37px 0 0 -37px;
         left: 50%;
         top: 50%;
         z-index: 10;
@@ -74,18 +74,18 @@ To build this template file intp the code after updating it do the following:
 <script>
 //duration in seconds
 function showLoader(duration){
-    document.getElementById("loader").style.display="block";
-    document.getElementById("countdown").style.display="block";
-    document.getElementById("formDiv").style.display="none";
-    document.getElementById("SWinfoDiv").style.display="none";
+    _("loader").style.display="block";
+    _("countdown").style.display="block";
+    _("formDiv").style.display="none";
+    _("SWinfoDiv").style.display="none";
     setTimeout("location.href = '/SWupdateGetForm';", duration*1000);
     var timer = duration, seconds;
     setInterval(function () {
         seconds = timer;
         seconds = seconds < 10 ? "0" + seconds : seconds;
-        document.getElementById("countdown").innerHTML = seconds;
+        _("countdown").innerHTML = seconds;
         if (--timer < 0) {
-            timer = 0;document.getElementById("countdown").innerHTML="<span style='font-size:16px;'>Wait</span>";
+            timer = 0;_("countdown").innerHTML="<span style='font-size:16px;'>...Wait...</span>";
         }
     }, 1000);
 }
@@ -140,7 +140,28 @@ function abortHandler(event) {
 <body style="margin:0px;"><div id=loader style=display:none></div><div id=countdown style=display:none>10</div>
 <div id="SWinfoDiv">
 <!--PART 1 END -->
-<p>dynamic content on SW version</p><script>var SWDELAY=10;</script>
+
+<!-- DON'T COPY THIS TEST CODE BEFORE PART 2 START-->
+<script>
+function showTestLoader(duration){
+    _("loader").style.display="block";
+    _("countdown").style.display="block";
+    _("formDiv").style.display="none";
+    _("SWinfoDiv").style.display="none";
+    //setTimeout(10*1000);
+    var timer = duration, seconds;
+    setInterval(function () {
+        seconds = timer;
+        seconds = seconds < 10 ? "0" + seconds : seconds;
+        _("countdown").innerHTML = seconds;
+        if (--timer < 0) {
+            timer = 0;_("countdown").innerHTML="<span style='font-size:16px;'>...Wait...</span>";
+        }
+    }, 1000);
+}</script>
+<p>dynamic content on SW version</p><script>var SWDELAY=10;</script><input type=button onclick=showTestLoader(10)>
+
+
 <!--PART 2 START-->  
 </div>
 <div id=formDiv>

@@ -1,4 +1,0 @@
-{"fishyDevices":[
-    {"ip":"10.203.1.33","name":"Test Actuator 1","dead":"0","typestr":"limit sw actuator","groupstr":"test group 1","statusstr":"50% Open","inError":"true","isMaster":"true"},
-    {"ip":"10.203.1.123","name":"Test Actuator 2","dead":"1","typestr":"limit sw actuator","groupstr":"test group 1","statusstr":"Open","inError":"false","isMaster":"false"},
-    {"ip":"10.203.1.23","name":"Direct Rotating Actuator","dead":"0","typestr":"limit sw actuator","groupstr":"test group 1","statusstr":"25% Open","inError":"true","isMaster":"false"}]}

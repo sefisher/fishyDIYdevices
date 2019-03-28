@@ -75,9 +75,11 @@ For ESPAsync Toolset - Copyright (c) 2016 Hristo Gochkov (under GNU License vers
 //DNS Server Port
 #define DNS_PORT 53
 
+//NETWORK SETTINGS
+#define MAX_DEVICE 30 //sets how many fishyDevices can be tracked by the MASTER
+
 //DEVICE SETTINGS - these are defined in a user .h file (e.g., FD-Device-Definitions.h)
 //For the MASTER NODE (webserver node) this sets the number of devices it can manage on the net
-extern const int MAX_DEVICE;
 extern const char CUSTOM_DEVICE_NAME[];
 extern const bool MASTER_NODE;
 extern const int DEVICE_TIMEOUT;
@@ -87,13 +89,15 @@ extern const char CUSTOM_DEVICE_TYPE[];
 extern const bool OPEN_IS_CCW;
 extern const bool SWAP_LIM_SW;
 extern const char SOFT_AP_PWD[]; 
-extern const bool DEBUG_UDP_MESSAGES;
-extern const bool DEBUG_MESSAGES;
-extern const bool UDP_PARSE_MESSAGES;
-extern const bool DEBUG_HEAP_MESSAGE;
-extern const bool DEBUG_WIFI_MESSAGES;
-extern const bool DEBUG_TIMING;
 extern const char INITIALIZE[];
+
+//Test switches for Serial output text (set to false to disable debug messages) 
+#define DEBUG_MESSAGES false      //debugging for general device problems (movement, switches, etc)
+#define DEBUG_UDP_MESSAGES false  //debugging for network comms (MASTER - SLAVE issues with nodes on the network)
+#define UDP_PARSE_MESSAGES false  //debugging for parsing messages - used after you've changed the message structures
+#define DEBUG_HEAP_MESSAGE false  //just tracking the heap size for memory leak issues or overloaded nodeMCUs
+#define DEBUG_WIFI_MESSAGES false //shows wifi connection debugging info
+#define DEBUG_TIMING false
 
 //A typedef struct of type fishyDevice to hold data on devices on the net; and
 //then create an array of size MAX_DEVICE to store all the stuff found on the net
@@ -278,7 +282,8 @@ class fishyDevice
     // apIP and netMsk are Soft AP network parameters
     IPAddress apIP; //ip address for device served AP - serves a webpage to allow entering wifi credentials from user
     IPAddress netMsk;
-    IPAddress masterIP; //the IP address of the MASTER device
+    IPAddress masterIP; //the IP address of the MASTER device (if set)
+    IPAddress loggerIP = IPAddress(0, 0, 0, 0); //the IP address of the logging device (if set)
 
     //make the webserver and web updater
     AsyncWebServer *httpServer; //for master node web server
@@ -291,7 +296,6 @@ class fishyDevice
 
     bool resetOnNextLoop; //used to tell the device to reset after it gets to the next main operating loop
     String _updaterError; //used for tracting SW uploading errors
-
 };
 
 /*----------------------------------------------------------------------------

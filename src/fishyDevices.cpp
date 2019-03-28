@@ -441,11 +441,21 @@ void fishyDevice::executeCommands(char inputMsg[MAXCMDSZ], IPAddress remote)
     if (DEBUG_UDP_MESSAGES)
     {
       Serial.print("[executeCommands] Commanded ~udp~FISHYDIYMASTER from: ");
-      Serial.println(masterIP);
+      Serial.println(remote);
     }
     masterIP = remote; //update the master IP
   }
-  else if (cmd.startsWith("~udp~activity_message")) {
+  else if (cmd.startsWith("~udp~fishydiylogger"))
+  {
+    if (DEBUG_UDP_MESSAGES)
+    {
+      Serial.print("[executeCommands] Commanded ~udp~FISHYDIYLOGGER from: ");
+      Serial.println(remote);
+    }
+    loggerIP = remote; //update the master IP
+  }
+  else if (cmd.startsWith("~udp~activity_message"))
+  {
     UDPparseActivityMessage(inputMsg, remote); //want the original case for this
   }
   else
@@ -786,19 +796,10 @@ it is also parsed by scripts in wifi-and-webserver.ino and webresources.h if add
     dealWithThisNode(holder);
   }
 }
-void  fishyDevice::UDPparseActivityMessage(char inputMsg[MAXCMDSZ], IPAddress remote)
+void fishyDevice::UDPparseActivityMessage(char inputMsg[MAXCMDSZ], IPAddress remote)
 {
   if (myEEPROMdata.master)
   {
-
-/* 
-parse a messge on activity from another device.
-
-TODO - figure out where to send the activity data for monitoring...
--current plan is to have the monitoring page just react to any activity reported by flashing the device, then the monitoring page should poll the master for a minute afterwards every 5 seconds; then only log when the new data is different than the old 
-network.JSON.   
-
-*/
 
     //example input: "~UDP~ACTIVITY_MESSAGE:device=10.203.1.33;message=Commanded to Open;"
 
@@ -808,6 +809,9 @@ network.JSON.
     {
       Serial.println("[UDPparseActivityMessage] Got this: " + String(response));
     }
+
+    /*
+    //TODO - determine if parsing activity message has value 
 
     char *strings[4]; //one string for each label and one for each value
     char *ptr = NULL;
@@ -845,7 +849,7 @@ network.JSON.
     {
       Serial.println("[UDPparseActivityMessage] Device IP: " + strIP);
     }
-
+        
     //Activty message
     String message = String(strings[3]);
     if (DEBUG_MESSAGES && UDP_PARSE_MESSAGES)
@@ -853,7 +857,14 @@ network.JSON.
       Serial.println("[UDPparseActivityMessage] message: " + message);
     }
 
-    //TODO - send a notice the monitoring page about the activity
+    */
+    if (loggerIP.toString() != "0.0.0.0")
+    {
+      Udp.beginPacket(loggerIP, UDP_LOCAL_PORT);
+      Udp.write(response);
+
+      Udp.endPacket();
+    }
   }
 }
 //==================================================================
@@ -1502,7 +1513,7 @@ String fishyDevice::getNetworkJSON()
       temp += "{\"ip\":\"" + deviceArray[i].ip.toString() + "\",\"name\":\"" + String(deviceArray[i].name) + "\",\"typestr\":\"" + String(deviceArray[i].typestr) + "\",\"statusstr\":\"" + String(deviceArray[i].statusstr) + "\",\"inError\":\"" + String(deviceArray[i].inError ? "true" : "false") + "\",\"isMaster\":\"" + String(deviceArray[i].isMaster ? "true" : "false") + "\",\"shortStat\":\"" + String(deviceArray[i].shortStat) + "\",\"X\":\"" + String(deviceArray[i].locationX) + "\",\"Y\":\"" + String(deviceArray[i].locationY) + "\",\"Z\":\"" + String(deviceArray[i].locationZ) + "\",\"dead\":\"" + String(deviceArray[i].dead) + "\"}";
     }
   }
-  temp += "]}";
+  temp += "],\"logger\":\""+loggerIP.toString()+"\"}";
 
   return temp;
 }
@@ -1550,20 +1561,20 @@ void fishyDevice::handleWifiUpdater(AsyncWebServerRequest *request)
   {
     Serial.println("[handleWifiUpdater] Start");
   }
- String n="";
- String p="";
- if (request->hasParam("n", true))
- {
-   n = request->arg("n");
- }
- if (request->hasParam("p", true))
- {
-   p = request->arg("p");
- }
+  String n = "";
+  String p = "";
+  if (request->hasParam("n", true))
+  {
+    n = request->arg("n");
+  }
+  if (request->hasParam("p", true))
+  {
+    p = request->arg("p");
+  }
 
- String responseString = "<!doctypehtml><title>fishDIY Device Network</title><meta content=\"width=device-width,initial-scale=1\"name=viewport><script src=/CommonWebFunctions.js></script><link href=/styles.css rel=stylesheet id=styles><link href=styles.css rel=stylesheet><script src=CommonWebFunctions.js></script><div class=main id=myBody><script>var pass=encodeURIComponent(\""+ p +"\"),ssid=encodeURIComponent(\""+ n +"\");function addDevice(e){var a=\"<div class='CPdevice' id='CP-\"+e.ip+\"'>\";return a+=addInnerDevice(e),a+=\"</div>\"}function addWIFIMASTERDevice(){return\"<div class='CPhd' id='hd1-master'>Master Update</div>\",\"<form class='swUpdate' method='POST' action='WIFIupdater' ><h3>Prefill WIFI Credentials for All Devices:</h3><input type='text' placeholder='network' name='n' /><br /><input type='password' placeholder='password' name='p' '/><br /><input type='submit' value='Submit'/></form>\",\"<div class='CPft' id='CPft-master'></div>\",\"</div>\",\"<div class='CPdevice' style='background-color: #cce6ff;' id='CP-MASTER'><div class='CPhd' id='hd1-master'>Master Update</div><form class='swUpdate' method='POST' action='WIFIupdater' ><h2>Prefill WIFI Credentials for All Devices:</h2><input type='text' placeholder='network' name='n' /><br /><input type='password' placeholder='password' name='p' '/><br /><input type='submit' value='Submit'/></form><div class='CPft' id='CPft-master'></div></div>\"}function addInnerDevice(e){var a;a=\"true\"==e.isMaster?\"MASTER:\"+e.ip:e.ip;var i=\"<div class='CPhd' id='hd1-\"+e.ip+\"'>\"+e.name+\"</div>\";return i+=\"<iframe id='wifiUpdate-\"+e.ip+\"' class='swUpdate' src='http://\"+e.ip+\"/wifi?n=\"+ssid+\"&p=\"+pass+\"'></iframe><br>\",i+=\"<div class='CPft' id='CPft-\"+e.ip+\"'>\"+a+\"</div>\"}function buildPage(){alertBadBrowser();var a,i,e=\"./network.JSON?nocache=\"+(new Date).getTime(),d=[],t=_(\"myBody\"),r=document.createElement(\"DIV\");r.className=\"fishyHdr\",t.appendChild(r),r.innerHTML=\"fishyDevice WIFI Credentials Update\",(r=document.createElement(\"DIV\")).className=\"CPhd3\",t.appendChild(r),(i=document.createElement(\"DIV\")).className=\"fishyFtr\",t.appendChild(i),i.innerHTML=\"<a href='/'>[Controls]</a>  <a href='/SWupdater'>[SW Update]</a>  <a href='/WIFIupdater'>[WIFI Update]</a>\",loadJSON(e,function(e){a=e.fishyDevices,d.push(addWIFIMASTERDevice()),Array.prototype.forEach.call(a,function(e,a){d.push(addDevice(e))}),(r=document.createElement(\"DIV\")).className=\"flex-container\",r.id=\"flex-container\",r.innerHTML=d.join(\"\"),t.insertBefore(r,i)})}window.onload=buildPage()</script></div>";
+  String responseString = "<!doctypehtml><title>fishDIY Device Network</title><meta content=\"width=device-width,initial-scale=1\"name=viewport><script src=/CommonWebFunctions.js></script><link href=/styles.css rel=stylesheet id=styles><link href=styles.css rel=stylesheet><script src=CommonWebFunctions.js></script><div class=main id=myBody><script>var pass=encodeURIComponent(\"" + p + "\"),ssid=encodeURIComponent(\"" + n + "\");function addDevice(e){var a=\"<div class='CPdevice' id='CP-\"+e.ip+\"'>\";return a+=addInnerDevice(e),a+=\"</div>\"}function addWIFIMASTERDevice(){return\"<div class='CPhd' id='hd1-master'>Master Update</div>\",\"<form class='swUpdate' method='POST' action='WIFIupdater' ><h3>Prefill WIFI Credentials for All Devices:</h3><input type='text' placeholder='network' name='n' /><br /><input type='password' placeholder='password' name='p' '/><br /><input type='submit' value='Submit'/></form>\",\"<div class='CPft' id='CPft-master'></div>\",\"</div>\",\"<div class='CPdevice' style='background-color: #cce6ff;' id='CP-MASTER'><div class='CPhd' id='hd1-master'>Master Update</div><form class='swUpdate' method='POST' action='WIFIupdater' ><h2>Prefill WIFI Credentials for All Devices:</h2><input type='text' placeholder='network' name='n' /><br /><input type='password' placeholder='password' name='p' '/><br /><input type='submit' value='Submit'/></form><div class='CPft' id='CPft-master'></div></div>\"}function addInnerDevice(e){var a;a=\"true\"==e.isMaster?\"MASTER:\"+e.ip:e.ip;var i=\"<div class='CPhd' id='hd1-\"+e.ip+\"'>\"+e.name+\"</div>\";return i+=\"<iframe id='wifiUpdate-\"+e.ip+\"' class='swUpdate' src='http://\"+e.ip+\"/wifi?n=\"+ssid+\"&p=\"+pass+\"'></iframe><br>\",i+=\"<div class='CPft' id='CPft-\"+e.ip+\"'>\"+a+\"</div>\"}function buildPage(){alertBadBrowser();var a,i,e=\"./network.JSON?nocache=\"+(new Date).getTime(),d=[],t=_(\"myBody\"),r=document.createElement(\"DIV\");r.className=\"fishyHdr\",t.appendChild(r),r.innerHTML=\"fishyDevice WIFI Credentials Update\",(r=document.createElement(\"DIV\")).className=\"CPhd3\",t.appendChild(r),(i=document.createElement(\"DIV\")).className=\"fishyFtr\",t.appendChild(i),i.innerHTML=\"<a href='/'>[Controls]</a>  <a href='/SWupdater'>[SW Update]</a>  <a href='/WIFIupdater'>[WIFI Update]</a>\",loadJSON(e,function(e){a=e.fishyDevices,d.push(addWIFIMASTERDevice()),Array.prototype.forEach.call(a,function(e,a){d.push(addDevice(e))}),(r=document.createElement(\"DIV\")).className=\"flex-container\",r.id=\"flex-container\",r.innerHTML=d.join(\"\"),t.insertBefore(r,i)})}window.onload=buildPage()</script></div>";
 
-   AsyncWebServerResponse *response = request->beginResponse(200, "text/html", responseString);
+  AsyncWebServerResponse *response = request->beginResponse(200, "text/html", responseString);
 
   //response->addHeader("Location", "wifi", true);
   response->addHeader("Cache-Control", "no-cache, no-store, must-revalidate");
@@ -1572,7 +1583,6 @@ void fishyDevice::handleWifiUpdater(AsyncWebServerRequest *request)
   request->send(response);
 }
 
-
 // Wifi config page
 void fishyDevice::handleWifi(AsyncWebServerRequest *request)
 {
@@ -1580,8 +1590,8 @@ void fishyDevice::handleWifi(AsyncWebServerRequest *request)
   {
     Serial.println("[handleWifi] wifi");
   }
- 
- String webpage = "<!doctypehtml><meta content=\"width=device-width,initial-scale=1\"name=viewport><style>:root{font-family: Arial, Helvetica, sans-serif;font-style: normal;}</style><script>function findGetParameter(t){var e=null,o=[];return location.search.substr(1).split(\"&\").forEach(function(n){(o=n.split(\"=\"))[0]===t&&(e=decodeURIComponent(o[1]))}),e}</script><form action=wifisave method=POST><h4>Connect to WIFI Network:</h4><input id=ssid name=n placeholder=network><br><input type=password id=pwd name=p placeholder=password><br><input type=submit value=\"Submit New WIFI Credentials\"><br>(Submitting blank info will delete saved credentials)</form><br><hr><form action=justreboot method=POST><h4>Reboot Device:</h4>Reboot and try to make the device reconnect using exisitng WIFI credentials:<br><input type=submit value=\"Reboot Device\"></form><script>function doGET(){var e=findGetParameter(\"n\"),d=findGetParameter(\"p\");document.getElementById(\"ssid\").value=e,document.getElementById(\"pwd\").value=d}window.onload=doGET()</script>";
+
+  String webpage = "<!doctypehtml><meta content=\"width=device-width,initial-scale=1\"name=viewport><style>:root{font-family: Arial, Helvetica, sans-serif;font-style: normal;}</style><script>function findGetParameter(t){var e=null,o=[];return location.search.substr(1).split(\"&\").forEach(function(n){(o=n.split(\"=\"))[0]===t&&(e=decodeURIComponent(o[1]))}),e}</script><form action=wifisave method=POST><h4>Connect to WIFI Network:</h4><input id=ssid name=n placeholder=network><br><input type=password id=pwd name=p placeholder=password><br><input type=submit value=\"Submit New WIFI Credentials\"><br>(Submitting blank info will delete saved credentials)</form><br><hr><form action=justreboot method=POST><h4>Reboot Device:</h4>Reboot and try to make the device reconnect using exisitng WIFI credentials:<br><input type=submit value=\"Reboot Device\"></form><script>function doGET(){var e=findGetParameter(\"n\"),d=findGetParameter(\"p\");document.getElementById(\"ssid\").value=e,document.getElementById(\"pwd\").value=d}window.onload=doGET()</script>";
 
   AsyncWebServerResponse *response = request->beginResponse(200, "text/html", webpage.c_str());
 
@@ -1628,13 +1638,7 @@ void fishyDevice::handleWifiSave(AsyncWebServerRequest *request)
     resetWiFiCredentials();
   } //if SSID is blank, reset credentials
 
-  String responseString = "<!DOCTYPE html><html><head><meta name='viewport' content='width=device-width, initial-scale=1'><style>:root{font-family: Arial, Helvetica, sans-serif;font-style: normal;}</style></head><body>"
-  "<h1>Configuration updated.</h1>You will now be disconnected from this device and need to reconnect to your normal WiFi network."
-  "<br><br>If the WiFi credentials work it will reboot and connect to your network. If they fail, it will return to Access Point mode "
-  "after ~1 minute of trying. <br><br>If that occurs, use your WiFi settings to find \"" + String(myWifiConnect.softAP_ssid) + 
-  "\"). Then return to \"" + apIP.toString() + 
-  "/wifi\" to reenter the network ID and password.<br><br>Note: The LED on the device blinks slowly when acting "
-  "as an Access Point.<hr><a href=\"/wifi\">Return to the WiFi settings page.</a></body></html>";
+  String responseString = "<!DOCTYPE html><html><head><meta name='viewport' content='width=device-width, initial-scale=1'><style>:root{font-family: Arial, Helvetica, sans-serif;font-style: normal;}</style></head><body><h1>Configuration updated.</h1>You will now be disconnected from this device and need to reconnect to your normal WiFi network.<br><br>If the WiFi credentials work it will reboot and connect to your network. If they fail, it will return to Access Point mode after ~1 minute of trying. <br><br>If that occurs, use your WiFi settings to find \"" + String(myWifiConnect.softAP_ssid) + "\"). Then return to \"" + apIP.toString() + "/wifi\" to reenter the network ID and password.<br><br>Note: The LED on the device blinks slowly when acting as an Access Point.<hr><a href=\"/wifi\">Return to the WiFi settings page.</a></body></html>";
 
   AsyncWebServerResponse *response = request->beginResponse(200, "text/html", responseString);
 
@@ -1659,8 +1663,7 @@ void fishyDevice::handleJustReboot(AsyncWebServerRequest *request)
     Serial.println("[handleJustReboot] just reboot");
   }
 
-  AsyncWebServerResponse *response = request->beginResponse(200, "text/html", "<!DOCTYPE html><html><head><meta name='viewport' content='width=device-width, initial-scale=1'></head><body>"
-  "<h1>Rebooting Device.</h1><hr><a href=\"/wifi\">Return to the WiFi settings page.</a></body></html></body></html>");
+  AsyncWebServerResponse *response = request->beginResponse(200, "text/html", "<!DOCTYPE html><html><head><meta name='viewport' content='width=device-width, initial-scale=1'></head><body><h1>Rebooting Device.</h1><hr><a href=\"/wifi\">Return to the WiFi settings page.</a></body></html></body></html>");
 
   response->addHeader("Cache-Control", "no-cache, no-store, must-revalidate");
   response->addHeader("Pragma", "no-cache");

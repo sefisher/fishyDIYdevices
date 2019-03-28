@@ -62,8 +62,38 @@ For ESPAsync Toolset - Copyright (c) 2016 Hristo Gochkov (under GNU License vers
 #define MAXCUSTOMDATALEN 256
 #define EEPROMsz 700 //(see calculated size below - fD.myEEPROMdata struct; 673 req'd, set at 700 for some margin)
 
+#define ESP8266                 //tell libraries this is an ESP8266 (vice ESP32)
+#define SW_UPDATE_DELAY 10      //the number of seconds to wait for a reboot following a software update - increase if you see "page not found errors" after an update
+
+//ENABLE VOICE CONTROLS
+#define FAUXMO_ENABLED true
+
+//Board communication rate and UDP port number
+#define SERIAL_BAUDRATE 115200
+#define UDP_LOCAL_PORT 8266
+
+//DNS Server Port
+#define DNS_PORT 53
+
+//DEVICE SETTINGS - these are defined in a user .h file (e.g., FD-Device-Definitions.h)
 //For the MASTER NODE (webserver node) this sets the number of devices it can manage on the net
-#define MAX_DEVICE 30
+extern const int MAX_DEVICE;
+extern const char CUSTOM_DEVICE_NAME[];
+extern const bool MASTER_NODE;
+extern const int DEVICE_TIMEOUT;
+extern const char CUSTOM_NOTE[];
+extern const char SW_VER[];
+extern const char CUSTOM_DEVICE_TYPE[];
+extern const bool OPEN_IS_CCW;
+extern const bool SWAP_LIM_SW;
+extern const char SOFT_AP_PWD[]; 
+extern const bool DEBUG_UDP_MESSAGES;
+extern const bool DEBUG_MESSAGES;
+extern const bool UDP_PARSE_MESSAGES;
+extern const bool DEBUG_HEAP_MESSAGE;
+extern const bool DEBUG_WIFI_MESSAGES;
+extern const bool DEBUG_TIMING;
+extern const char INITIALIZE[];
 
 //A typedef struct of type fishyDevice to hold data on devices on the net; and
 //then create an array of size MAX_DEVICE to store all the stuff found on the net

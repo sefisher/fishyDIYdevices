@@ -25,7 +25,6 @@ THE SOFTWARE.
 */
 
 #include "fishyDevices.h"
-#include "FD-Device-Definitions.h"
 
 //Constructor
 fishyDevice::fishyDevice(const char *WEBCTRLSTR)

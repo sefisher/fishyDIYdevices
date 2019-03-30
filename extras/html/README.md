@@ -1,0 +1,2 @@
+# fishyDIYdevices HTML files
+HTML files provided anywhere in this repository are not required.  These are the source HTML files used in developing and testing web interfaces. They can be used to develop and test your own interfaces (or change the look/feel of the web interfaces using the styles.css). There are instructions in each file for taking the HTML code you develop, formatting it compactly, and then pasting it into the code (either the library or the examples or your own device).

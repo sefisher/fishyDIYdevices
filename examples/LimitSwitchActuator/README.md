@@ -1,5 +1,6 @@
 # fishyDIYdevices - Limit Switch Actuator Example
-For detailed project instructions to include 3D printing files, wiring diagrams, hardware details, etc, go to [fishyDIY.com](http://fishyDIY.com).  These project instructions are a work in progress.
+For detailed project instructions to include 3D printing files, wiring diagrams, hardware details, etc, go to [fishyDIY.com](http://fishyDIY.com).  Those complete project instructions are a work in progress.  
+* You can build and upload the software on a ESP8266 chip alone (no real device) to see/test the basic web interface and WiFi configuration features by following these steps.
 ## Basic steps to build this example:
 ### 1. Get the Arduino IDE set up:
 #### * Get the [Ardunio IDE](https://www.arduino.cc/). Note: don't get the Windows 10 APP version by mistake - get the full IDE.
@@ -28,7 +29,7 @@ For detailed project instructions to include 3D printing files, wiring diagrams,
 #### * Connect to the device and setup WiFi
   - Connect your device to a power source via USB (recommend not using your computer USB to ensure a stable voltage for the AP mode, if you try it and can't connect to the network below then try powering it from a regular plug-in USB power source).
   - It will boot in AP mode the first time with the name "New Device" (or whatever you named it in FD-Device-Definitions.h).
-  - Go to you phone or computer wifi settings and find the "New Device" network and try to connect to it.
+  - Go to your phone's or computer's WiFi settings and find the "New Device" network and try to connect to it.
   - The AP password will be "123456789" (or whatever you set up in FD-Device-Definitions.h)
   - Once connected to the device's network, open "http://192.168.1.4" in your web browser and enter the Wifi SSID and password for your local network.
 ### 3. Operate your device:

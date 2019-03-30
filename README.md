@@ -28,12 +28,13 @@ ESPAsyncTCP and ESPAsyncWebServer by [me-no-dev](https://github.com/me-no-dev) (
 
 ### Arduino IDE
 
-If you are using the Arduino IDE you will need to install the required library from sources. If you are just getting started it is easiest to download the library as a ZIP file and install it using the option under "Sketch > Include Library > Add .ZIP Library...".
+If you are using the Arduino IDE you will need to install the fishyDevice and other required libraries from sources. If you are just getting started it is easiest to download a library as a ZIP file and install it using the option under "Sketch > Include Library > Add .ZIP Library...".
 
-You can look for it manually but I have gathered the URL here for convenience:
+Here are the direct ZIP file locations here for convenience:
 
 |Device|Library|Repository|ZIP|
 |-|-|-|-|
+|ESP8266|**fishyDIYdevices** by Stephen Fisher ESP8266|[GIT](https://github.com/sefisher/fishyDIYdevices)|[ZIP](https://github.com/sefisher/fishyDIYdevices/archive/Main.zip)|
 |ESP8266|**ESPAsyncTCP** by Hristo Gochkov ESP8266|[GIT](https://github.com/me-no-dev/ESPAsyncTCP)|[ZIP](https://github.com/me-no-dev/ESPAsyncTCP/archive/master.zip)|
 |ESP8266|**ESPAsyncWebServer** by Hristo Gochkov ESP8266|[GIT](https://github.com/me-no-dev/ESPAsyncWebServer)|[ZIP](https://github.com/me-no-dev/AsyncTCP/archive/master.zip)|
 |ESP8266|**FauxmoEsp** by Xose Perez ESP8266|[GIT](https://github.com/simap/fauxmoesp)|[ZIP](https://github.com/simap/fauxmoesp/archive/master.zip)|

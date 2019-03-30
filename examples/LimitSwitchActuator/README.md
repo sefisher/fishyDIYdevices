@@ -15,11 +15,11 @@ For detailed project instructions to include 3D printing files, wiring diagrams,
 #### * Add the fishyDIYdevices library and dependencies (see main README.md)
 ### 2. Compile and upload to your device:
 #### * Download the 5 files in the example folder into a directory named "FD-Limit-Switch-Actuator"
-  - FD-Limit-Switch-Actuator.ino - this is the main file with loop() and setup() functions, it is generally the same flow for all fishyDIYdevices.
-  - FD-Device-Definitions.h - this header defines device settings for compiling (name, device-type, etc), it is common to all fishyDIYdevices. You can compile it as is and make the changes to the device settings via the web interface.
-  - FD-LSA-Custom-Functions.ino - this contains the device-type specific function defintions to operate the limit-switch-actuator.
-  - FD-LSA-Globals.h - this header adds device-type specific variables, settings, and global variables.
-  - FD-LSA-Web-Resources.h - this header provides the string for compiling the device's web control interface.
+  - [FD-Limit-Switch-Actuator.ino](https://github.com/sefisher/fishyDIYdevices/blob/Main/examples/LimitSwitchActuator/FD-Limit-Switch-Actuator.ino) - this is the main file with loop() and setup() functions, it is generally the same flow for all fishyDIYdevices.
+  - [FD-Device-Definitions.h](https://github.com/sefisher/fishyDIYdevices/blob/Main/examples/LimitSwitchActuator/FD-Device-Definitions.h) - this header defines device settings for compiling (name, device-type, etc), it is common to all fishyDIYdevices. You can compile it as is and make the changes to the device settings via the web interface.
+  - [FD-LSA-Custom-Functions.ino](https://github.com/sefisher/fishyDIYdevices/blob/Main/examples/LimitSwitchActuator/FD-LSA-Custom-Functions.ino) - this contains the device-type specific function defintions to operate the limit-switch-actuator.
+  - [FD-LSA-Globals.h](https://github.com/sefisher/fishyDIYdevices/blob/Main/examples/LimitSwitchActuator/FD-LSA-Globals.h) - this header adds device-type specific variables, settings, and global variables.
+  - [FD-LSA-Web-Resources.h](https://github.com/sefisher/fishyDIYdevices/blob/Main/examples/LimitSwitchActuator/FD-LSA-Web-Resources.h) - this header provides the string for compiling the device's web control interface.
 #### * Build and upload the file
   - Open "FD-Limit-Switch-Actuator.ino" within the Ardnuino IDE
   - Make sure your ESP8266 is connected to your computer via a USB and select its port in the IDE (Tools > Port > 'COM3,COM8, etc')

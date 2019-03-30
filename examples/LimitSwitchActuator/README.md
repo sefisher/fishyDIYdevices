@@ -13,8 +13,15 @@ For detailed project instructions to include 3D printing files, wiring diagrams,
   - Click on “Filter your search” and type “ESP8266”
   - Click on esp8266 by ESP8266 Community, select version 2.3.0, and press “Install”
   - When installed, in the IDE go to “Tools>Board” the scroll down and select: “NodeMCU 1.0 (ESP-12E Module)”
-#### * Add the fishyDIYdevices library and dependencies (see "Dependencies" in main [README](../../README.md#dependencies))
-### 2. Compile and upload to your device:
+#### * Add the fishyDIYdevices library and dependencies
+  - Get fishyDIYdevices and other libraries it requires for all fishyDevices (see "Dependencies" in main [README](../../README.md#dependencies)).
+  - Get AccelStepper for controlling the motor. Install it using the option under "Sketch > Include Library > Add .ZIP Library...".
+  
+|Device|Library|Repository|ZIP|
+|-|-|-|-|
+|ESP8266|**AccelStepper** by Mike McCauley|[PAGE](http://www.airspayce.com/mikem/arduino/AccelStepper/index.html)|[ZIP](http://www.airspayce.com/mikem/arduino/AccelStepper/AccelStepper-1.59.zip)|
+
+### 2. Compile and upload the software to your device:
 #### * Download the 5 files in the example folder into a directory named "FD-Limit-Switch-Actuator"
   - [FD-Limit-Switch-Actuator.ino](FD-Limit-Switch-Actuator.ino) - this is the main file with loop() and setup() functions, it is generally the same flow for all fishyDIYdevices.
   - [FD-Device-Definitions.h](FD-Device-Definitions.h) - this header defines device settings for compiling (name, device-type, etc), it is common to all fishyDIYdevices. You can compile it as is and make the changes to the device settings via the web interface.

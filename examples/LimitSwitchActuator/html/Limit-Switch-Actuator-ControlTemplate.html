@@ -1,0 +1,261 @@
+<!--------------------------------------------------------------------------------------------------------
+This is the template file for the control panel for a Limit-SW-Actuator. You can use this to design control
+interface changes and then convert the HTML into a string embedded in the code. Style data is kept in styles.css 
+(which is embedded into webresources.h into a string and served if a clinet requests /styles.css).
+Common JS functions are stored in CommonWebFunction.js. 
+To build this template file intp the code after updating it do the following:
+ 1) copy the HTML from below this comment.
+ 2) put it through a minifier (like https://kangax.github.io/html-minifier/ with "Decode Entity Characters OFF") 
+ and then through a String builder (like http://buildmystring.com/ with "strip out carriage returns" on) to create a single string with no tabs and one line.
+ 3) paste that string into the WEBCTRLSTR After "PROGMEM" in the FD-LSA-Web-Resources.h file.
+ ------------------------------------------------------------------------------------------------------ -->
+<!DOCTYPE html>
+<html>
+
+<head>
+    <title>fishDIY Limit-SW-Actuator</title>
+    <meta name='viewport' content='initial-scale=1.0'>
+
+    <script type="text/javascript" src="/CommonWebFunctions.js"></script>
+    <link id='styles' rel="stylesheet" href="/styles.css">
+    <!-- intentionally left for testing -->
+    <link rel="stylesheet" href="styles.css">
+    <script type="text/javascript" src="CommonWebFunctions.js"></script>
+</head>
+
+<body>
+    <div class='main' id='myBody'>
+        <script>
+            //required function name/paramaters (called by start() during onmessage event)
+            function dealWithMessagePayload(payload){
+                var msgText = getMsg(payload);
+                console.log(msgText);
+                setOtherTxt(msgText);
+                var nodeJSONtext = getNodeJSONtext(payload);
+                console.log(nodeJSONtext);
+                processJSON(nodeJSONtext);
+            }
+            //required function for all fishyDIY devices (updates main text with status in the header)
+            function setMainTxt(text) {
+                _("mainTxt").innerHTML = text + "%";
+            }
+            //utility function for Limit-SW-Actuator
+            function setOtherTxt(text) {
+                _("otherTxt").innerHTML = text;
+            }
+            //utility function for Limit-SW-Actuator
+            function syncPO() {
+                var slider = _('pctOpenSld');
+                var btn = _('pobtntxt');
+                btn.innerHTML = slider.value + '%';
+            }
+            //utility function for Limit-SW-Actuator
+            function openIsCCWUpd() {
+                var label = _('swLab');
+                var sw = _('swChck');
+                if (sw.checked == true) { label.innerHTML = 'Open CCW'; } else { label.innerHTML = 'Open CW'; }
+            }
+            //utility function for Limit-SW-Actuator
+            function swSwapUpd() {
+                var label = _('swSwapLab');
+                var sw = _('swSwapChck');
+                if (sw.checked == true) { label.innerHTML = 'Swapped Lim Sw'; } else { label.innerHTML = 'Normal Lim Sw'; }
+            }
+            //utility function for all fishyDIY devices (sends Commands - commands and messages are customized for each device)
+            function sendCmd(command) {
+                if (websock.readyState != 1) {
+                    alert("This control panel is no longer connected to the device.  Please close this window and reopen the control panel.");
+                    return 0;
+                }
+                var cmd = '';
+                if (command == 'O') {
+                    cmd = 'open';
+                } else if (command == 'C') {
+                    cmd = 'close';
+                } else if (command == 'S') {
+                    cmd = 'stop';
+                } else if (command == 'cal') {
+                    cmd = 'calibrate';
+                } else if (command == 'reboot') {
+                    cmd = 'reset';
+                } else if (command == 'rstWifi') {
+                    cmd = 'reset_wifi';
+                } else if (command == 'G') {
+                    var pos;
+                    cmd = 'goto';
+                    pos = _('pctOpenSld').value;
+                    while (pos.length < 3) pos = '0' + pos;
+                    cmd += pos;
+                } else if (command == 'config') {
+                    var tmpStr = '';
+                    var isMstr = 'false';
+                    var ccwIsOpen = 'false';
+                    var swapLimSW = 'false';
+                    if (_('swMstrChck').checked) isMstr = 'true';
+                    if (_('swChck').checked) ccwIsOpen = 'true';
+                    if (_('swSwapChck').checked) swapLimSW = 'true';
+                    cmd = 'config';
+                    cmd += ';openIsCCW=' + ccwIsOpen;
+                    cmd += ';isMaster=' + isMstr;
+                    tmpStr = _('devName').value==""?" ":_('devName').value; cmd += ';devName=' + tmpStr;
+                    tmpStr = _('devNote').value==""?" ":_('devNote').value; cmd += ';note=' + tmpStr;
+                    cmd += ';swapLimSW=' + swapLimSW;
+                    tmpStr = _('timeOut').value==""?"60":_('timeOut').value; cmd += ';timeOut=' + tmpStr;
+                }
+                document.body.style.backgroundColor = "var(--bg-col-ack)";
+                websock.send(cmd);
+            }
+            //variable for all fishyDIY devices - holds data for device info modal
+            var infoText = '...Loading...';
+            //utility function for all fishyDIY devices (takes the device status info from the JSON and processes it - highly customized for each control interface)
+            function doStuffWithJSON(DA) {
+
+                var addDiv = '';
+                var mstrTxt = '';
+                var calTxt = '';
+                var inErr = false;
+                var errTxt = '';
+                d = DA[0];
+
+                returnColor(); //set background color to normal to show user the device responded
+                if (d.isMaster == 'true') { mstrTxt = ' (MASTER)'; _('swMstrChck').checked = true; } else { mstrTxt = ''; _('swMstrChck').checked = false; }
+                if (d.openIsCCW == 'true') { _('swChck').checked = true; } else { chckTxt = ''; _('swChck').checked = false; }
+                if (d.swapLimSW == 'true') { _('swSwapChck').checked = true; } else { _('swSwapChck').checked = false; }
+                if (d.motorPosAtCWset == 'true' && d.motorPosAtCCWset == 'true') { calTxt = ''; } else { inErr = true; errTxt = 'UNCALIBRATED\n'; calTxt = '**HARDWARE LIMITS ARE UNCALIBRATED**\n(AUTOCAL IS RECOMMENDED)\n'; }
+                if (d.deviceTimedOut == 'true') { inErr = true; errTxt = errTxt + 'ERROR - DEVICE TIMED OUT\n'; }
+                openIsCCWUpd(); swMstrUpd(); swSwapUpd();
+
+                infoText = 'DEVICE TYPE: ' + d.devType + '<br>\n' +
+                    'NAME: ' + d.deviceName + '<br>\n' +
+                    'IP ADDRESS: ' + d.ip + mstrTxt + '<hr>\n' +
+                    'MOTOR POSITION: ' + d.motorPos + '<br>\n' +
+                    'MOTOR HARDWARE LIMITS: CCW=0 CW= ' + d.range + '<hr>\n' +
+                    'SOFTWARE VERSION: ' + d.swVer + '<br>\n' +
+                    'INIT STR: ' + d.initStamp + '\n\n\n<hr>' + calTxt + '<br>\n' + errTxt;
+                if (inErr) {
+                    _("info-icon").className = "info-icon-blink";
+                } else {
+                    _("info-icon").className = "info-icon";
+                }
+                setMainTxt(posPct(d.motorPos, d.range, d.openIsCCW));
+                _('devIP').value = d.ip + mstrTxt;
+                _('devNote').value = d.note;
+                _('timeOut').value = d.timeOut;
+                _('devName').value = d.deviceName;
+                _('devType').value = d.devType;
+            }
+            //utility function for Limit-SW-Actuator (calculates motor position as a %)
+            function posPct(motPos, range, openIsCCW) {
+                if (range == 0) return 0;
+                var ret = Math.round(100 * ((motPos) / (range)));
+                //correct if CW = open
+                if (openIsCCW == 'true') ret = 100 - ret;
+                return ret;
+            }
+            window.onload = start();
+        </script>
+
+    </div>
+    <div id='flex-container' class='flex-grid-outer'>
+        <div class='fishyHdr' id='deviceStatus'>
+            <table width=100%>
+                <tr>
+                    <td>
+                        <div class='info-icon' id='info-icon' onclick='showDetails()'>&#9432;</div>
+                    </td>
+                    <td>
+                        <div class='flex-grid' style="padding:6px">
+                            <table>
+                                <tr>
+                                    <td style="font-size:12px">Position:</td>
+                                </tr>
+                                <tr>
+                                    <td id=mainTxt>100%</td>
+                                </tr>
+                            </table><span class=otherTxt id='otherTxt'></span>
+                        </div>
+                    </td>
+                </tr>
+            </table>
+        </div>
+        <div>
+            <div class='buttonSet'>
+                <div class='flex-grid'>
+                    <div class='sliderDiv'><input class='slider' id='pctOpenSld' type='range' value='50' max='100' min='0'
+                            oninput='syncPO()'></div>
+                    <div class='button' onclick='sendCmd("G")'>
+                        <table width=100%>
+                            <tr>
+                                <td class='lilButtonTxt'>GOTO</td>
+                            </tr>
+                            <tr>
+                                <td class='buttonTxt'><span id='pobtntxt'>50%</span></td>
+                            </tr>
+                        </table>
+                    </div>
+                </div>
+                <div class='flex-grid'>
+                    <div class='button' onclick='sendCmd("O")'><span class='buttonTxt'>OPEN</span></div>
+                    <div class='button' onclick='sendCmd("S")'><span class='buttonTxt'>STOP</span></div>
+                    <div class='button' onclick='sendCmd("C")'><span class='buttonTxt'>CLOSE</span></div>
+                </div>
+            </div>
+
+            <div class='swPanel'>
+                <div class='flex-grid'>
+                    <div class='swRow'><label class='sw' id='sw'><input type='checkbox' id='swChck' onchange='openIsCCWUpd()'><span
+                                class='sldSw'></span></label><span class='swLab' id='swLab'>Open CW</span></div>
+                    <div class='swRow'><label class='sw' id='swMstr'><input type='checkbox' id='swMstrChck' checked=''
+                                onchange='swMstrUpd()'><span class='sldSw'></span></label><span class='swLab' id='swMstrLab'>Master
+                            Node</span></div>
+                    <div class='swRow'><label class='sw' id='swSwap'><input type='checkbox' id='swSwapChck' checked=''
+                                onchange='swSwapUpd()'><span class='sldSw'></span></label><span class='swLab' id='swSwapLab'>Swapped
+                            Lim SW</span></div>
+                </div>
+            </div>
+        </div>
+        <div class='configPanel'>
+            <label class='cfgInpLab' for='devIP'>IP Address:<input class='cfgInp' disabled id='devIP' value='...Loading...'
+                    maxlength='40'></label><br>
+            <label class='cfgInpLab' for='devName'>Name:<input class='cfgInp' onkeypress='return blockSpecialChar(event)'
+                    id='devName' value='...Loading...' maxlength='40'></label><br>
+            <label class='cfgInpLab' for='devType'>Type:<input class='cfgInp' disabled
+                    id='devType' value='...Loading...' maxlength='20'></label><br>
+            <label class='cfgInpLab' for='devNote'>Note:<input class='cfgInp' onkeypress='return blockSpecialChar(event)'
+                    id='devNote' value='...Loading...' maxlength='55'></label><br>
+            <label class='cfgInpLab' for='timeOut'>Time-Out:<input class='cfgInpNum' onkeypress='return numberCharOnly(event)'
+                    id='timeOut' value='00' maxlength='5' title='Enter a time (in seconds) to wait for the actuator to respond before stopped and displaying an error message (assuming the actuator got stuck).'></label>
+        </div>
+
+
+        <div class='fishyFtrSw'>
+            <div class='flex-grid'>
+                <input class='cfgbuttonY' id='updCfgBtn' type='button' value='UPDATE SETTINGS' onclick='sendCmd("config")'
+                    title='This will save new settings in the device. New settings should be displayed on next refresh.  If trying to adjust mulitple settings it is recommended that you temporarily turn off Auto-refresh.'>
+                <input class='cfgbuttonY' id='updCfgBtn' type='button' value='REBOOT DEVICE' onclick='sendCmd("reboot")'
+                    title='This will reboot the device.'>
+            </div>
+            <div class='flex-grid'>
+                <input class='cfgbuttonR' id='updCfgBtn' type='button' value='AUTO-CAL. HW LIM' onclick='sendCmd("cal")'
+                    title='WARNING:Auto-Cal will attempt to cycle your actuator full open and shut to determine  hardware limit switch positions. Ensure that range is possible to prevent damage.'>
+                <input class='cfgbuttonR' id='rstWifiBtn' type='button' value='RESET WIFI' onclick='sendCmd("rstWifi")'
+                    title='WARNING:Reset Wifi will attempt to delete your network SSID and passwordand put the device into wifi-server mode to learn new wifi SSID and password. To teach a reset device a new wifi network go to the device IP address using a mobile phone or computer.'>
+            </div>
+        </div>
+    </div>
+
+    <!-- Overlay Modal for device information-->
+    <div id='infoPanel' class='infoPanel'>
+    <div id='infoDiv' class='infoDiv'></div>
+    <!-- Close button for overlay modal panel.  -->
+    <input type='button' class='infoOKbtn' onclick='closeCtrlModal()' value='OK'>
+    </div>
+    </body>
+    <script>
+    var ctrlModal = _('infoPanel');
+    // When the user clicks the X
+    function closeCtrlModal() {
+    ctrlModal.style.display = 'none';
+    }
+    </script>
+</html>

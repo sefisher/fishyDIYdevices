@@ -14,11 +14,15 @@ For detailed project instructions to include 3D printing files, wiring diagrams,
   - Click on esp8266 by ESP8266 Community, select version 2.3.0, and press “Install”
   - When installed, in the IDE go to “Tools>Board” the scroll down and select: “NodeMCU 1.0 (ESP-12E Module)”
 #### d. Add the fishyDIYdevices library and dependencies
-  - Get fishyDIYdevices and other libraries it requires for all fishyDevices (see "Dependencies" in main [README](../../README.md#dependencies)).
+  - Get fishyDIYdevices library and other 3 libraries required for all fishyDevices (same as listed under "Arduino IDE" in main [README](../../README.md#arduino-ide)).
   - Get AccelStepper for controlling the motor. Install it using the option under "Sketch > Include Library > Add .ZIP Library...".
   
 |Device|Library|Repository|ZIP|
 |-|-|-|-|
+|ESP8266|**fishyDIYdevices** by Stephen Fisher ESP8266|[GIT](https://github.com/sefisher/fishyDIYdevices)|[ZIP](https://github.com/sefisher/fishyDIYdevices/archive/Main.zip)|
+|ESP8266|**ESPAsyncTCP** by Hristo Gochkov ESP8266|[GIT](https://github.com/me-no-dev/ESPAsyncTCP)|[ZIP](https://github.com/me-no-dev/ESPAsyncTCP/archive/master.zip)|
+|ESP8266|**ESPAsyncWebServer** by Hristo Gochkov ESP8266|[GIT](https://github.com/me-no-dev/ESPAsyncWebServer)|[ZIP](https://github.com/me-no-dev/AsyncTCP/archive/master.zip)|
+|ESP8266|**FauxmoEsp** by Xose Perez ESP8266|[GIT](https://github.com/simap/fauxmoesp)|[ZIP](https://github.com/simap/fauxmoesp/archive/master.zip)|
 |ESP8266|**AccelStepper** by Mike McCauley|[PAGE](http://www.airspayce.com/mikem/arduino/AccelStepper/index.html)|[ZIP](http://www.airspayce.com/mikem/arduino/AccelStepper/AccelStepper-1.59.zip)|
 
 ### 2. Compile and upload the software to your device:

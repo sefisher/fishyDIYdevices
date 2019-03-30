@@ -39,7 +39,7 @@ You can look for it manually but I have gathered the URL here for convenience:
 |ESP8266|**FauxmoEsp** by Xose Perez ESP8266|[GIT](https://github.com/simap/fauxmoesp)|[ZIP](https://github.com/simap/fauxmoesp/archive/master.zip)|
 
 ## Examples
-* Detailed build instructions for the example devices (including files for 3D printed parts, hardware lists, etc) will be available at [fishyDIY.com](http://fishydiy.com/). 
+* Detailed build instructions for the example devices (including files for 3D printed parts, hardware lists, etc) will be available at [fishyDIY.com](http://fishydiy.com/). These full project examples are a work in progress. See the README.md in the examples folders for simple instructions for each example there.
 * The examples provided can generally be compiled and uploaded as is if you use the same electronic hardware. There are template html files in each example directory provided in case you want to customize the interfaces or make your own new device type. **Please note: SPIFFS is NOT used, all the device needs is in a single binary uploaded by the Arduino IDE, the HTML files are for you to develop your own look/feel/functions if desired.
 The following built-in device types are provided with hardware examples:
     - Limit-SW-Actuator (limit switches allow moving between full open and shut, or positioning anywhere from 0-100% of that range). This is a pretty flexible device that can be set up mechanical for a linear actuator (moving things back and forth) or rotating.  Using 2 limit switches makes positioning reliable since it can regain track on position if the motor ever "slips" (tries to move a step but doesn't have enough force).

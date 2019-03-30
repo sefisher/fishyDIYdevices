@@ -28,7 +28,7 @@ ESPAsyncTCP and ESPAsyncWebServer by [me-no-dev](https://github.com/me-no-dev) (
 
 ### Arduino IDE
 
-If you are using the Arduino IDE you will need to install the fishyDevice and other required libraries from sources. If you are just getting started it is easiest to download a library as a ZIP file and install it using the option under "Sketch > Include Library > Add .ZIP Library...".
+If you are using the Arduino IDE you will need to install the fishyDevice and other required libraries from sources (click on ZIP on the 4 files below). If you are just getting started it is easiest to download a library as a ZIP file and install it using the option under "Sketch > Include Library > Add .ZIP Library...".
 
 Here are the direct ZIP file locations here for convenience:
 

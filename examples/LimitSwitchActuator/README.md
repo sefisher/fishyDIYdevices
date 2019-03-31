@@ -46,6 +46,7 @@
   #### b. If you think it will work for you, set up the hardware.
 ## Hardware Setup:
 ### Parts:
+ - ESP8266 (NodeMCU ESP 12E)
  - 28BYJ-48 Stepper Motor
  - ULN2003 Motor Driver
  - 2 limit switches (normally open contacts, momentary)

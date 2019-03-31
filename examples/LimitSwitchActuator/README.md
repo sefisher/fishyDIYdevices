@@ -52,3 +52,5 @@
  - 2 limit switches (normally open contacts, momentary)
 ### Wiring:
 ![Wiring](extras/wiring%20diagram.png)
+## Thanks
+Thanks to Anne Elise Bolton for helping test and edit these instructions!

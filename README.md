@@ -54,5 +54,3 @@ Examples for the following types are under development:
 ## Security
 From a security standpoint - fishyDevices are intended to operate on a home WiFi network with device-device data transfer protected by your properly secured router (using the router's security to have device to device comms encrypted at the link layer). Each device can be controlled using a self-served control panel using any webbrowser only on your local network. Remote control (from outside your local network) is only enabled through your Alexa devices and Amazon.
 
-## Thanks:
-Thanks to Anne Elise Bolton for her work to edit and test this README.

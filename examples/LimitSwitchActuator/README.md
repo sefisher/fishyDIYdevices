@@ -27,9 +27,9 @@
 
 ### 2. Compile and upload the software to your device:
   #### a. Open "fishyDIYdevices.zip" and extract the example folder named "FD-Limit-Switch-Actuator" from  (.zip > examples > LimitSwitchActuator > FD-Limit-Switch-Actuator). You should find the following files in the extracted folder:
-  - [FD-Limit-Switch-Actuator.ino](FD-Limit-Switch-Actuator.ino) - this is the main file with loop() and setup() functions, it is generally the same flow for all fishyDIYdevices. It also contains all the definitions for the custom (device type specific) functions.
-  - [FD-Limit-Switch-Actuator.h](FD-Limit-Switch-Actuator.h) - this header adds declarations for functions, adds device-type specific variables, settings, and global variables.
-  - [FD-Device-Definitions.h](FD-Device-Definitions.h) - this header defines device settings for compiling (name, device-type, etc), it is common to all fishyDIYdevices. You can compile it as is and make the changes to the device settings via the web interface.
+  - [FD-Limit-Switch-Actuator.ino](FD-Limit-Switch-Actuator/FD-Limit-Switch-Actuator.ino) - this is the main file with loop() and setup() functions, it is generally the same flow for all fishyDIYdevices. It also contains all the definitions for the custom (device type specific) functions.
+  - [FD-Limit-Switch-Actuator.h](FD-Limit-Switch-Actuator/FD-Limit-Switch-Actuator.h) - this header adds declarations for functions, adds device-type specific variables, settings, and global variables.
+  - [FD-Device-Definitions.h](FD-Limit-Switch-Actuator/FD-Device-Definitions.h) - this header defines device settings for compiling (name, device-type, etc), it is common to all fishyDIYdevices. You can compile it as is and make the changes to the device settings via the web interface.
   #### b. Build and upload the file:
   - Open "FD-Limit-Switch-Actuator.ino" in the Arduino IDE
   - Make sure your ESP8266 is connected to your computer via a USB and select its port in the IDE (Tools > Port > 'COM3,COM8, etc')

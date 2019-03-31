@@ -13,7 +13,7 @@ In addition to providing a simple framework for control and device-device, devic
  2) Providing over the air software updating (intial software load on any device is via usb at your computer).
  3) Creates an Alexa (Amazon Echo) voice control interface for controlling the devices.
  4) Displaying a master list with all local device's status and controls. 
- 5) Mapview **under development** to see and control your devices overlaid on a layout/map of your home. (Logging, monitoring, and controlling in this way uses a separate monitoring device like a raspberry pi).
+ 5) Mapview (**under development**) to see and control your devices overlaid on a layout/map of your home. (Logging, monitoring, and controlling in this way uses a separate monitoring device like a raspberry pi).
  
 ## Dependencies
 

@@ -1,20 +1,15 @@
 /*
-
 Copyright (C) 2019 by Stephen Fisher 
 
 The MIT License (MIT)
 
-Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the "Software"), to deal
-in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions:
+Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions:
 
 The above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software.
 
 THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
 FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
-THE SOFTWARE.
-
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 -->Limit Switch Actuator (LSA) 
 This is an example implementation of the fishyDevice library.  This implements an actuator driven by a stepper motor whose range of operation is lmited by two limit switches at either end of the actuator's travel. The switch defined as "open" will correspond to 100% (and on), the switch defined as "closed" will correspond to 0% (and off). Once calibrated (each switch position found by the device at least once) it can reliably accept commands to goto any potistion between 000 and 100 (%).  
@@ -27,40 +22,52 @@ FD-LSA-Globals.h contains global variables.
 
 */
 
+#include <fishyDevices.h>               // fishyDevice header for class
+#include <AccelStepper.h>               // a library for stepper motor control
+
+#include "FD-Device-Definitions.h"      // device settings common to all devices (names, debug paramters, etc)
+#include "FD-Limit-Switch-Actuator.h"   // global variables specific to Limit-SW-Actuators
+
+//create the object and pass in the const holding the FD-Limit-Switch-Actuator's webpage control panel HTML
+fishyDevice fD(WEBCTRLSTR);
+
+//this is the base setup routine called first on power up or reboot
+void setup()
+{
+    fD.FD_setup();
+}
+
+//this is the standard loop run for all fishy devices the customization occures in operateDevice
+void loop()
+{
+
+    fD.checkResetOnLoop(); //reset device if flagged to by device
+    fD.checkWifiStatus();  //check/report on WiFi and support AP mode if not connected
+
+    if (fD.myWifiConnect.connect && !fD.myWifiConnect.softAPmode)
+    {
+        //this is done first time we have credentials, after that just let autoreconnect handle temp losses
+        fD.manageConnection();
+    }
+    else if (!fD.myWifiConnect.connect && !fD.myWifiConnect.softAPmode)
+    {
+        //connected and in STA mode - do normal loop stuff here
+
+        fD.UDPprocessPacket();    //process any net (UDP) traffic
+        fD.UDPkeepAliveAndCull(); //talk on net and drop dead notes from list
+        fD.fauxmo.handle();       //handle voice commands via fauxmo
+        fD.operateDevice();       //run device (state machine, commands, etc)
+    }
+    else
+    {
+        fD.slowBlinks(1); //in SoftAP mode - only do AP Wifi Config server stuff
+    }
+    fD.showHeapAndProcessSerialInput(); //if debugging allow heap display and take serial commands
+}
+
+
 //=============================================================================
-/*  DECLARATIONS -->
-
-CUSTOM DEVICE FUNCTIONS - EXTERNAL - The following 
-COMMON EXTERNAL functions are required for all fishyDevice objects are DECLARED in
-fishyDevice.h but must be DEFINED in this file using the fishyDevice namespace (fishyDevice::).
-
-void operateDevice();
-void deviceSetup(); 
-void executeDeviceCommands(char inputMsg[MAXCMDSZ], IPAddress remote);
-void executeState(bool state, unsigned char, context int); 
-void UDPparseConfigResponse(String responseIn, IPAddress remote);
-String getStatusString();
-String getShortStatString();
-void initializeDeviceCustomData();
-void extractDeviceCustomData();
-void encodeDeviceCustomData();
-void showEEPROMdevicePersonalityData();
-bool isCustomDeviceReady();
-String getDeviceSpecificJSON();
-
-The declarations immediately following are for non-COMMON functions (unique to this device) 
-defined in this file:  */
-
-void executeGoto(String cmd);
-void executeStop();
-trueState moveCCW();
-trueState moveCW();
-int whichWayGoto(int in);
-trueState idleActuator(trueState idleState);
-trueState openPercentActuator(int percent);
-
-//=============================================================================
-// DEFINIITIONS-->
+// FUNCTION DEFINIITIONS-->
 
 //CUSTOM DEVICE FUNCTION - EXTERNAL (SAME FUNCTION CALLED BY ALL DEVICES)
 //THIS IS A FUNCTION FOR A Limit-SW-Actuator
@@ -702,7 +709,6 @@ void executeStop()
     deviceCalStage = doneCal;
     idleActuator(deviceTrueState);
 }
-
 //CUSTOM DEVICE FUNCTION - INTERNAL
 //function used to do a normal WiFi or calibration opening of the actuator
 // - this moves at constant speed to HW limits
@@ -841,7 +847,6 @@ trueState moveCW()
     }
     return newState;
 }
-
 //CUSTOM DEVICE FUNCTION - INTERNAL
 //this function changes goto commmand values to their
 //complement (100-original value) if CW is defined as

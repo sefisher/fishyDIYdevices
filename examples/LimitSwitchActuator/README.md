@@ -50,4 +50,4 @@
  - ULN2003 Motor Driver
  - 2 limit switches (normally open contacts, momentary)
 ### Wiring:
-![Wiring](extras/wiring diagram.png)
+![Wiring](/extras/wiring%20diagram.png)

@@ -41,6 +41,13 @@
   - Go to your phone's or computer's WiFi settings and find the "New Device" network and try to connect to it.
   - The AP password will be "123456789" (or whatever you set up in FD-Device-Definitions.h)
   - Once connected to the device's network, open "http://192.168.1.4" in your web browser and enter the Wifi SSID and password for your local network.
-### 3. Operate your device:
+### 3. Test your device:
   #### a. Go to [http://fishydiy.local/](http://fishydiy.local/) (or the IP address your router provided the new device if your network doesn't support mDNS).
-  #### b. Have fun!
+  #### b. If you think it will work for you, set up the hardware.
+## Hardware Setup:
+### Parts:
+ - 28BYJ-48 Stepper Motor
+ - ULN2003 Motor Driver
+ - 2 limit switches (normally open contacts, momentary)
+### Wiring:
+![Wiring](extras/wiring diagram.png)

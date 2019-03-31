@@ -49,7 +49,7 @@ Examples for the following types are under development:
     - Light switch controls (for replacing normal toggle light switches).
     - Infrared motion sensors (passive sensors to detect motion and trigger events).
     - Temperature sensors (just
-    - Single-SW-Actuator (single limit switch allow resetting motion tracking from a single known point (limit SW) positioning anywhere fromm 0-100% with 100% set by software and conuting motor rotations). These can be used for the same things as a Limit-SW-actuator where adding a second switch is hard (or ugly) - like blinds. But it is slightly less reliable than a full limit switch actuator with two switches. 
+    - Single-SW-Actuator (single limit switch allow resetting motion tracking from a single known point (limit SW) positioning anywhere from 0 to 100% with 100% set by software and conuting motor rotations). These can be used for the same things as a Limit-SW-actuator where adding a second switch is hard (or ugly) - like blinds. But it is slightly less reliable than a full limit switch actuator with two switches. 
 
 ## Security
 From a security standpoint - fishyDevices are intended to operate on a home WiFi network with device-device data transfer protected by your properly secured router (using the router's security to have device to device comms encrypted at the link layer). Each device can be controlled using a self-served control panel using any webbrowser only on your local network. Remote control (from outside your local network) is only enabled through your Alexa devices and Amazon.

@@ -13,7 +13,7 @@
   - Click on “Filter your search” and type “ESP8266”
   - Click on esp8266 by ESP8266 Community, select version 2.3.0, and press “Install”
   - When installed, in the IDE go to “Tools>Board” the scroll down and select: “NodeMCU 1.0 (ESP-12E Module)”
-  #### d. Add the fishyDIYdevices library and dependencies
+  #### d. Add the fishyDIYdevices library and dependencies:
   - If you don't have them already, click on "ZIP" for each of the 5 libraries in the table below. 
   - Install each of the 5 libraries in the Arduino IDE using the option under "Sketch > Include Library > Add .ZIP Library...".
   
@@ -26,16 +26,16 @@
 |ESP8266|**AccelStepper** by Mike McCauley|[PAGE](http://www.airspayce.com/mikem/arduino/AccelStepper/index.html)|[ZIP](http://www.airspayce.com/mikem/arduino/AccelStepper/AccelStepper-1.59.zip)|
 
 ### 2. Compile and upload the software to your device:
-  #### a. Extract the example folder named "FD-Limit-Switch-Actuator" from fishyDIYdevices.zip (.zip > examples > LimitSwitchActuator). You should find the following files in the extracted folder:
+  #### a. Open "fishyDIYdevices.zip" and extract the example folder named "FD-Limit-Switch-Actuator" from  (.zip > examples > LimitSwitchActuator > FD-Limit-Switch-Actuator). You should find the following files in the extracted folder:
   - [FD-Limit-Switch-Actuator.ino](FD-Limit-Switch-Actuator.ino) - this is the main file with loop() and setup() functions, it is generally the same flow for all fishyDIYdevices. It also contains all the definitions for the custom (device type specific) functions.
   - [FD-Limit-Switch-Actuator.h](FD-Limit-Switch-Actuator.h) - this header adds declarations for functions, adds device-type specific variables, settings, and global variables.
   - [FD-Device-Definitions.h](FD-Device-Definitions.h) - this header defines device settings for compiling (name, device-type, etc), it is common to all fishyDIYdevices. You can compile it as is and make the changes to the device settings via the web interface.
-  #### b. Build and upload the file
+  #### b. Build and upload the file:
   - Open "FD-Limit-Switch-Actuator.ino" in the Arduino IDE
   - Make sure your ESP8266 is connected to your computer via a USB and select its port in the IDE (Tools > Port > 'COM3,COM8, etc')
   - Build and upload the sketch using "Sketch > Upload"
   - NOTE: Do a hard RESET on the device (power cycyle or press the RST button on the chip) after you successfully Upload the first time
-  #### c. Connect to the device and setup WiFi
+  #### c. Connect to the device and setup WiFi:
   - Connect your device to a power source via USB (recommend not using your computer USB to ensure a stable voltage for the AP mode, if you try it and can't connect to the network below then try powering it from a regular plug-in USB power source).
   - It will boot in AP mode the first time with the name "New Device" (or whatever you named it in FD-Device-Definitions.h).
   - Go to your phone's or computer's WiFi settings and find the "New Device" network and try to connect to it.

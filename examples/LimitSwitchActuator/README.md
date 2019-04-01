@@ -21,8 +21,8 @@
 |-|-|-|-|
 |ESP8266|**fishyDIYdevices** by Stephen Fisher ESP8266|[GIT](https://github.com/sefisher/fishyDIYdevices)|[ZIP](https://github.com/sefisher/fishyDIYdevices/archive/Main.zip)|
 |ESP8266|**ESPAsyncTCP** by Hristo Gochkov ESP8266|[GIT](https://github.com/me-no-dev/ESPAsyncTCP)|[ZIP](https://github.com/me-no-dev/ESPAsyncTCP/archive/master.zip)|
-|ESP8266|**ESPAsyncWebServer** by Hristo Gochkov ESP8266|[GIT](https://github.com/me-no-dev/ESPAsyncWebServer)|[ZIP](https://github.com/me-no-dev/AsyncTCP/archive/master.zip)|
-|ESP8266|**FauxmoEsp** by Xose Perez ESP8266|[GIT](https://github.com/simap/fauxmoesp)|[ZIP](https://github.com/simap/fauxmoesp/archive/master.zip)|
+|ESP8266|**ESPAsyncWebServer** by Hristo Gochkov ESP8266|[GIT](https://github.com/me-no-dev/ESPAsyncWebServer)|[ZIP](https://github.com/me-no-dev/ESPAsyncWebServer/archive/master.zip)|
+|ESP8266|**FauxmoEsp** by Xose Perez ESP8266|[GIT](https://bitbucket.org/xoseperez/fauxmoesp)|[ZIP](https://bitbucket.org/xoseperez/fauxmoesp/get/f60c46d80f9b.zip)|
 |ESP8266|**AccelStepper** by Mike McCauley|[PAGE](http://www.airspayce.com/mikem/arduino/AccelStepper/index.html)|[ZIP](http://www.airspayce.com/mikem/arduino/AccelStepper/AccelStepper-1.59.zip)|
 
 ### 2. Compile and upload the software to your device:
@@ -41,6 +41,16 @@
   - Go to your phone's or computer's WiFi settings and find the "New Device" network and try to connect to it.
   - The AP password will be "123456789" (or whatever you set up in FD-Device-Definitions.h)
   - Once connected to the device's network, open "http://192.168.1.4" in your web browser and enter the Wifi SSID and password for your local network.
-### 3. Operate your device:
+### 3. Test your device:
   #### a. Go to [http://fishydiy.local/](http://fishydiy.local/) (or the IP address your router provided the new device if your network doesn't support mDNS).
-  #### b. Have fun!
+  #### b. If you think it will work for you, set up the hardware.
+## Hardware Setup:
+### Parts:
+ - ESP8266 (NodeMCU ESP 12E)
+ - 28BYJ-48 Stepper Motor
+ - ULN2003 Motor Driver
+ - 2 limit switches (normally open contacts, momentary)
+### Wiring:
+![Wiring](extras/wiring%20diagram.png)
+## Thanks
+Thanks to Anne Elise Bolton for helping test and edit these instructions!

@@ -14,11 +14,9 @@ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OU
 -->Limit Switch Actuator (LSA) 
 This is an example implementation of the fishyDevice library.  This implements an actuator driven by a stepper motor whose range of operation is lmited by two limit switches at either end of the actuator's travel. The switch defined as "open" will correspond to 100% (and on), the switch defined as "closed" will correspond to 0% (and off). Once calibrated (each switch position found by the device at least once) it can reliably accept commands to goto any potistion between 000 and 100 (%).  
 
-This is the main file (Limit-Switch-Actuator-ControlTemplate.ino). 
-FD-LSA-Custom-Functions.h defines the actual functions which operate this specific device.
-FD-LSA-Web-Resources.h provides HTML for the device webbased control interface.
-FD-Device-Definitions.h contains settings (name, etc).
-FD-LSA-Globals.h contains global variables.
+FD-Limit-Switch-Actuator.ino - this is the main file with loop() and setup() functions, it is generally the same flow for all fishyDIYdevices. It also contains all the definitions for the custom (device type specific) functions.
+FD-Limit-Switch-Actuator.h - this header adds declarations for functions, adds device-type specific variables, settings, and global variables.
+FD-Device-Definitions.h - this header defines device settings for compiling (name, device-type, etc), it is common to all fishyDIYdevices. You can compile it as is and make the changes to the device settings via the web interface.
 
 */
 

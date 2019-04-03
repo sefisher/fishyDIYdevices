@@ -1,7 +1,7 @@
 //-----------------------------------------------------------------------------
 //--------------------------USER DEFINED VARIABLES-----------------------------
 //-------------------(See fishyDevices.h for DEBUG switches)-------------------
-//-----------(See FD-LSA-Globals.h for device type specific settings)----------
+//-----------(See FD-Limit-Switch-Actuator.h for device type specific settings)----------
 //---In a hurry to test? Set device type and leave the rest (update via web).--
 //-----------------------------------------------------------------------------
 

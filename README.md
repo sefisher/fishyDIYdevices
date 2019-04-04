@@ -44,7 +44,7 @@ Here are the direct ZIP file locations here for convenience:
 * The examples provided can generally be compiled and uploaded as is if you use the same electronic hardware. There are template html files in each example directory provided in case you want to customize the interfaces or make your own new device type. 
 The following built-in device types are provided with hardware examples:
     - Limit-SW-Actuator (limit switches allow moving between full open and shut, or positioning anywhere from 0-100% of that range). This is a pretty flexible device that can be set up mechanical for a linear actuator (moving things back and forth) or rotating.  Using 2 limit switches makes positioning reliable since it can regain track on position if the motor ever "slips" (tries to move a step but doesn't have enough force). Using ESP8266, 28BYJ-48 stepper, ULN2003 driver, your 3D printed mechanical device, and a few switches you can have an actuator working for less than $8.
-Examples for the following types are under development:
+* Examples for the following types are under development:
     - RGBLED controller (colors and dimming control for a low power RGB LED strip)
     - Light switch controls (for replacing normal toggle light switches).
     - Infrared motion sensors (passive sensors to detect motion and trigger events).

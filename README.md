@@ -129,7 +129,7 @@ The library needs these functions to work, you define them to control what they 
   - **void encodeDeviceCustomData()** - This encodes device speciifc data into a string stored in EEPROM
   - **void showEEPROMdevicePersonalityData()** - This display device type specific personality data for debugging
   
-## Program flow exaplained in more detail.
+## Program flow explained in more detail.
 Coming...
 
 

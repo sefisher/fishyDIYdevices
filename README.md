@@ -55,17 +55,61 @@ Examples for the following types are under development:
 From a security standpoint - fishyDevices are intended to operate on a home WiFi network with device-device data transfer protected by your properly secured router (using the router's security to have device to device comms encrypted at the link layer). Each device can be controlled using a self-served control panel using any webbrowser only on your local network. Remote control (from outside your local network) is only enabled through your Alexa devices and Amazon.
 
 ## More detail on how to use this library with your device and how it works.
-In case your not a do-it-by-example person, or if you want to understand or modify the library.  The following two sections are for you.
+In case you are not a do-it-by-example person, or if you want to understand or modify the library.  The following two sections are for you.
 
 ### What are the three files in each example for?
+Coming...
 
 ### Explain what I have to do in my main Arduino .ino file.
+To make you own device the following basic "scaffolding" is needed by the fishyDevice library.  The rest (defining what your device actually does) is up to you.  
 
 #### Required header files and the fD variable.
+In this section you also include any other headers your device needs (like AccelStepper.h to control motors in the Limit Switch Actuator example). 
+```
+#include <fishyDevices.h>               // fishyDevice header for class
+#include "FD-Device-Definitions.h"      // device settings common to all devices (names, debug paramters, etc)
+#include "FD-[YOUR-DEVICE-TYPE-NAME].h"   // global variables specific to your device type
 
+//create the object and pass in the const holding the your device's webpage control panel HTML (the default is "WEBCTRLSTR" with that character array is defined in the device's .h file).
+fishyDevice fD(WEBCTRLSTR);
+```
 #### Required setup() function call.
+```
+void setup()
+{
+    fD.FD_setup();
+}
+```
 
 #### Basic loop() flow.
+```
+void loop()
+{
+
+    fD.checkResetOnLoop(); //reset device if flagged to by device
+    fD.checkWifiStatus();  //check/report on WiFi and support AP mode if not connected
+
+    if (fD.myWifiConnect.connect && !fD.myWifiConnect.softAPmode)
+    {
+        //this is done first time we have credentials, after that just let autoreconnect handle temp losses
+        fD.manageConnection();
+    }
+    else if (!fD.myWifiConnect.connect && !fD.myWifiConnect.softAPmode)
+    {
+        //connected and in STA mode - do normal loop stuff here
+
+        fD.UDPprocessPacket();    //process any net (UDP) traffic
+        fD.UDPkeepAliveAndCull(); //talk on net and drop dead notes from list
+        fD.fauxmo.handle();       //handle voice commands via fauxmo
+        fD.operateDevice();       //run device (state machine, commands, etc)
+    }
+    else
+    {
+        fD.slowBlinks(1); //in SoftAP mode - only do AP Wifi Config server stuff
+    }
+    fD.showHeapAndProcessSerialInput(); //if debugging allow heap display and take serial commands
+}
+```
 
 #### Functions you MUST define (but are declared in the library)
 Tthe library needs these functions to work, you define them to control what they do in your specific device. But they are already declared (named with the input and output setup in the fishyDevice.h file). In the examples the comments before them say "//CUSTOM DEVICE FUNCTION - EXTERNAL (SAME FUNCTION CALLED BY ALL DEVICES)". Each of the following functions needs to be coded in your .ino file. If you don't need that specific function to do anything in your device, you can just define it as a function shell with no internal code. (Note: MAXCMDSZ is a constant set to define the maximum command size, set 300 characters in the library. Commands are just text passed between devices and web control interfaces to make things happen.)

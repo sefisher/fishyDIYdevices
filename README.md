@@ -114,7 +114,7 @@ void loop()
 #### Functions you MUST define (but are declared in the library)
 The library needs these functions to work, you define them to control what they do in your specific device. But they are already declared (named with the input and output setup in the fishyDevice.h file). In the examples the comments before them say "//CUSTOM DEVICE FUNCTION - EXTERNAL (SAME FUNCTION CALLED BY ALL DEVICES)". Each of the following functions needs to be coded in your .ino file. If you don't need that specific function to do anything in your device, you can just define it as a function shell with no internal code. (Note: MAXCMDSZ is a constant set to define the maximum command size, set 300 characters in the library. Commands are just text passed between devices and web control interfaces to make things happen.)
 
-* **void operateDevice()** - his is run very loop cycle to make the device work based on user input
+* **void operateDevice()** - This is run very loop cycle to make the device work based on user input
 * **void deviceSetup()** - This is run at initialization (from setup()) to startup the device
 * **bool executeDeviceCommands(char inputMsg[MAXCMDSZ], IPAddress remote)** - This is run by executecommands first to allow device specific commands to be processed (can override built-in commands processes as well)
 * **void executeState(bool state, unsigned char value, int context)** - This executes voice command state changes (immplemented by Fauxmo - takes on/off or a numerical setting from 0-100 (e.g., "Alexa set My Device to 60"))

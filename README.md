@@ -54,7 +54,7 @@ Examples for the following types are under development:
 ## Security
 From a security standpoint - fishyDevices are intended to operate on a home WiFi network with device-device data transfer protected by your properly secured router (using the router's security to have device to device comms encrypted at the link layer). Each device can be controlled using a self-served control panel using any webbrowser only on your local network. Remote control (from outside your local network) is only enabled through your Alexa devices and Amazon.
 
-## More detail on how to use this library with your device and how it works.
+## Usage
 In case you are not a do-it-by-example person, or if you want to understand or modify the library.  The following two sections are for you.
 
 ### What are the three files in each example for?
@@ -128,6 +128,9 @@ The library needs these functions to work, you define them to control what they 
   - **void extractDeviceCustomData()** - This extracts device specific data from a string stored in EEPROM 
   - **void encodeDeviceCustomData()** - This encodes device speciifc data into a string stored in EEPROM
   - **void showEEPROMdevicePersonalityData()** - This display device type specific personality data for debugging
+  
+## Program flow exaplained in more detail.
+Coming...
 
 
 

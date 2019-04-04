@@ -54,3 +54,37 @@ Examples for the following types are under development:
 ## Security
 From a security standpoint - fishyDevices are intended to operate on a home WiFi network with device-device data transfer protected by your properly secured router (using the router's security to have device to device comms encrypted at the link layer). Each device can be controlled using a self-served control panel using any webbrowser only on your local network. Remote control (from outside your local network) is only enabled through your Alexa devices and Amazon.
 
+## More detail on how to use this library with your device and how it works.
+In case your not a do-it-by-example person, or if you want to understand or modify the library.  The following two sections are for you.
+
+### What are the three files in each example for?
+
+### Explain what I have to do in my main Arduino .ino file.
+
+#### Required header files and the fD variable.
+
+#### Required setup() function call.
+
+#### Basic loop() flow.
+
+#### Functions you MUST define (but are declared in the library)
+Tthe library needs these functions to work, you define them to control what they do in your specific device. But they are already declared (named with the input and output setup in the fishyDevice.h file). In the examples the comments before them say "//CUSTOM DEVICE FUNCTION - EXTERNAL (SAME FUNCTION CALLED BY ALL DEVICES)". Each of the following functions needs to be coded in your .ino file. If you don't need that specific function to do anything in your device, you can just define it as a function shell with no internal code. (Note: MAXCMDSZ is a constant set to define the maximum command size, set 300 characters in the library. Commands are just text passed between devices and web control interfaces to make things happen.)
+
+* void operateDevice() - his is run very loop cycle to make the device work based on user input
+* void deviceSetup() - This is run at initialization (from setup()) to startup the device
+* bool executeDeviceCommands(char inputMsg[MAXCMDSZ], IPAddress remote) - This is run by executecommands first to allow device specific commands to be processed (can override built-in commands processes as well)
+* void executeState(bool state, unsigned char value, int context) - This executes voice command state changes (immplemented by Fauxmo - takes on/off or a numerical setting from 0-100 (e.g., "Alexa set My Device to 60"))
+* void UDPparseConfigResponse(char inputMsg[MAXCMDSZ], IPAddress remote) - parse configuration string data to update all the stored parameters
+* String getStatusString() - This returns a string with the device's status for display
+* String getShortStatString() - This returns a SHORT string (3 char max) summarizing the device's status for minimalist displays (used for viewing/controlling devices overlaid on floor plans)
+* bool isCustomDeviceReady() - This reports if the device is ready, if not sets Error flag. For example if a device needs calibrating one time to know its starting position, this can flag an ERROR to the user until that is done. 
+* String getDeviceSpecificJSON() - This generates a device specific status JSON for use by the device's webbased control panel.
+* Functions managing device setting persistent storage. (Note: the library manages EEPROM storage for a character array with MAXCUSTOMDATALEN characters in it for custom use in devices to save persistent settings or status information)
+  - void initializeDeviceCustomData() - This sets up device specific data elements on boot up if nothing is found stored in EEPROM 
+  - void extractDeviceCustomData() - This extracts device specific data from a string stored in EEPROM 
+  - void encodeDeviceCustomData() - This encodes device speciifc data into a string stored in EEPROM
+  - void showEEPROMdevicePersonalityData() - This display device type specific personality data for debugging
+
+
+
+

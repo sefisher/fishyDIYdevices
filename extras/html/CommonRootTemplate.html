@@ -117,7 +117,7 @@ To build it in the code do the following:
                     },
                     //load failure function
                     function (xhr) {
-                        console.log("Error with loadJSON")
+                        console.log("Error with loadJSON");
                     }
                 );
             }
@@ -155,12 +155,24 @@ To build it in the code do the following:
                 loadJSON(srcStr,
                     //load success function
                     function (data) {
-                        DA = data.fishyDevices;
-                        Array.prototype.forEach.call(DA,
-                            function (d, num) {
-                                items.push(addDevice(d));
-                            }
-                        );
+                        if(data!=null){
+                            DA = data.fishyDevices;
+                            Array.prototype.forEach.call(DA,
+                                function (d, num) {
+                                    items.push(addDevice(d));
+                                }
+                            );
+                            
+                        }else{
+                            alert("Failed to load network.JSON. Suspect one of the devices is not configured properly. Look at http://[this device's ip]/network.JSON (link should appear when you click OK) to see if you can find which device is affecting the JSON data and correct it. Often this occurs when a device is compiled with the wrong 'CUSTOM_DEVICE_TYPE' setting.");
+                                
+                            var addDiv = "<div class='CPdevice' id='CP-" + window.location.hostname + "'>";
+                            var loc = window.location.href;
+                            var dir = loc.substring(0, loc.lastIndexOf('/'));
+                            addDiv += "<a style='color:red' href = '" + dir + "/network.JSON' >network.JSON</a>";
+                            addDiv += "</div>";
+                            items.push(addDiv);
+                        }
                         newdiv = document.createElement('DIV');
                         newdiv.className = 'flex-container';
                         newdiv.id = 'flex-container';

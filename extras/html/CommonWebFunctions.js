@@ -62,8 +62,21 @@ function loadJSON(path, success, error){
     {
         if (xhr.readyState === XMLHttpRequest.DONE) {
             if (xhr.status === 200) {
-                if (success)
-                    success(JSON.parse(xhr.responseText));
+                if (success){
+                    try {
+                        var json = xhr.responseText;
+                        var pjson = JSON.parse(json);
+                    } catch (e) {
+                        if (e instanceof SyntaxError) {
+                            console.log(e, true);
+                            pjson=null;
+                        } else {
+                            console.log(e, false);
+                            pjson=null;
+                        }
+                    }
+                    success(pjson);
+                }
             } else {
                 if (error)
                     error(xhr);

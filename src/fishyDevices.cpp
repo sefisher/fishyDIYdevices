@@ -1046,6 +1046,10 @@ void fishyDevice::cullDeadNodes()
 void fishyDevice::storeDataToEEPROM()
 {
   uint addr = 0;
+  if (DEBUG_MESSAGES)
+  {
+       Serial.println("[storeDataToEEPROM]start");
+  }
   encodeDeviceCustomData(); //get the device custom data and put it into the EEPROM struct
   EEPROM.begin(1024);
   // replace values in EEPROM

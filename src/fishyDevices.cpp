@@ -147,9 +147,16 @@ void fishyDevice::WifiFauxmoAndDeviceSetup()
   // You can enable or disable the library at any moment
   // Disabling it will prevent the devices from being discovered and switched
   fauxmo.enable(false);
-
+  if (DEBUG_MESSAGES)
+  {
+    Serial.println("[WifiFauxmoAndDeviceSetup]disabled fauxmo");
+  }
   // WiFi - see wifi-and-webserver.ino
   WiFiSetup();
+  if (DEBUG_MESSAGES)
+  {
+    Serial.println("[WifiFauxmoAndDeviceSetup]did wifi setup");
+  }
   if (FAUXMO_ENABLED)
   {
 
@@ -159,6 +166,10 @@ void fishyDevice::WifiFauxmoAndDeviceSetup()
     fauxmo.enable(true);
     // Add virtual device
     fauxmo.addDevice(myEEPROMdata.namestr);
+    if (DEBUG_MESSAGES)
+    {
+      Serial.println("[WifiFauxmoAndDeviceSetup]enabled fauxmo");
+    }
   }
 
   if (FAUXMO_ENABLED)
@@ -169,6 +180,11 @@ void fishyDevice::WifiFauxmoAndDeviceSetup()
   {
     Serial.println("[WifiFauxmoAndDeviceSetup]finish");
   }
+}
+
+//function to add additonal devices, device ID will be incrmented for each call (the default/first device_id is 0)
+void fishyDevice::addAnotherDevice(const char *device_name){
+   fauxmo.addDevice(device_name);
 }
 
 //passthrough function for binding to fauxmo,onSetState
@@ -183,11 +199,9 @@ void fishyDevice::onSetStateForFauxmo(unsigned char device_id, const char *devic
   {
     Serial.printf("[SETUP] Device #%d (%s) state was set: %s set value was: %d\n", device_id, device_name, state ? "ON" : "OFF", value);
   }
+ 
+  executeState(device_id, device_name, state, value, 2); //2= context 2 which tells the device it was a fauxmo state change (has no custom device knowledge)
 
-  if (!strcmp(device_name, myEEPROMdata.namestr))
-  {
-    executeState(state, value, 2); //2= context 2 which tells the device it was a fauxmo state change (has no custom device knowledge)
-  }
 }
 
 //as name implies - dump memory remaining on serial - process every second
@@ -226,9 +240,13 @@ void fishyDevice::showHeapAndProcessSerialInput()
 // Initialize serial port and clean garbage
 void fishyDevice::serialStart()
 {
-  if (DEBUG_MESSAGES || DEBUG_TIMING)
+  if (DEBUG_MESSAGES )
   {
-    Serial.begin(SERIAL_BAUDRATE);
+    if(USE_SERIAL_INPUT) {
+      Serial.begin(SERIAL_BAUDRATE);
+    }else{
+      Serial.begin(SERIAL_BAUDRATE,SERIAL_8N1, SERIAL_TX_ONLY);
+    }
     Serial.println();
     Serial.println();
   }
@@ -252,7 +270,6 @@ void fishyDevice::showPersonalityDataSize()
 {
   if (DEBUG_MESSAGES)
   {
-    Serial.println("[SETUP] Device Type: " + String(myEEPROMdata.typestr));
     Serial.println("[SETUP] The personality data needs " + String(sizeof(myEEPROMdata)) + " Bytes in EEPROM.");
     Serial.println("[SETUP] initstr " + String(sizeof(myEEPROMdata.initstr)));
     Serial.println("[SETUP] namestr " + String(sizeof(myEEPROMdata.namestr)));
@@ -1536,16 +1553,10 @@ void fishyDevice::handleRoot(AsyncWebServerRequest *request)
 {
   if (myEEPROMdata.master || (masterIP.toString() == "0.0.0.0"))
   {
-
-    //'m here - need to finish moving to POST from GET for WIFI
-    //need to use the 2 part WEBROOTSTR
-    //insert hasParam(n) amd (p) into var pass and user
-    //make use of those variables in creating the wifi forms
-    // get rid of any HTTP_GET (move to ANY ro POST if needed)
     if (DEBUG_MESSAGES)
     {
       Serial.println("\n[handleRoot]\n");
-      Serial.println(String(WEBROOTSTR));
+      Serial.println(FPSTR(WEBROOTSTR));
     }
     request->send_P(200, "text/html", WEBROOTSTR);
   }
@@ -1682,7 +1693,7 @@ void fishyDevice::handleCtrl(AsyncWebServerRequest *request)
   if (DEBUG_MESSAGES)
   {
     Serial.println("\n[handleCtrl]\n");
-    Serial.println(String(webctrlstrPtr));
+    Serial.println(FPSTR(webctrlstrPtr));
   }
   request->send_P(200, "text/html", webctrlstrPtr);
 }
@@ -1690,11 +1701,20 @@ void fishyDevice::handleCtrl(AsyncWebServerRequest *request)
 //show the SW update form for the specifc device (function for every device webserver)
 void fishyDevice::handleSWupdateDevForm(AsyncWebServerRequest *request)
 {
+  if (DEBUG_MESSAGES)
+  {
+    Serial.println("[handleSWupdateDevForm]");
+  }
+  
   //build the device info string
-  String WEBSTR_SWUPDATE_DEVICE_INFO = "Type: " + String(myEEPROMdata.typestr) + "<br>Software Version:" + String(myEEPROMdata.swVer) + "<br>Initialization String:" + String(myEEPROMdata.initstr) + "<br><script>var SWDELAY=" + String(SW_UPDATE_DELAY) + ";</script>";
+  String SwUpdate_Device_Info = "Type: " + String(myEEPROMdata.typestr) + "<br>Software Version:" + String(myEEPROMdata.swVer) + "<br>Initialization String:" + String(myEEPROMdata.initstr) + "<br>Current SW Size: " + String(ESP.getSketchSize()) + "<br>Free Space: " + String(ESP.getFreeSketchSpace());
+  if(ESP.getFreeSketchSpace()<ESP.getSketchSize()){
+    SwUpdate_Device_Info = SwUpdate_Device_Info  + String("<BR><i>WARNING: Device needs free space bigger than the sketch you uploading. Likely not enough is available.  If it fails you will need to update via serial connection.</i>");
+  }
+  SwUpdate_Device_Info = SwUpdate_Device_Info  + "<script>var SWDELAY=" + String(SW_UPDATE_DELAY) + ";</script>";
 
   String responseStr;
-  responseStr = String(WEBSTR_SWUPDATE_PT1) + String(WEBSTR_SWUPDATE_DEVICE_INFO) + String(WEBSTR_SWUPDATE_PT2);
+  responseStr = String(FPSTR(WEBSTR_SWUPDATE_PT1)) + String(SwUpdate_Device_Info) + String(FPSTR(WEBSTR_SWUPDATE_PT2));
   if (DEBUG_MESSAGES)
   {
     Serial.println(responseStr);
@@ -1702,13 +1722,13 @@ void fishyDevice::handleSWupdateDevForm(AsyncWebServerRequest *request)
   request->send(200, "text/html", responseStr.c_str());
 }
 
-//show the SW update form for the specifc device (function for every device webserver)
+//show the CSS (function for every device webserver)
 void fishyDevice::handleCSS(AsyncWebServerRequest *request)
 {
   if (DEBUG_MESSAGES)
   {
     Serial.println("\n[handleCSS]\n");
-    Serial.println(String(WEBSTYLESSTR));
+    Serial.println(FPSTR(WEBSTYLESSTR));
   }
   request->send_P(200, "text/css", WEBSTYLESSTR);
 }
@@ -1719,7 +1739,7 @@ void fishyDevice::handleJS(AsyncWebServerRequest *request)
   if (DEBUG_MESSAGES)
   {
     Serial.println("\n[handleJS]\n");
-    Serial.println(String(WEBSTR_COMMON_JS));
+    Serial.println(FPSTR(WEBSTR_COMMON_JS));
   }
   request->send_P(200, "application/javascript", WEBSTR_COMMON_JS);
 }
@@ -1728,8 +1748,12 @@ void fishyDevice::handleSWupdateDevPost(AsyncWebServerRequest *request, String f
 {
   if (!index)
   {
-    if (DEBUG_MESSAGES)
+    if (DEBUG_MESSAGES) {
+      Serial.printf("Free Space: %d\nCurrent sketch size: %d\n", ESP.getFreeSketchSpace(),ESP.getSketchSize());
+      Serial.printf("Chip Size (from SDK): %d\nActual Chip Size (from ID): %d\n", ESP.getFlashChipSize(),ESP.getFlashChipRealSize());
       Serial.printf("Update Start: %s\n", filename.c_str());
+      
+    }
     Update.runAsync(true);
     if (!Update.begin((ESP.getFreeSketchSpace() - 0x1000) & 0xFFFFF000))
     {
@@ -1871,9 +1895,7 @@ void fishyDevice::runSoftAPServer()
 {
   httpServer->reset();
   dnsServer = new DNSServer();
-  //todo - testing this
   WiFi.disconnect(true);
-  //WiFi.mode(WIFI_AP_STA);
   WiFi.mode(WIFI_AP);
   WiFi.softAPConfig(apIP, apIP, netMsk);
   WiFi.softAP(myWifiConnect.softAP_ssid, myWifiConnect.softAP_password);
@@ -1891,7 +1913,7 @@ void fishyDevice::runSoftAPServer()
     Serial.print("\AP IP address: ");
     Serial.println(WiFi.softAPIP());
   }
-  Serial.println("[runSoftAPServer]6");
+
   httpServer->on("/", HTTP_GET, std::bind(&fishyDevice::handleWifi, this, std::placeholders::_1));
   httpServer->on("/wifi", HTTP_GET, std::bind(&fishyDevice::handleWifi, this, std::placeholders::_1));
   httpServer->onNotFound(std::bind(&fishyDevice::handleWifi, this, std::placeholders::_1));

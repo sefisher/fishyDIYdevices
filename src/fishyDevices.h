@@ -86,20 +86,34 @@ extern const int  DEVICE_TIMEOUT;
 extern const char CUSTOM_NOTE[];
 extern const char SW_VER[];
 extern const char CUSTOM_DEVICE_TYPE[];
-extern const bool OPEN_IS_CCW;
-extern const bool SWAP_LIM_SW;
+//extern const bool OPEN_IS_CCW;
+//extern const bool SWAP_LIM_SW;
 extern const char SOFT_AP_PWD[]; 
 extern const char INITIALIZE[];
-
-//This allows disabling or enabling Serial Input (RX); generally set to FALSE for ESP-01 to allow using GPIO3 as input
-#define USE_SERIAL_INPUT false
+extern const bool USE_SERIAL_INPUT;
+extern const bool DO_BLINKING;
+extern const int BLINK_LED;
 
 //Test switches for Serial output text (set to false to disable debug messages) 
-#define DEBUG_MESSAGES true      //debugging for general device problems (movement, switches, etc)
+#ifndef DEBUG_MESSAGES
+#define DEBUG_MESSAGES false      //debugging for general device problems (movement, switches, etc)
+#endif
+
+#ifndef DEBUG_UDP_MESSAGES
 #define DEBUG_UDP_MESSAGES false  //debugging for network comms (MASTER - SLAVE issues with nodes on the network)
+#endif
+
+#ifndef UDP_PARSE_MESSAGES
 #define UDP_PARSE_MESSAGES false  //debugging for parsing messages - used after you've changed the message structures
+#endif
+
+#ifndef DEBUG_HEAP_MESSAGE
 #define DEBUG_HEAP_MESSAGE false  //just tracking the heap size for memory leak issues or overloaded nodeMCUs
+#endif
+
+#ifndef DEBUG_WIFI_MESSAGES
 #define DEBUG_WIFI_MESSAGES false //shows wifi connection debugging info
+#endif
 
 //A typedef struct of type fishyDevice to hold data on devices on the net; and
 //then create an array of size MAX_DEVICE to store all the stuff found on the net
@@ -206,6 +220,7 @@ class fishyDevice
     //general helper functions
     void fastBlinks(int numBlinks);
     void slowBlinks(int numBlinks);
+    void doBlinking(void);
     String paddedH3Name(String name);
     String threeDigits(int i);
     String paddedInt(int lengthInt, int val);
@@ -281,7 +296,8 @@ class fishyDevice
     -------------------------------------------------------------------------*/
     fauxmoESP fauxmo;          //fauxmo device for alexa interactions
     wifiConnect myWifiConnect; //global used for managing wifi connection
-
+    WiFiEventHandler gotIpEventHandler;
+    
     // apIP and netMsk are Soft AP network parameters
     IPAddress apIP; //ip address for device served AP - serves a webpage to allow entering wifi credentials from user
     IPAddress netMsk;
@@ -297,8 +313,18 @@ class fishyDevice
 
     fishyDeviceData deviceArray[MAX_DEVICE]; //array of fishydevices for use in creating contorl panel webpages
 
+    //variables for asynchronous blinking
+    unsigned long fastBlinkStart;
+    unsigned long slowBlinkStart;
+    int fastBlinkState = HIGH;
+    int slowBlinkState = HIGH;
+    int fastBlinkCount = 0;
+    int slowBlinkCount = 0;
     bool resetOnNextLoop; //used to tell the device to reset after it gets to the next main operating loop
     String _updaterError; //used for tracting SW uploading errors
+    bool use_serial;
+    bool do_the_blinking;
+    int blinker_led;
 };
 
 /*----------------------------------------------------------------------------

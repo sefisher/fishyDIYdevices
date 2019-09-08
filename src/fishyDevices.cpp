@@ -53,7 +53,7 @@ void fishyDevice::FD_setup()
   showEEPROMPersonalityData(); //show device information from memory or initialization
   WifiFauxmoAndDeviceSetup();  //setup wifi, if crenditials found-> run normal server, if not -> run AP to allow entering wifi
   deviceSetup();               //custom device setup call; *Note: runs even if in AP mode. Need to make sure it won't break things.
-  announceReadyOnUDP();        //tell other fishyDevices on the network that you are here and ready
+  //announceReadyOnUDP();        //tell other fishyDevices on the network that you are here and ready
 }
 
 //determine if initalization string is different than stored in EEPROM -
@@ -180,6 +180,12 @@ void fishyDevice::WifiFauxmoAndDeviceSetup()
   {
     Serial.println("[WifiFauxmoAndDeviceSetup]finish");
   }
+
+  if(do_the_blinking)
+  {
+    pinMode(blinker_led, OUTPUT);
+    digitalWrite(blinker_led, HIGH);
+  }
 }
 
 //function to add additonal devices, device ID will be incrmented for each call (the default/first device_id is 0)
@@ -240,9 +246,29 @@ void fishyDevice::showHeapAndProcessSerialInput()
 // Initialize serial port and clean garbage
 void fishyDevice::serialStart()
 {
+  //set default settings in case the extern const aren't set outside library
+
+  if(USE_SERIAL_INPUT == NULL){
+    use_serial = false;
+  }else{
+    use_serial = USE_SERIAL_INPUT;
+  }
+
+  if(DO_BLINKING == NULL){
+    do_the_blinking = true;
+  }else{
+    do_the_blinking = DO_BLINKING;
+  }
+
+  if(BLINK_LED == NULL){
+    blinker_led = LED_BUILTIN;
+  }else{
+    blinker_led = BLINK_LED;
+  }
+
   if (DEBUG_MESSAGES )
   {
-    if(USE_SERIAL_INPUT) {
+    if(use_serial) {
       Serial.begin(SERIAL_BAUDRATE);
     }else{
       Serial.begin(SERIAL_BAUDRATE,SERIAL_8N1, SERIAL_TX_ONLY);
@@ -263,6 +289,9 @@ void fishyDevice::checkResetOnLoop()
     }
     delay(1000);
     resetController();
+  }
+  if(do_the_blinking && (fastBlinkCount || slowBlinkCount)){
+    doBlinking();
   }
 }
 //Setup Device Personaility and update EEPROM data as needed
@@ -301,34 +330,65 @@ void fishyDevice::resetController()
 
 //============================
 //general helper functions
+
 //============================
 void fishyDevice::fastBlinks(int numBlinks)
 {
-
-  pinMode(LED_BUILTIN, OUTPUT); // Initialize GPIO2 pin as an output
-
-  for (int i = 0; i < numBlinks; i++)
-  {
-    digitalWrite(LED_BUILTIN, LOW);  // Turn the LED on by making the voltage LOW
-    delay(100);                      // Wait for a second
-    digitalWrite(LED_BUILTIN, HIGH); // Turn the LED off by making the voltage HIGH
-    delay(200);                      // Wait for two seconds
-  }
-  pinMode(LED_BUILTIN, INPUT_PULLUP);
+  slowBlinkCount = 0;
+  fastBlinkCount = numBlinks;
+  fastBlinkState = HIGH;
+  digitalWrite(blinker_led, slowBlinkState);
+  fastBlinkStart = millis();
 }
+
 
 void fishyDevice::slowBlinks(int numBlinks)
 {
-  pinMode(LED_BUILTIN, OUTPUT); // Initialize GPIO2 pin as an output
+  fastBlinkCount = 0;
+  slowBlinkCount = numBlinks;
+  slowBlinkState = HIGH;
+  digitalWrite(blinker_led, slowBlinkState);
+  slowBlinkStart = millis();
+}
 
-  for (int i = 0; i < numBlinks; i++)
-  {
-    digitalWrite(LED_BUILTIN, LOW);  // Turn the LED on by making the voltage LOW
-    delay(1000);                     // Wait for a second
-    digitalWrite(LED_BUILTIN, HIGH); // Turn the LED off by making the voltage HIGH
-    delay(1000);                     // Wait for two seconds
+void fishyDevice::doBlinking()
+{
+  unsigned long currentmillis = millis();
+  if(fastBlinkCount){
+    if(currentmillis - fastBlinkStart >= 100){
+      fastBlinkStart = currentmillis;
+      if(fastBlinkState == HIGH){
+        fastBlinkState = LOW;
+      }else{
+        if(DEBUG_MESSAGES){
+          Serial.print(currentmillis);
+          Serial.print(" fastBlinkCount = ");
+          Serial.println(fastBlinkCount);
+        }
+        fastBlinkCount--;  
+        fastBlinkState = HIGH;
+      }
+      digitalWrite(blinker_led, fastBlinkState);
+    }
   }
-  pinMode(LED_BUILTIN, INPUT_PULLUP);
+  else if(slowBlinkCount){
+    if(currentmillis - slowBlinkStart >= 1000){
+      slowBlinkStart = currentmillis;
+      if(slowBlinkState == HIGH){
+        slowBlinkState = LOW;
+      }else{
+        if(DEBUG_MESSAGES){
+          Serial.print(currentmillis);
+          Serial.print(" slowBlinkCount = ");
+          Serial.println(slowBlinkCount);
+        }
+        slowBlinkCount--;  
+        slowBlinkState = HIGH;
+      }
+      digitalWrite(blinker_led, slowBlinkState);
+    }
+  }
+    
 }
 
 //makes the name string 255 in length and adds H3 tags (space after tags so ignored by browser)
@@ -620,10 +680,12 @@ void fishyDevice::announceReadyOnUDP()
   //otherwise let the master know you're here
   if (myEEPROMdata.master)
   {
+    if(DEBUG_MESSAGES){Serial.println("Connected. Announcing Master on UDP.");}
     UDPannounceMaster();
   }
   else
   {
+    if(DEBUG_MESSAGES){Serial.println("Connected. Broadcasting to see who is on network via UDP.");}
     UDPbroadcast();
   }
 }
@@ -659,7 +721,7 @@ void fishyDevice::UDPpollReply(IPAddress remote)
   holder = makeMyfishyDeviceData();
   String response = "~UDP~POLL_RESPONSE ";
   Udp.beginPacket(remote, UDP_LOCAL_PORT);
-  /* 
+/* 
 send fishyDeviceData data.
 Note - this is parsed by UDPparsePollResponse and paralleled by getJSON; if adding data elements all these may need updating.  This function sends data as follows (keep this list updated):{ip,name,typestr,statusstr,inError,isMaster,shortStat,locationX,locationY,locationZ}
 */
@@ -1073,6 +1135,10 @@ void fishyDevice::storeDataToEEPROM()
   EEPROM.put(addr, myEEPROMdata);
   EEPROM.commit();
   EEPROM.end();
+  if (DEBUG_MESSAGES)
+  {
+       Serial.println("[storeDataToEEPROM]finish");
+  }
 }
 
 void fishyDevice::retrieveDataFromEEPROM()
@@ -1154,6 +1220,13 @@ void fishyDevice::saveCredentials()
 // -----------------------------------------------------------------------------
 void fishyDevice::WiFiSetup()
 {
+  gotIpEventHandler = WiFi.onStationModeGotIP([this](const WiFiEventStationModeGotIP& event)
+  {
+    Serial.print("[WiFiSetup - getIP event handler] Connected, IP: ");
+    Serial.println(WiFi.localIP());
+    runNormalServer();
+  });
+
   myWifiConnect.connect = false;
   if (DEBUG_WIFI_MESSAGES)
   {
@@ -1192,7 +1265,10 @@ void fishyDevice::connectWifi()
 
   WiFi.mode(WIFI_STA);
   WiFi.begin(myWifiConnect.ssid, myWifiConnect.password);
+  
   int connRes = WiFi.waitForConnectResult();
+  //delay(500);
+  //int connRes = WiFi.status();
 
   if (DEBUG_WIFI_MESSAGES)
   {
@@ -1207,8 +1283,8 @@ void fishyDevice::connectWifi()
   else
   {
     myWifiConnect.connect = false;
-    fastBlinks(5);
-    runNormalServer();
+
+//    runNormalServer();
   }
 }
 
@@ -1248,7 +1324,9 @@ void fishyDevice::manageConnection()
       Serial.println("Connecting...");
     }
     lastConnectTry = millis();
-    fastBlinks(myWifiConnect.connectTryCount);
+    if(do_the_blinking){
+      fastBlinks(myWifiConnect.connectTryCount);
+    }
     connectWifi();
     myWifiConnect.connectTryCount = myWifiConnect.connectTryCount + 1;
     if (myWifiConnect.connectTryCount > 3)
@@ -1268,7 +1346,6 @@ void fishyDevice::manageConnection()
     myWifiConnect.status = s;
     if (s == WL_CONNECTED)
     {
-      fastBlinks(5);
       runNormalServer();
     }
     else if (s == WL_NO_SSID_AVAIL)
@@ -1844,7 +1921,9 @@ void fishyDevice::runNormalServer()
     Serial.print("IP address: ");
     Serial.println(WiFi.localIP());
   }
-
+  if(do_the_blinking){
+    fastBlinks(5);
+  }
   String hostName;
   if (myEEPROMdata.master)
   {
@@ -1882,6 +1961,7 @@ void fishyDevice::runNormalServer()
   {
     Serial.println("HTTP server started\n--------------------------\n");
   }
+  announceReadyOnUDP();
 }
 
 void fishyDevice::handleOnRequestBody(AsyncWebServerRequest *request, uint8_t *data, size_t len, size_t index, size_t total)
@@ -1923,6 +2003,10 @@ void fishyDevice::runSoftAPServer()
   if (DEBUG_WIFI_MESSAGES)
   {
     Serial.println("HTTP server started\n--------------------------");
+  }
+  if(do_the_blinking)
+  {
+    slowBlinks(60); //blink slowly for a few minutes
   }
 }
 

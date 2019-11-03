@@ -8,10 +8,10 @@
   - In the IDE go to “File>Preferences” (or hit Ctrl-comma):
   - By Additional Boards Manager URLs: enter http://arduino.esp8266.com/stable/package_esp8266com_index.json
   - Click “OK”
-  #### c. Select board package version 2.3.0 (this is stable and works well):
+  #### c. Select board package version (2.5.2 is tested, stable, and seems to work well):
   - In the IDE go to “Tools>Board>Board Manager…”
   - Click on “Filter your search” and type “ESP8266”
-  - Click on esp8266 by ESP8266 Community, select version 2.3.0, and press “Install”
+  - Click on esp8266 by ESP8266 Community, select version 2.5.2, and press “Install”
   - When installed, in the IDE go to “Tools>Board” the scroll down and select: “NodeMCU 1.0 (ESP-12E Module)”
   #### d. Add the fishyDIYdevices library and dependencies:
   - If you don't have them already, click on "ZIP" for each of the 5 libraries in the table below. 

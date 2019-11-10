@@ -228,7 +228,7 @@ void fishyDevice::showHeapAndProcessSerialInput()
     if (!myWifiConnect.softAPmode)
     {
       //take serial commands in
-      if (Serial.available() > 0)
+      if (use_serial && (Serial.available() > 0))
       {
         char inputMsg[MAXCMDSZ];
         int sizeRead;
@@ -266,7 +266,7 @@ void fishyDevice::serialStart()
     blinker_led = BLINK_LED;
   }
 
-  if (DEBUG_MESSAGES )
+  if (DEBUG_MESSAGES)
   {
     if(use_serial) {
       Serial.begin(SERIAL_BAUDRATE);
@@ -1834,26 +1834,25 @@ void fishyDevice::handleSWupdateDevPost(AsyncWebServerRequest *request, String f
     Update.runAsync(true);
     if (!Update.begin((ESP.getFreeSketchSpace() - 0x1000) & 0xFFFFF000))
     {
-      Update.printError(Serial);
+      if (DEBUG_MESSAGES){Update.printError(Serial);}
     }
   }
   if (!Update.hasError())
   {
     if (Update.write(data, len) != len)
     {
-      Update.printError(Serial);
+      if (DEBUG_MESSAGES){Update.printError(Serial);}
     }
   }
   if (final)
   {
     if (Update.end(true))
     {
-      if (DEBUG_MESSAGES)
-        Serial.printf("Update Successful: %uB\n", index + len);
+      if (DEBUG_MESSAGES){Serial.printf("Update Successful: %uB\n", index + len);}
     }
     else
     {
-      Update.printError(Serial);
+      if (DEBUG_MESSAGES){Update.printError(Serial);}
     }
   }
 }
@@ -1866,8 +1865,7 @@ void fishyDevice::handleSWupdateDevPostDone(AsyncWebServerRequest *request)
   }
   else
   {
-    if (DEBUG_MESSAGES)
-      Serial.println("Got into Update Post Done. Delay and Restarting.");
+    if (DEBUG_MESSAGES){Serial.println("Got into Update Post Done. Delay and Restarting.");}
     delay(100);
     ESP.restart();
   }

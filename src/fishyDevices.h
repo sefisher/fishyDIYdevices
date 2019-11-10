@@ -96,13 +96,9 @@ extern const int BLINK_LED;
 
 //Test switches for Serial output text (set to false to disable debug messages) 
 #define DEBUG_MESSAGES false      //debugging for general device problems (movement, switches, etc)
-
 #define DEBUG_UDP_MESSAGES false  //debugging for network comms (MASTER - SLAVE issues with nodes on the network)
-
 #define UDP_PARSE_MESSAGES false  //debugging for parsing messages - used after you've changed the message structures
-
 #define DEBUG_HEAP_MESSAGE false  //just tracking the heap size for memory leak issues or overloaded nodeMCUs
-
 #define DEBUG_WIFI_MESSAGES false //shows wifi connection debugging info
 
 //A typedef struct of type fishyDevice to hold data on devices on the net; and

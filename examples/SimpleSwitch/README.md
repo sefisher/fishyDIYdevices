@@ -1,5 +1,4 @@
 # fishyDIYdevices - Simple Switch Example
-* NOTE: This specific project is designed for the ESP8266 ESP-01.
 * For detailed project instructions to include 3D printing files, wiring diagrams, hardware details, etc, go to [fishyDIY.com](http://fishyDIY.com).  Those complete project instructions are a work in progress.  
 * You can build and upload the software on a ESP8266 chip alone (no real device) to see/test the basic web interface and WiFi configuration features by following these steps.
 ## Basic steps to build this example:

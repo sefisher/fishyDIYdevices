@@ -1,0 +1,293 @@
+<!--------------------------------------------------------------------------------------------------------
+This is the template file for the control panel for a Simple-Switch. You can use this to design control
+interface changes and then convert the HTML into a string embedded in the code. Style data is kept in styles.css 
+(which is embedded into webresources.h into a string and served if a clinet requests /styles.css).
+Common JS functions are stored in CommonWebFunction.js. 
+To build this template file intp the code after updating it do the following:
+ 1) copy the HTML from below this comment.
+ 2) put it through a minifier (like https://kangax.github.io/html-minifier/ with "Decode Entity Characters OFF") 
+ and then through a String builder (like http://buildmystring.com/ with "strip out carriage returns" on) to create a single string with no tabs and one line.
+ 3) paste that string into the WEBCTRLSTR After "PROGMEM" in the FD-Simple-Switch.h file.
+ ------------------------------------------------------------------------------------------------------ -->
+<!DOCTYPE html>
+<html>
+
+<head>
+    <title>fishDIY Simple-Switch</title>
+    <meta name='viewport' content='initial-scale=1.0'>
+
+    <script type="text/javascript" src="/CommonWebFunctions.js"></script>
+    <link id='styles' rel="stylesheet" href="/styles.css">
+    <!-- left for testing -->
+    <link rel="stylesheet" href="styles.css">
+    <script type="text/javascript" src="CommonWebFunctions.js"></script>
+</head>
+
+<body>
+    <div class='main' id='myBody'>
+        <script>
+            //required function name/paramaters (called by start() during onmessage event)
+            function dealWithMessagePayload(payload) {
+                var msgText = getMsg(payload);
+                console.log(msgText);
+                setOtherTxt(msgText);
+                var nodeJSONtext = getNodeJSONtext(payload);
+                console.log(nodeJSONtext);
+                processJSON(nodeJSONtext);
+            }
+            //required function for all fishyDIY devices (updates main text with status in the header)
+            function setMainTxt(text) {
+                _("mainTxt").innerHTML = text;
+            }
+            //utility function for Simple-Switch
+            function setOtherTxt(text) {
+                _("otherTxt").innerHTML = text;
+            }
+            //utility function for all Simple-Switch devices (updates switch on toggle)
+            function swPwrUpd(num) {
+                var labStr = 'swPwr' + num + 'Lab';
+                var label = _(labStr);
+                var swStr = 'swPwr' + num + 'Chck';
+                var sw = _(swStr);
+                if (sw.checked == true) {
+                    label.innerHTML = 'On';
+                    sendCmd('on' + num);
+                } else {
+                    label.innerHTML = 'Off';
+                    sendCmd('off' + num);
+                }
+            }
+            //utility function for all fishyDIY devices (sends Commands - commands and messages are customized for each device)
+            function sendCmd(command) {
+                if (websock.readyState != 1) {
+                    alert("This control panel is no longer connected to the device.  Please close this window and reopen the control panel.");
+                    return 0;
+                }
+                var cmd = '';
+                if (command.substring(0, 1) == 'o') { //on or off - just pass on command as is
+                    cmd = command;
+                } else if (command == 'reboot') {
+                    cmd = 'reset';
+                } else if (command == 'rstWifi') {
+                    cmd = 'reset_wifi';
+                } else if (command == 'config') {
+                    var tmpStr = '';
+                    var isMstr = 'false';
+                    var ccwIsOpen = 'false';
+                    var swapLimSW = 'false';
+                    if (_('swMstrChck').checked) isMstr = 'true';
+                    cmd = 'config';
+                    cmd += ';isMaster=' + isMstr;
+                    for (i = 1; i <= 4; i++) {
+                        swNameStr = 'sw' + i + 'Name';
+                        tmpStr = _(swNameStr).value == "" ? " " : _(swNameStr).value; cmd += ';' + swNameStr + '=' + tmpStr;
+                    }
+                    tmpStr = _('devNote').value == "" ? " " : _('devNote').value; cmd += ';note=' + tmpStr;
+                    tmpStr = _('timeOut').value == "" ? "60" : _('timeOut').value; cmd += ';timeOut=' + tmpStr;
+                }
+                document.body.style.backgroundColor = "var(--bg-col-ack)";
+                websock.send(cmd);
+            }
+            //variable for all fishyDIY devices - holds data for device info modal
+            var infoText = '...Loading...';
+            //utility function for all fishyDIY devices (takes the device status info from the JSON and processes it - highly customized for each control interface)
+            function doStuffWithJSON(DA) {
+
+                var addDiv = '';
+                var mstrTxt = '';
+                var calTxt = '';
+                var inErr = false;
+                var errTxt = '';
+                d = DA[0];
+
+                // new parameters:
+                // d.NumSwitches  - integer 1 to 4
+                // d.power_state - upto numwitches 1 or 0 for powerstate pf each switch {"0","0","1"} or {"0","1","1","1"}
+                // d.names - upto numwitches {"1":"name 1","2":"name 2","3":"name 3"}
+                returnColor(); //set background color to normal to show user the device responded
+                if (d.isMaster == 'true') { mstrTxt = ' (MASTER)'; _('swMstrChck').checked = true; } else { mstrTxt = ''; _('swMstrChck').checked = false; }
+                if (d.deviceTimedOut == 'true') { inErr = true; errTxt = 'ERROR - DEVICE TIMED OUT\n'; }
+                swMstrUpd();
+                infoText = 'DEVICE TYPE: ' + d.devType + '<br>\n' +
+                    'NAME: ' + d.names[1] + '<br>\n' +
+                    'IP ADDRESS: ' + d.ip + mstrTxt + '<hr>\n' +
+                    'SOFTWARE VERSION: ' + d.swVer + '<br>\n' +
+                    'INIT STR: ' + d.initStamp + '\n\n\n<hr>' + calTxt + '<br>\n' + errTxt;
+                if (inErr) {
+                    _("info-icon").className = "info-icon-blink";
+                } else {
+                    _("info-icon").className = "info-icon";
+                }
+                _('devIP').value = d.ip + mstrTxt;
+                _('devNote').value = d.note;
+                _('timeOut').value = d.timeOut;
+                numSw = d.NumSwitches;
+                //numSw = 4;
+                mainTxt = '';
+                for (i = 1; i <= numSw; i++) {
+                    swNameStr = 'sw' + i + 'Name';
+                    _(swNameStr).value = d.names[i];
+                    swNameStr = 'sw' + i + 'NameCtrl';
+                    _(swNameStr).innerHTML = d.names[i];
+                    mainTxt = mainTxt + i + '-' + pos(d.power_state[i]) + ' ';
+                    swNameStr = 'swPwr' + i + 'Chck';
+                    labStr = 'swPwr' + i + 'Lab';
+                    if(d.power_state[i]=='1'){
+                        _(swNameStr).checked = true;
+                        _(labStr).innerHTML = 'On';
+                    } else {
+                        _(swNameStr).checked = false;
+                        _(labStr).innerHTML = 'Off';
+                    } 
+                }
+                setMainTxt(mainTxt);
+                //hide second grid row if i = 3 or 4
+                if (numSw < 3) {
+                    _('swGrid2').style.display = 'none';
+                }
+                for (; i <= 4; i++) { //deal with unused swtiches
+                    //hide switches if not needed
+                    swNameStr = 'sw' + i + 'Row';
+                    _(swNameStr).style.display = 'none';
+
+                    //hide labels and input fields for unused switches
+                    swNameStr = 'sw' + i + 'LabelSpan';
+                    _(swNameStr).style.display = 'none';
+
+                    //set unused names to '' to prevent bad config updates
+                    swNameStr = 'sw' + i + 'Name';
+                    _(swNameStr).value = '';
+                }
+                _('devType').value = d.devType;
+            }
+            //utility function for Simple-Switch (calculates motor position as a %)
+            function pos(state) {
+                if (state == '1') {
+                    return 'On';
+                } else {
+                    return 'Off';
+                }
+            }
+            window.onload = start();
+        </script>
+
+    </div>
+    <div id='flex-container' class='flex-grid-outer'>
+        <div class='fishyHdr' id='deviceStatus'>
+            <table width=100%>
+                <tr>
+                    <td>
+                        <div class='info-icon' id='info-icon' onclick='showDetails()'>&#9432;</div>
+                    </td>
+                    <td>
+                        <div class='flex-grid' style="padding:6px">
+                            <table>
+                                <tr>
+                                    <td style="font-size:12px">Power:</td>
+                                </tr>
+                                <tr>
+                                    <td id=mainTxt>--</td>
+                                </tr>
+                            </table><span class=otherTxt id='otherTxt'></span>
+                        </div>
+                    </td>
+                </tr>
+            </table>
+        </div>
+        <div>
+            <div class='swPanel'>
+                <div class='flex-grid' id='swGrid1' style='padding:6px;justify-content:space-around;flex-wrap:wrap;'>
+                    <div class='swRow' style='text-align:center;' id='sw1Row'>
+                        <div id='sw1NameCtrl'>Name 1</div><label class='sw' id='swPwr1'><input type='checkbox'
+                                id='swPwr1Chck' onchange='swPwrUpd(1)'><span class='sldSw'></span></label><span
+                            class='swLab' style='font-size:larger;top:0px' id='swPwr1Lab'>Off</span>
+                    </div>
+                    <div class='swRow' style='text-align:center;' id='sw2Row'>
+                        <div id='sw2NameCtrl'>Name 2</div><label class='sw' id='swPwr2'><input type='checkbox'
+                                id='swPwr2Chck' onchange='swPwrUpd(2)'><span class='sldSw'></span></label><span
+                            class='swLab' style='font-size:larger;top:0px' id='swPwr2Lab'>Off</span>
+                    </div>
+                </div>
+                <div class='flex-grid' id='swGrid2' style='padding:6px;justify-content:space-around;flex-wrap:wrap'>
+                    <div class='swRow' style='text-align:center;' id='sw3Row'>
+                        <div id='sw3NameCtrl'>Name 3</div><label class='sw' id='swPwr3'><input type='checkbox'
+                                id='swPwr3Chck' onchange='swPwrUpd(3)'><span class='sldSw'></span></label><span
+                            class='swLab' style='font-size:larger;top:0px' id='swPwr3Lab'>Off</span>
+                    </div>
+                    <div class='swRow' style='text-align:center;' id='sw4Row'>
+                        <div id='sw4NameCtrl'>Name 4</div><label class='sw' id='swPwr4'><input type='checkbox'
+                                id='swPwr4Chck' onchange='swPwrUpd(4)'><span class='sldSw'></span></label><span
+                            class='swLab' style='font-size:larger;top:0px' id='swPwr4Lab'>Off</span>
+                    </div>
+                </div>
+            </div>
+
+
+        </div>
+        <div class='configPanel'>
+            <label class='cfgInpLab' for='devIP'>IP Address:<input class='cfgInp' disabled id='devIP'
+                    value='...Loading...' maxlength='40'></label><br>
+            <label class='cfgInpLab' for='sw1Name'>SW1 Name:<input class='cfgInp'
+                    onkeypress='return blockSpecialChar(event)' id='sw1Name' value='...Loading...'
+                    maxlength='40'></label><br>
+            <span id='sw2LabelSpan'><label class='cfgInpLab' for='sw2Name'>SW2 Name:<input class='cfgInp'
+                        onkeypress='return blockSpecialChar(event)' id='sw2Name' value='...Loading...'
+                        maxlength='40'></label><br></span>
+            <span id='sw3LabelSpan'><label class='cfgInpLab' for='sw3Name'>SW3 Name:<input class='cfgInp'
+                        onkeypress='return blockSpecialChar(event)' id='sw3Name' value='...Loading...'
+                        maxlength='40'></label><br></span>
+            <span id='sw4LabelSpan'><label class='cfgInpLab' for='sw4Name'>SW4 Name:<input class='cfgInp'
+                        onkeypress='return blockSpecialChar(event)' id='sw4Name' value='...Loading...'
+                        maxlength='40'></label><br></span>
+            <label class='cfgInpLab' for='devType'>Type:<input class='cfgInp' disabled id='devType'
+                    value='...Loading...' maxlength='20'></label><br>
+            <label class='cfgInpLab' for='devNote'>Note:<input class='cfgInp'
+                    onkeypress='return blockSpecialChar(event)' id='devNote' value='...Loading...'
+                    maxlength='55'></label><br>
+            <label class='cfgInpLab' for='timeOut'>Time-Out:<input class='cfgInpNum'
+                    onkeypress='return numberCharOnly(event)' id='timeOut' value='00' maxlength='5'
+                    title='Enter a time (in seconds) to wait for the actuator to respond before stopped and displaying an error message (assuming the actuator got stuck).'></label>
+        </div>
+        <div class='swPanel'>
+            <div class='flex-grid'>
+                <div class='swRow'><label class='sw' id='swMstr'><input type='checkbox' id='swMstrChck' checked=''
+                            onchange='swMstrUpd()'><span class='sldSw'></span></label><span class='swLab'
+                        style='font-size:larger;top:0px' id='swMstrLab'>Master
+                        Node</span></div>
+
+            </div>
+        </div>
+
+        <div class='fishyFtrSw'>
+            <div class='flex-grid'>
+                <input class='cfgbuttonY' id='updCfgBtn' type='button' value='UPDATE SETTINGS'
+                    onclick='sendCmd("config")'
+                    title='This will save new settings in the device. New settings should be displayed on next refresh.  If trying to adjust mulitple settings it is recommended that you temporarily turn off Auto-refresh.'>
+                <input class='cfgbuttonY' id='updCfgBtn' type='button' value='REBOOT DEVICE' onclick='sendCmd("reboot")'
+                    title='This will reboot the device.'>
+            </div>
+            <div class='flex-grid'>
+                <!--<input class='cfgbuttonR' id='updCfgBtn' type='button' value='AUTO-CAL. HW LIM' onclick='sendCmd("cal")'
+                    title='WARNING:Auto-Cal will attempt to cycle your actuator full open and shut to determine  hardware limit switch positions. Ensure that range is possible to prevent damage.'> -->
+                <input class='cfgbuttonR' id='rstWifiBtn' type='button' value='RESET WIFI' onclick='sendCmd("rstWifi")'
+                    title='WARNING:Reset Wifi will attempt to delete your network SSID and passwordand put the device into wifi-server mode to learn new wifi SSID and password. To teach a reset device a new wifi network go to the device IP address using a mobile phone or computer.'>
+            </div>
+        </div>
+    </div>
+
+    <!-- Overlay Modal for device information-->
+    <div id='infoPanel' class='infoPanel'>
+        <div id='infoDiv' class='infoDiv'></div>
+        <!-- Close button for overlay modal panel.  -->
+        <input type='button' class='infoOKbtn' onclick='closeCtrlModal()' value='OK'>
+    </div>
+</body>
+<script>
+    var ctrlModal = _('infoPanel');
+    // When the user clicks the X
+    function closeCtrlModal() {
+        ctrlModal.style.display = 'none';
+    }
+</script>
+
+</html>

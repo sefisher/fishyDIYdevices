@@ -3,14 +3,24 @@
         {
             "name": "Win32",
             "includePath": [
-                "${workspaceFolder}/**"
+                "C:\\Users\\steph\\AppData\\Local\\Arduino15\\packages\\esp8266\\tools\\**",
+                "C:\\Users\\steph\\AppData\\Local\\Arduino15\\packages\\esp8266\\hardware\\esp8266\\2.3.0\\**",
+                "C:\\Users\\steph\\OneDrive\\fishyDIYprojects\\Arduino\\libraries\\**",
+                "C:\\Users\\steph\\AppData\\Local\\Arduino15\\packages\\esp8266\\hardware\\esp8266\\2.5.2\\**",
+                "C:\\Users\\steph\\AppData\\Local\\Arduino15\\packages\\esp8266\\hardware\\esp8266\\2.6.0\\**"
             ],
-            "defines": [
-                "_DEBUG",
-                "UNICODE",
-                "_UNICODE"
-            ],
-            "intelliSenseMode": "msvc-x64"
+            "browse": {
+                "path": ["C:\\Users\\steph\\AppData\\Local\\Arduino15\\packages\\esp8266\\tools\\**",
+                    "C:\\Users\\steph\\AppData\\Local\\Arduino15\\packages\\esp8266\\hardware\\esp8266\\2.3.0\\**",
+                    "C:\\Users\\steph\\OneDrive\\fishyDIYprojects\\Arduino\\libraries\\**",
+                    "C:\\Users\\steph\\AppData\\Local\\Arduino15\\packages\\esp8266\\hardware\\esp8266\\2.5.2\\**",
+                    "C:\\Users\\steph\\AppData\\Local\\Arduino15\\packages\\esp8266\\hardware\\esp8266\\2.6.0\\**"]
+            },
+            "forcedInclude": [],
+            "intelliSenseMode": "msvc-x64",
+            "compilerPath": "C:\\Program Files\\LLVM\\bin\\clang.exe",
+            "cStandard": "c11",
+            "cppStandard": "c++17"
         }
     ],
     "version": 4

@@ -530,6 +530,7 @@ void fishyDevice::executeCommands(char inputMsg[MAXCMDSZ], IPAddress remote)
       Serial.println(remote);
     }
     loggerIP = remote; //update the master IP
+    UDPackLogger();
   }
   else if (cmd.startsWith("~udp~activity_message"))
   {
@@ -688,6 +689,15 @@ void fishyDevice::announceReadyOnUDP()
     if(DEBUG_MESSAGES){Serial.println("Connected. Broadcasting to see who is on network via UDP.");}
     UDPbroadcast();
   }
+}
+
+//acknowledge loggerIR
+void fishyDevice::UDPackLogger()
+{
+  Udp.beginPacket(loggerIP, UDP_LOCAL_PORT);
+  Udp.write(String("~UDP~HEARD_NEW_LOGGER at" + loggerIP.toString()).c_str());
+
+  Udp.endPacket();
 }
 
 //broadcast on subnet to see who will respond
@@ -889,9 +899,9 @@ void fishyDevice::UDPparseActivityMessage(char inputMsg[MAXCMDSZ], IPAddress rem
       Serial.println("[UDPparseActivityMessage] Got this: " + String(response));
     }
 
-    /*
+    
     //TODO - determine if parsing activity message has value 
-
+    /*
     char *strings[4]; //one string for each label and one for each value
     char *ptr = NULL;
     byte index = 0;
@@ -935,8 +945,12 @@ void fishyDevice::UDPparseActivityMessage(char inputMsg[MAXCMDSZ], IPAddress rem
     {
       Serial.println("[UDPparseActivityMessage] message: " + message);
     }
+  
+  */
+  //end of todo------------------------------------------------------------
+    
 
-    */
+    //TODO - verify the "IP unset" string is also seen as 0.0.0.0
     if (loggerIP.toString() != "0.0.0.0")
     {
       Udp.beginPacket(loggerIP, UDP_LOCAL_PORT);

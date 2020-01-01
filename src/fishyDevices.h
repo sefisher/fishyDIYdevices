@@ -216,6 +216,7 @@ class fishyDevice
     void UDPkeepAliveAndCull();
     void announceReadyOnUDP();
     void UDPbroadcast();
+    void UDPackLogger();
     void UDPannounceMaster();
     void UDPpollReply(IPAddress remote);
     void UDPparsePollResponse(char inputMsg[MAXCMDSZ], IPAddress remote);

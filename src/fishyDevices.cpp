@@ -24,6 +24,10 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 THE SOFTWARE.
 */
 
+//TODO - make master send its own events to the logger (right now only does the other device events)
+//TODO - when logging - update device list data right away and then the log event UDP signal, that way the next request will have updated data.  
+// if that is too hard -  send the new device data as a UDP list so the logger and parse it
+
 #include "fishyDevices.h"
 
 //Constructor

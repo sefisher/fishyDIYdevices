@@ -902,60 +902,9 @@ void fishyDevice::UDPparseActivityMessage(char inputMsg[MAXCMDSZ], IPAddress rem
     {
       Serial.println("[UDPparseActivityMessage] Got this: " + String(response));
     }
-
     
-    //TODO - determine if parsing activity message has value 
-    /*
-    char *strings[4]; //one string for each label and one for each value
-    char *ptr = NULL;
-    byte index = 0;
-
-    fishyDeviceData holder;
-    holder.dead = false;
-    ptr = strtok(response, "=;"); // takes a list of delimiters and points to the first token
-
-    while (ptr != NULL)
-    {
-      strings[index] = ptr;
-      index++;
-      ptr = strtok(NULL, "=;"); // goto the next token
-    }
-
-    if (DEBUG_MESSAGES && UDP_PARSE_MESSAGES)
-    {
-      Serial.println("[UDPparseActivityMessage] found this many parts: " + String(index));
-    }
-
-    if (DEBUG_MESSAGES && UDP_PARSE_MESSAGES)
-    {
-      for (int n = 0; n < index; n++)
-      {
-        Serial.print(n);
-        Serial.print(") ");
-        Serial.println(strings[n]);
-      }
-    }
-
-    //Device
-    String strIP = String(strings[1]);
-    if (DEBUG_MESSAGES && UDP_PARSE_MESSAGES)
-    {
-      Serial.println("[UDPparseActivityMessage] Device IP: " + strIP);
-    }
-        
-    //Activty message
-    String message = String(strings[3]);
-    if (DEBUG_MESSAGES && UDP_PARSE_MESSAGES)
-    {
-      Serial.println("[UDPparseActivityMessage] message: " + message);
-    }
-  
-  */
-  //end of todo------------------------------------------------------------
-    
-
     //TODO - verify the "IP unset" string is also seen as 0.0.0.0
-    if (loggerIP.toString() != "0.0.0.0")
+    if (loggerIP.toString() != "0.0.0.0" && loggerIP.toString() != "(IP unset)")
     {
       Udp.beginPacket(loggerIP, UDP_LOCAL_PORT);
       Udp.write(response);
@@ -1017,7 +966,7 @@ int fishyDevice::dealWithThisNode(fishyDeviceData netDevice)
 {
   //don't add a 0.0.0.0 device to list
   //only do this if this device is master or if no master is found on net
-  if (netDevice.ip.toString() != "0.0.0.0" && (myEEPROMdata.master || (masterIP.toString() == "0.0.0.0")))
+  if (netDevice.ip.toString() != "0.0.0.0" && netDevice.ip.toString() != "(IP unset)" && (myEEPROMdata.master || (masterIP.toString() == "0.0.0.0")))
   {
     int index = findNode(netDevice.ip);
     if (index > -1)
@@ -1543,8 +1492,13 @@ void fishyDevice::updateClients(String message)
 }
 void fishyDevice::updateClients(String message, bool forceUpdate)
 {
+  //I'M HERE - TODO - need to update this to send nodeJSON info for the master to update the devicelist[] )for network JSON
+  //also send the updated status and short stats
+  //-verify the message length is ok
+  //-piMonitor get the shortstat
   static unsigned long lastUpdate = millis();
-  String text = "MSG:" + message + "~*~*DAT:" + getNodeJSON();
+  String nodeJSON = getNodeJSON();
+  String text = "MSG:" + message + "~*~*DAT:" + nodeJSON;
 
   if ((millis() - lastUpdate > 500) || forceUpdate)
   {
@@ -1562,6 +1516,16 @@ void fishyDevice::updateClients(String message, bool forceUpdate)
         response += WiFi.localIP().toString();
         response += ";message=";
         response += message;
+        response += ";nodeStatus=";
+        response += getStatusString();
+        response += ";nodeShortStatus=";
+        response += getShortStatString();
+        response += ";";
+        Udp.beginPacket(masterIP, UDP_LOCAL_PORT);
+        Udp.write(response.c_str());
+        Udp.endPacket();
+        response = "~UDP~ACTIVITY_MESSAGE:nodeJSON=";
+        response += nodeJSON;
         response += ";";
         Udp.beginPacket(masterIP, UDP_LOCAL_PORT);
         Udp.write(response.c_str());

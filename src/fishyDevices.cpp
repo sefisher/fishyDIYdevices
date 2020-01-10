@@ -24,6 +24,7 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 THE SOFTWARE.
 */
 
+//TODO - make a global "turn off fauxmo" switch (MASTER) that sends a UDP message to dosable all fauxmo (disable voice controls)
 //TODO - make master send its own events to the logger (right now only does the other device events)
 //TODO - when logging - update device list data right away and then the log event UDP signal, that way the next request will have updated data.  
 // if that is too hard -  send the new device data as a UDP list so the logger and parse it
@@ -729,6 +730,8 @@ void fishyDevice::UDPannounceMaster()
 }
 
 //put out this devices data on the net
+//this tells the master to update the 
+//list of devices pulled by network.JSON
 void fishyDevice::UDPpollReply(IPAddress remote)
 {
   fishyDeviceData holder; //temp
@@ -764,7 +767,7 @@ void fishyDevice::UDPparsePollResponse(char inputMsg[MAXCMDSZ], IPAddress remote
 {
   if (myEEPROMdata.master)
   {
-    /* 
+/* 
 parse fishyDeviceData data.
 Note - this data set is sent by UDPparsePollResponse and getNetworkJSON; UDPparseConfigResponse may be affected as well (if data is added that needs set by configuration updates)
 it is also parsed by scripts in wifi-and-webserver.ino and webresources.h if adding data elements all these may need updating.  This function sends data as follows (keep this list updated):{ip,name,typestr,statusstr,inError,isMaster,shortStat,locationX,locationY,locationZ}
@@ -886,7 +889,7 @@ it is also parsed by scripts in wifi-and-webserver.ino and webresources.h if add
       Serial.println("[UDPparsePollResponse] Y: " + holder.locationZ);
     }
 
-    dealWithThisNode(holder);
+    dealWithThisNode(holder); //update the list of nodes
   }
 }
 void fishyDevice::UDPparseActivityMessage(char inputMsg[MAXCMDSZ], IPAddress remote)
@@ -949,12 +952,13 @@ fishyDeviceData fishyDevice::makeMyfishyDeviceData()
 
   holder.name = String(myEEPROMdata.namestr);
   holder.typestr = String(myEEPROMdata.typestr);
-  holder.statusstr = getStatusString();
-  holder.shortStat = getShortStatString();
+  holder.statusstr = getStatusString(); //ask the device for a status string
+  holder.shortStat = getShortStatString(); //ask the device for a short status string
   holder.locationX = myEEPROMdata.locationX;
   holder.locationY = myEEPROMdata.locationY;
   holder.locationZ = myEEPROMdata.locationZ;
 
+  //if debuging show the data
   showThisNode(holder);
 
   return holder;
@@ -1492,10 +1496,6 @@ void fishyDevice::updateClients(String message)
 }
 void fishyDevice::updateClients(String message, bool forceUpdate)
 {
-  //I'M HERE - TODO - need to update this to send nodeJSON info for the master to update the devicelist[] )for network JSON
-  //also send the updated status and short stats
-  //-verify the message length is ok
-  //-piMonitor get the shortstat
   static unsigned long lastUpdate = millis();
   String nodeJSON = getNodeJSON();
   String text = "MSG:" + message + "~*~*DAT:" + nodeJSON;
@@ -1503,6 +1503,7 @@ void fishyDevice::updateClients(String message, bool forceUpdate)
   if ((millis() - lastUpdate > 500) || forceUpdate)
   {
     lastUpdate = millis();
+    UDPpollReply(WiFi.localIP());
     if (DEBUG_MESSAGES)
     {
       Serial.println(text);
@@ -1524,12 +1525,12 @@ void fishyDevice::updateClients(String message, bool forceUpdate)
         Udp.beginPacket(masterIP, UDP_LOCAL_PORT);
         Udp.write(response.c_str());
         Udp.endPacket();
-        response = "~UDP~ACTIVITY_MESSAGE:nodeJSON=";
-        response += nodeJSON;
-        response += ";";
-        Udp.beginPacket(masterIP, UDP_LOCAL_PORT);
-        Udp.write(response.c_str());
-        Udp.endPacket();
+        // response = "~UDP~ACTIVITY_MESSAGE:nodeJSON=";
+        // response += nodeJSON;
+        // response += ";";
+        // Udp.beginPacket(masterIP, UDP_LOCAL_PORT);
+        // Udp.write(response.c_str());
+        // Udp.endPacket();
       }
     }
   }

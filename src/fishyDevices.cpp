@@ -905,8 +905,6 @@ void fishyDevice::UDPparseActivityMessage(char inputMsg[MAXCMDSZ], IPAddress rem
     {
       Serial.println("[UDPparseActivityMessage] Got this: " + String(response));
     }
-    
-    //TODO - verify the "IP unset" string is also seen as 0.0.0.0
     if (loggerIP.toString() != "0.0.0.0" && loggerIP.toString() != "(IP unset)")
     {
       Udp.beginPacket(loggerIP, UDP_LOCAL_PORT);
@@ -970,7 +968,7 @@ int fishyDevice::dealWithThisNode(fishyDeviceData netDevice)
 {
   //don't add a 0.0.0.0 device to list
   //only do this if this device is master or if no master is found on net
-  if (netDevice.ip.toString() != "0.0.0.0" && netDevice.ip.toString() != "(IP unset)" && (myEEPROMdata.master || (masterIP.toString() == "0.0.0.0")))
+  if (netDevice.ip.toString() != "0.0.0.0" && netDevice.ip.toString() != "(IP unset)" && (myEEPROMdata.master || (masterIP.toString() == "0.0.0.0") || masterIP.toString() == "(IP unset)"))
   {
     int index = findNode(netDevice.ip);
     if (index > -1)
@@ -1002,7 +1000,7 @@ int fishyDevice::dealWithThisNode(fishyDeviceData netDevice)
 //first verifies this is the myEEPROMdata.master
 int fishyDevice::findNode(IPAddress lookupIP)
 {
-  if (myEEPROMdata.master || (masterIP.toString() == "0.0.0.0"))
+  if (myEEPROMdata.master || (masterIP.toString() == "0.0.0.0" || masterIP.toString() == "(IP unset)"))
   {
     for (int i = 0; i < MAX_DEVICE; i++)
     {
@@ -1401,7 +1399,7 @@ void fishyDevice::webSocketEventHandler(AsyncWebSocket *server, AsyncWebSocketCl
       }
       else
       {
-        //TODO - handle binary if desired
+        //Not needed for fishyDevice - handle binary if desired
       }
     }
     else
@@ -1511,7 +1509,7 @@ void fishyDevice::updateClients(String message, bool forceUpdate)
     webSocket->textAll(text.c_str());
     if (forceUpdate)
     {
-      if (masterIP.toString() != "0.0.0.0")
+      if (masterIP.toString() != "0.0.0.0" && masterIP.toString() != "(IP unset)")
       {
         String response = "~UDP~ACTIVITY_MESSAGE:device=";
         response += WiFi.localIP().toString();
@@ -1543,7 +1541,7 @@ void fishyDevice::updateClients(String message, bool forceUpdate)
 //Web Server - provide a JSON structure with all the deviceArray data
 void fishyDevice::handleNetworkJSON(AsyncWebServerRequest *request)
 {
-  if (myEEPROMdata.master || (masterIP.toString() == "0.0.0.0"))
+  if (myEEPROMdata.master || (masterIP.toString() == "0.0.0.0" || masterIP.toString() == "(IP unset)"))
   {
     UDPbroadcast();
     request->send(200, "text/html", getNetworkJSON().c_str());
@@ -1565,7 +1563,7 @@ void fishyDevice::handleNodeJSON(AsyncWebServerRequest *request)
 void fishyDevice::handleNotMaster(AsyncWebServerRequest *request)
 {
   String ipToShow = masterIP.toString();
-  if (ipToShow == "0.0.0.0")
+  if (ipToShow == "0.0.0.0" || ipToShow == "(IP unset)")
   {
     ipToShow = WiFi.localIP().toString();
   }
@@ -1611,7 +1609,7 @@ String fishyDevice::getNodeJSON()
 //this creates the iframes for all the devices in the network, if /SWupdater then it loads those forms, otherwise it loads /ctrlPanels for each iframe
 void fishyDevice::handleRoot(AsyncWebServerRequest *request)
 {
-  if (myEEPROMdata.master || (masterIP.toString() == "0.0.0.0"))
+  if (myEEPROMdata.master || (masterIP.toString() == "0.0.0.0" || masterIP.toString() == "(IP unset)"))
   {
     if (DEBUG_MESSAGES)
     {

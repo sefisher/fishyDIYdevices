@@ -24,10 +24,13 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 THE SOFTWARE.
 */
 
+//Update library.properties to add the dependencies so CLI can automatically pull them
+//TODO - in the notes explaining things - make sure I explain updateClients(msg,1) vs updateClients(msg,0) - 1 sends activity to the logger and should be for final states or received commands (also forces and update even if just done recently) ,0 is for information or transient states and will not be logged as activity by the logger.
+//TODO - send notice to logger on boot up; have logger respond with IP
+//TODO - ESP32 integration
+//TODO - work on a script to pull all the variants into the examples folder
+//TODO - make a task and building script that updates the SWVERSION variable in the device.h 
 //TODO - make a global "turn off fauxmo" switch (MASTER) that sends a UDP message to dosable all fauxmo (disable voice controls)
-//TODO - make master send its own events to the logger (right now only does the other device events)
-//TODO - when logging - update device list data right away and then the log event UDP signal, that way the next request will have updated data.  
-// if that is too hard -  send the new device data as a UDP list so the logger and parse it
 
 #include "fishyDevices.h"
 
@@ -58,7 +61,6 @@ void fishyDevice::FD_setup()
   showEEPROMPersonalityData(); //show device information from memory or initialization
   WifiFauxmoAndDeviceSetup();  //setup wifi, if crenditials found-> run normal server, if not -> run AP to allow entering wifi
   deviceSetup();               //custom device setup call; *Note: runs even if in AP mode. Need to make sure it won't break things.
-  //announceReadyOnUDP();        //tell other fishyDevices on the network that you are here and ready
 }
 
 //determine if initalization string is different than stored in EEPROM -
@@ -240,7 +242,7 @@ void fishyDevice::showHeapAndProcessSerialInput()
         sizeRead = Serial.readBytesUntil('\r', inputMsg, sizeof(inputMsg));
         if (sizeRead)
         {
-          executeCommands(inputMsg, IPAddress(0, 0, 0, 0));
+          executeCommands(inputMsg, IPAddress(0, 0, 0, 0),-1);
         }
         Serial.flush();
       }
@@ -285,6 +287,8 @@ void fishyDevice::serialStart()
 //reset if commanded to by someone last loop
 void fishyDevice::checkResetOnLoop()
 {
+  //TODO - consider adding webSocket->cleanupClients(); call every minute or so (see https://github.com/me-no-dev/ESPAsyncWebServer#limiting-the-number-of-web-socket-clients)
+
   if (resetOnNextLoop)
   {
     //allow time for any commit to settle and webresponses to process before bailing
@@ -333,10 +337,6 @@ void fishyDevice::resetController()
   ESP.restart();
 }
 
-//============================
-//general helper functions
-
-//============================
 void fishyDevice::fastBlinks(int numBlinks)
 {
   slowBlinkCount = 0;
@@ -396,6 +396,9 @@ void fishyDevice::doBlinking()
     
 }
 
+//-------------------------------------------------------
+//TODO - look to see if these functions should be deleted
+
 //makes the name string 255 in length and adds H3 tags (space after tags so ignored by browser)
 String fishyDevice::paddedH3Name(String name)
 {
@@ -447,7 +450,11 @@ String fishyDevice::paddedIntQuotes(int lengthInt, int val)
   return paddedStr;
 }
 
-void fishyDevice::executeCommands(char inputMsg[MAXCMDSZ], IPAddress remote)
+//TODO - end consider
+//-----------------------------------------------------
+
+
+void fishyDevice::executeCommands(char inputMsg[MAXCMDSZ], IPAddress remote, int client_id)
 {
   String cmd = String(inputMsg);
   cmd.toLowerCase();
@@ -481,8 +488,9 @@ void fishyDevice::executeCommands(char inputMsg[MAXCMDSZ], IPAddress remote)
       Serial.println("[executeCommands] Commanded GET_NETWORK_JSON");
       Serial.println(getNetworkJSON().c_str());
     }
-    updateClients(getNetworkJSON().c_str(), true);
-    updateClients("COMPLETE", true);
+    //This function is generally called by the homeMonitor site asking for an updated list of all the devices statusses.
+    updateSpecificClient(getNetworkJSON().c_str(), client_id);
+    updateSpecificClient("COMPLETE", client_id);
   }
   else if (cmd.startsWith("reset_wifi"))
   {
@@ -635,7 +643,7 @@ void fishyDevice::UDPprocessPacket()
       Serial.print("[UDPprocessPacket] Processing:");
       Serial.println(packetBuffer);
     }
-    executeCommands(packetBuffer, remoteIp);
+    executeCommands(packetBuffer, remoteIp,-1);
   }
 }
 
@@ -701,7 +709,6 @@ void fishyDevice::UDPackLogger()
 {
   Udp.beginPacket(loggerIP, UDP_LOCAL_PORT);
   Udp.write(String("~UDP~HEARD_NEW_LOGGER at" + loggerIP.toString()).c_str());
-
   Udp.endPacket();
 }
 
@@ -909,7 +916,6 @@ void fishyDevice::UDPparseActivityMessage(char inputMsg[MAXCMDSZ], IPAddress rem
     {
       Udp.beginPacket(loggerIP, UDP_LOCAL_PORT);
       Udp.write(response);
-
       Udp.endPacket();
     }
   }
@@ -1351,7 +1357,7 @@ void fishyDevice::webSocketEventHandler(AsyncWebSocket *server, AsyncWebSocketCl
   break;
   case WS_EVT_CONNECT:
   {
-    //on connect provide this node's information
+    //on connect provide this node's information to all clients
     webSocket->textAll(getNodeJSON().c_str(), strlen(getNodeJSON().c_str()));
     if (DEBUG_MESSAGES)
     {
@@ -1393,7 +1399,7 @@ void fishyDevice::webSocketEventHandler(AsyncWebSocket *server, AsyncWebSocketCl
 
       if (info->opcode == WS_TEXT)
       {
-        executeCommands((char *)msg.c_str(), WiFi.localIP());
+        executeCommands((char *)msg.c_str(), WiFi.localIP(),client->id());
         // repeat back received message data to all connected clients
         webSocket->textAll(msg.c_str());
       }
@@ -1454,9 +1460,11 @@ void fishyDevice::webSocketEventHandler(AsyncWebSocket *server, AsyncWebSocketCl
           }
           if (info->message_opcode == WS_TEXT)
           {
-            executeCommands((char *)msg.c_str(), WiFi.localIP());
-            // send data to all connected clients
-            webSocket->textAll(msg.c_str());
+            executeCommands((char *)msg.c_str(), WiFi.localIP(),client->id());
+            // send data to client
+            //TODO - VERIFY this is working - I changed to only send the response verifying the receipt back to client rather than all clients.
+            //webSocket->textAll(msg.c_str());
+            client->text(msg.c_str());
           }
           else
           {
@@ -1495,43 +1503,57 @@ void fishyDevice::updateClients(String message)
 void fishyDevice::updateClients(String message, bool forceUpdate)
 {
   static unsigned long lastUpdate = millis();
-  String nodeJSON = getNodeJSON();
-  String text = "MSG:" + message + "~*~*DAT:" + nodeJSON;
-
+  String text = "";
   if ((millis() - lastUpdate > 500) || forceUpdate)
   {
+    String nodeJSON = getNodeJSON();
+    text = "MSG:" + message + "~*~*DAT:" + nodeJSON;
+
     lastUpdate = millis();
     UDPpollReply(WiFi.localIP());
-    if (DEBUG_MESSAGES)
-    {
-      Serial.println(text);
-    }
+    if (DEBUG_MESSAGES){Serial.println(text);}
     webSocket->textAll(text.c_str());
+    
     if (forceUpdate)
     {
+      String response = UDPmakeActivityMessage(message);
       if (masterIP.toString() != "0.0.0.0" && masterIP.toString() != "(IP unset)")
       {
-        String response = "~UDP~ACTIVITY_MESSAGE:device=";
-        response += WiFi.localIP().toString();
-        response += ";message=";
-        response += message;
-        response += ";nodeStatus=";
-        response += getStatusString();
-        response += ";nodeShortStatus=";
-        response += getShortStatString();
-        response += ";";
         Udp.beginPacket(masterIP, UDP_LOCAL_PORT);
         Udp.write(response.c_str());
         Udp.endPacket();
-        // response = "~UDP~ACTIVITY_MESSAGE:nodeJSON=";
-        // response += nodeJSON;
-        // response += ";";
-        // Udp.beginPacket(masterIP, UDP_LOCAL_PORT);
-        // Udp.write(response.c_str());
-        // Udp.endPacket();
+      }else if(myEEPROMdata.master){ //send logged events from the maser device itself
+        if (loggerIP.toString() != "0.0.0.0" && loggerIP.toString() != "(IP unset)")
+          {
+           char strForParse[MAXCMDSZ] = "";
+           strncpy(strForParse, response.c_str(), MAXCMDSZ);
+           UDPparseActivityMessage(strForParse,WiFi.localIP()); 
+          }
       }
     }
   }
+}
+//similar to above but just send a message to the client_id via websocket
+void fishyDevice::updateSpecificClient(String message, int client_id)
+{
+    String text = "MSG:" + message + "~*~*DAT:" + getNodeJSON();;
+    if (DEBUG_MESSAGES){Serial.println(text);}
+    webSocket->text(client_id,text.c_str());
+}
+
+//helper function to format an activity message with or without the ~UDP label
+String fishyDevice::UDPmakeActivityMessage(String message){
+        String str;
+        str = "~UDP~ACTIVITY_MESSAGE:device=";}
+        str += WiFi.localIP().toString();
+        str += ";message=";
+        str += message;
+        str += ";nodeStatus=";
+        str += getStatusString();
+        str += ";nodeShortStatus=";
+        str += getShortStatString();
+        str += ";";
+        return str;
 }
 
 //-----------------------------------------------------------------------------

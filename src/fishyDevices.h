@@ -201,7 +201,7 @@ class fishyDevice
     void resetController();
     void addAnotherDevice(const char *device_name);
     //take and process commands (from UDP/websocket)
-    void executeCommands(char inputMsg[MAXCMDSZ], IPAddress remote); 
+    void executeCommands(char inputMsg[MAXCMDSZ], IPAddress remote, int client_id); 
     void updateLocation(char inputMsg[MAXCMDSZ]);
     //general helper functions
     void fastBlinks(int numBlinks);
@@ -221,6 +221,7 @@ class fishyDevice
     void UDPpollReply(IPAddress remote);
     void UDPparsePollResponse(char inputMsg[MAXCMDSZ], IPAddress remote);
     void UDPparseActivityMessage(char inputMsg[MAXCMDSZ], IPAddress remote);
+    String UDPmakeActivityMessage(String message, bool withLabel);
     // functions to maintain list of active fishyDevices on network
     fishyDeviceData makeMyfishyDeviceData();
     int dealWithThisNode(fishyDeviceData netDevice);
@@ -245,6 +246,7 @@ class fishyDevice
     void webSocketEventHandler(AsyncWebSocket *server, AsyncWebSocketClient *client, AwsEventType type, void *arg, uint8_t *data, size_t len);
     void updateClients(String message);
     void updateClients(String message, bool forceUpdate);
+    void updateSpecificClient(String message, int client_id);
     //-webserver
     void handleNetworkJSON(AsyncWebServerRequest *request);
     void handleNodeJSON(AsyncWebServerRequest *request);

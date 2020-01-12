@@ -221,7 +221,7 @@ class fishyDevice
     void UDPpollReply(IPAddress remote);
     void UDPparsePollResponse(char inputMsg[MAXCMDSZ], IPAddress remote);
     void UDPparseActivityMessage(char inputMsg[MAXCMDSZ], IPAddress remote);
-    String UDPmakeActivityMessage(String message, bool withLabel);
+    String UDPmakeActivityMessage(String message);
     // functions to maintain list of active fishyDevices on network
     fishyDeviceData makeMyfishyDeviceData();
     int dealWithThisNode(fishyDeviceData netDevice);

@@ -708,7 +708,7 @@ void fishyDevice::announceReadyOnUDP()
 void fishyDevice::UDPackLogger()
 {
   Udp.beginPacket(loggerIP, UDP_LOCAL_PORT);
-  Udp.write(String("~UDP~HEARD_NEW_LOGGER at" + loggerIP.toString()).c_str());
+  Udp.write(String("~UDP~HEARD_NEW_LOGGER at " + loggerIP.toString()).c_str());
   Udp.endPacket();
 }
 
@@ -1544,7 +1544,7 @@ void fishyDevice::updateSpecificClient(String message, int client_id)
 //helper function to format an activity message with or without the ~UDP label
 String fishyDevice::UDPmakeActivityMessage(String message){
         String str;
-        str = "~UDP~ACTIVITY_MESSAGE:device=";}
+        str = "~UDP~ACTIVITY_MESSAGE:device=";
         str += WiFi.localIP().toString();
         str += ";message=";
         str += message;

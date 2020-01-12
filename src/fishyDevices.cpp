@@ -26,10 +26,8 @@ THE SOFTWARE.
 
 //Update library.properties to add the dependencies so CLI can automatically pull them
 //TODO - in the notes explaining things - make sure I explain updateClients(msg,1) vs updateClients(msg,0) - 1 sends activity to the logger and should be for final states or received commands (also forces and update even if just done recently) ,0 is for information or transient states and will not be logged as activity by the logger.
-//TODO - send notice to logger on boot up; have logger respond with IP
 //TODO - ESP32 integration
 //TODO - work on a script to pull all the variants into the examples folder
-//TODO - make a task and building script that updates the SWVERSION variable in the device.h 
 //TODO - make a global "turn off fauxmo" switch (MASTER) that sends a UDP message to dosable all fauxmo (disable voice controls)
 
 #include "fishyDevices.h"
@@ -547,7 +545,7 @@ void fishyDevice::executeCommands(char inputMsg[MAXCMDSZ], IPAddress remote, int
   }
   else if (cmd.startsWith("~udp~activity_message"))
   {
-    UDPparseActivityMessage(inputMsg, remote); //want the original case for this
+    UDPhandleActivityMessage(inputMsg, remote); //want the original case for this
   }
   else
   {
@@ -707,7 +705,9 @@ void fishyDevice::announceReadyOnUDP()
 //acknowledge loggerIR
 void fishyDevice::UDPackLogger()
 {
-  Udp.beginPacket(loggerIP, UDP_LOCAL_PORT);
+  IPAddress broadcast = WiFi.localIP();
+  broadcast[3] = 255;
+  Udp.beginPacket(broadcast, UDP_LOCAL_PORT);
   Udp.write(String("~UDP~HEARD_NEW_LOGGER at " + loggerIP.toString()).c_str());
   Udp.endPacket();
 }
@@ -899,22 +899,24 @@ it is also parsed by scripts in wifi-and-webserver.ino and webresources.h if add
     dealWithThisNode(holder); //update the list of nodes
   }
 }
-void fishyDevice::UDPparseActivityMessage(char inputMsg[MAXCMDSZ], IPAddress remote)
+void fishyDevice::UDPhandleActivityMessage(char inputMsg[MAXCMDSZ], IPAddress remote)
 {
   if (myEEPROMdata.master)
   {
-
+    //pass on message to broadcast for logger
     //example input: "~UDP~ACTIVITY_MESSAGE:device=10.203.1.33;message=Commanded to Open;"
-
-    char response[MAXCMDSZ] = "";
-    strncpy(response, inputMsg + 22, MAXCMDSZ - 22); //strip off "~UDP~ACTIVITY_MESSAGE"
+    char response[MAXCMDSZ] = "~UDP~MESSAGE_4_LOGGER:";
+    strncpy(response + 22, inputMsg + 22, MAXCMDSZ - 22); //strip off "~UDP~ACTIVITY_MESSAGE"
+    
     if (DEBUG_MESSAGES)
     {
-      Serial.println("[UDPparseActivityMessage] Got this: " + String(response));
+      Serial.println("[UDPhandleActivityMessage] Got this: " + String(response));
     }
     if (loggerIP.toString() != "0.0.0.0" && loggerIP.toString() != "(IP unset)")
     {
-      Udp.beginPacket(loggerIP, UDP_LOCAL_PORT);
+      IPAddress broadcast = WiFi.localIP();
+      broadcast[3] = 255;
+      Udp.beginPacket(broadcast, UDP_LOCAL_PORT);
       Udp.write(response);
       Udp.endPacket();
     }
@@ -1527,7 +1529,7 @@ void fishyDevice::updateClients(String message, bool forceUpdate)
           {
            char strForParse[MAXCMDSZ] = "";
            strncpy(strForParse, response.c_str(), MAXCMDSZ);
-           UDPparseActivityMessage(strForParse,WiFi.localIP()); 
+           UDPhandleActivityMessage(strForParse,WiFi.localIP()); 
           }
       }
     }

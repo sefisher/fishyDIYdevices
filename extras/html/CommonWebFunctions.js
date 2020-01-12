@@ -104,12 +104,11 @@ function getNodeJSONtext(data) {
 }
 //utility function for all fishyDIY devices (extract after ~*~*DAT):
 function start() {
-    // TEST - TODO turn off when not testing
+    // TEST - turn off when not testing
     //if(document.domain=="localhost"){websock = new WebSocket('ws://10.203.1.197/ws');}
-    if (document.domain == "localhost"){websock = new WebSocket('ws://10.203.1.24/ws')}
-    else { 
-        websock = new WebSocket('ws://' + window.location.hostname + '/ws'); 
-    };
+    //else { 
+    websock = new WebSocket('ws://' + window.location.hostname + '/ws'); 
+    //};
 
     websock.onopen = function(evt) { 
         console.log('websock open'); 

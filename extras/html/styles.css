@@ -1,8 +1,8 @@
 /* 
-This styles.css file is used by the other HTML pages and built into the code in webresources.h. If you modify the css below then:
+This styles.css file is used by the other HTML pages and built into the code in fishyDevices.h. If you modify the css below then:
 1) copy the whole file (from below this comment).
 2) put it through a css minifier (like https://codebeautify.org/css-beautify-minify#) and then through a String builder (like http://buildmystring.com/ with "strip out carriage returns" on) to create a single one-line string.
-3) paste that into the WEBSTYLESSTR After "PROGMEM" in the webresources.h file.
+3) paste that into the WEBSTYLESSTR After "PROGMEM" in the fishyDevices.h file.
 */
 :root {
 	font-family: Arial, Helvetica, sans-serif;

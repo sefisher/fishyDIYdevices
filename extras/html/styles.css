@@ -535,6 +535,6 @@ input:checked+.sldSw:before {
   	background: transparent;
 }
 .swUpdate {
-    min-width:300px;
+    width: var(--cp-sz);
     min-height: 300px;
 }

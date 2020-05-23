@@ -906,7 +906,8 @@ void fishyDevice::UDPhandleActivityMessage(char inputMsg[MAXCMDSZ], IPAddress re
     //pass on message to broadcast for logger
     //example input: "~UDP~ACTIVITY_MESSAGE:device=10.203.1.33;message=Commanded to Open;"
     char response[MAXCMDSZ] = "~UDP~MESSAGE_4_LOGGER:";
-    strncpy(response + 22, inputMsg + 22, MAXCMDSZ - 22); //strip off "~UDP~ACTIVITY_MESSAGE"
+    int msglen = sizeof(UDPACT) + 1;
+    strncpy(response + msglen, inputMsg + msglen, MAXCMDSZ - msglen); //strip off "~UDP~ACTIVITY_MESSAGE:"
     
     if (DEBUG_MESSAGES)
     {
@@ -1546,7 +1547,8 @@ void fishyDevice::updateSpecificClient(String message, int client_id)
 //helper function to format an activity message with or without the ~UDP label
 String fishyDevice::UDPmakeActivityMessage(String message){
         String str;
-        str = "~UDP~ACTIVITY_MESSAGE:device=";
+        str = UDPACT; 
+        str += ":device=";
         str += WiFi.localIP().toString();
         str += ";message=";
         str += message;

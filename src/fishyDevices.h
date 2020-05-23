@@ -78,6 +78,11 @@ For ESPAsync Toolset - Copyright (c) 2016 Hristo Gochkov (under GNU License vers
 //NETWORK SETTINGS
 #define MAX_DEVICE 30 //sets how many fishyDevices can be tracked by the MASTER
 
+//UDP MESSAGE STRINGS" - customizable strings used in UDP comms
+#define UDPACT "~UDP~ACTIVITY_MESSAGE"
+#define UDP4LOG "~UDP~MESSAGE_4_LOGGER"
+
+
 //DEVICE SETTINGS - these are defined in a user .h file (e.g., FD-Device-Definitions.h)
 //For the MASTER NODE (webserver node) this sets the number of devices it can manage on the net
 extern const char CUSTOM_DEVICE_NAME[];

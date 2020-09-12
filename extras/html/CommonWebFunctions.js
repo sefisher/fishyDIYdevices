@@ -104,7 +104,7 @@ function getNodeJSONtext(data) {
 }
 //utility function for all fishyDIY devices (extract after ~*~*DAT):
 function start() {
-    // TEST - turn off when not testing
+    // TEST CODE - This is used to do testing on a local webbrowser: turn off (comment out if-else) when not testing
     //if(document.domain=="localhost"){websock = new WebSocket('ws://10.203.1.197/ws');}
     //else { 
     websock = new WebSocket('ws://' + window.location.hostname + '/ws'); 

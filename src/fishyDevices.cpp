@@ -24,11 +24,16 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 THE SOFTWARE.
 */
 
-//Update library.properties to add the dependencies so CLI can automatically pull them
+//TODO - update (compile and upload) simple switch and try to make work
+//TODO - for homeMonitoring : Fix multiple name convention (simpleswitch) to work
+//TODO - for homeMonitoring : kitchen light 2 (cabinet lghts not working; why?)
+//TODO - for homeMonitoring : activity not being announced and logged when physical switch pressed - send activity if network is working
+
+//TODO Update library.properties to add the dependencies so CLI can automatically pull them
 //TODO - in the notes explaining things - make sure I explain updateClients(msg,1) vs updateClients(msg,0) - 1 sends activity to the logger and should be for final states or received commands (also forces and update even if just done recently) ,0 is for information or transient states and will not be logged as activity by the logger.
 //TODO - ESP32 integration
 //TODO - work on a script to pull all the variants into the examples folder
-//TODO - make a global "turn off fauxmo" switch (MASTER) that sends a UDP message to dosable all fauxmo (disable voice controls)
+//TODO - make a global "turn off fauxmo" switch (MASTER) that sends a UDP message to disable all fauxmo (disable voice controls)
 
 #include "fishyDevices.h"
 
@@ -186,7 +191,7 @@ void fishyDevice::WifiFauxmoAndDeviceSetup()
     Serial.println("[WifiFauxmoAndDeviceSetup]finish");
   }
 
-  if(do_the_blinking)
+  if(myEEPROMdata.blink_Enable)
   {
     pinMode(blinker_led, OUTPUT);
     digitalWrite(blinker_led, HIGH);
@@ -194,8 +199,8 @@ void fishyDevice::WifiFauxmoAndDeviceSetup()
 }
 
 //function to add additonal devices, device ID will be incrmented for each call (the default/first device_id is 0)
-void fishyDevice::addAnotherDevice(const char *device_name){
-   fauxmo.addDevice(device_name);
+unsigned char fishyDevice::addAnotherDevice(const char *device_name){
+   return fauxmo.addDevice(device_name);
 }
 
 //passthrough function for binding to fauxmo,onSetState
@@ -203,14 +208,14 @@ void fishyDevice::onSetStateForFauxmo(unsigned char device_id, const char *devic
 {
   // Callback when a command from Alexa is received.
   // You can use device_id or device_name to choose the element to perform an action onto (relay, LED,...)
-  // State is a boolean (ON/OFF) and value a number from 0 to 255 (if you say "set kitchen light to 50%" you will receive a 128 here).
+  // State is a boolean (ON/OFF) and value a number from 001 to 255 (if you say "set kitchen light to 50%" you will receive a 128 here).
   // Just remember not to delay too much here, this is a callback, exit as soon as possible.
   // If you have to do something more involved here set a flag and process it in your main loop.
   if (DEBUG_MESSAGES)
   {
-    Serial.printf("[SETUP] Device #%d (%s) state was set: %s set value was: %d\n", device_id, device_name, state ? "ON" : "OFF", value);
+    Serial.printf("[fD onSetStateForFauxmo] Device #%d (%s) state was set: %s set value was: %d\n", device_id, device_name, state ? "ON" : "OFF", value);
   }
- 
+  
   executeState(device_id, device_name, state, value, 2); //2= context 2 which tells the device it was a fauxmo state change (has no custom device knowledge)
 
 }
@@ -235,7 +240,7 @@ void fishyDevice::showHeapAndProcessSerialInput()
       //take serial commands in
       if (use_serial && (Serial.available() > 0))
       {
-        char inputMsg[MAXCMDSZ];
+        char inputMsg[MAXCMDSZ*2];
         int sizeRead;
         sizeRead = Serial.readBytesUntil('\r', inputMsg, sizeof(inputMsg));
         if (sizeRead)
@@ -248,7 +253,7 @@ void fishyDevice::showHeapAndProcessSerialInput()
   }
 }
 
-// Initialize serial port and clean garbage
+// Initialize serial port, LED (visual communcations), and clean garbage
 void fishyDevice::serialStart()
 {
   //set default settings in case the extern const aren't set outside library
@@ -259,16 +264,16 @@ void fishyDevice::serialStart()
     use_serial = USE_SERIAL_INPUT;
   }
 
-  if(DO_BLINKING == NULL){
-    do_the_blinking = true;
-  }else{
-    do_the_blinking = DO_BLINKING;
-  }
-
   if(BLINK_LED == NULL){
     blinker_led = LED_BUILTIN;
   }else{
     blinker_led = BLINK_LED;
+  }
+
+  if(DO_BLINKING == NULL){
+    myEEPROMdata.blink_Enable = true;
+  }else{
+    myEEPROMdata.blink_Enable = DO_BLINKING;
   }
 
   if (DEBUG_MESSAGES)
@@ -297,7 +302,7 @@ void fishyDevice::checkResetOnLoop()
     delay(1000);
     resetController();
   }
-  if(do_the_blinking && (fastBlinkCount || slowBlinkCount)){
+  if(myEEPROMdata.blink_Enable && (fastBlinkCount || slowBlinkCount)){
     doBlinking();
   }
 }
@@ -316,7 +321,7 @@ void fishyDevice::showPersonalityDataSize()
     Serial.println("[SETUP] timeOut " + String(sizeof(myEEPROMdata.timeOut)));
     Serial.println("[SETUP] deviceTimedOut " + String(sizeof(myEEPROMdata.deviceTimedOut)));
     Serial.println("[SETUP] deviceCustomData " + String(sizeof(myEEPROMdata.deviceCustomData)));
-    Serial.println("[SETUP] reserved_Enable " + String(sizeof(myEEPROMdata.reserved_Enable)));
+    Serial.println("[SETUP] blink_Enable " + String(sizeof(myEEPROMdata.blink_Enable)));
     Serial.println("[SETUP] reserved_data_package " + String(sizeof(myEEPROMdata.reserved_data_package)));
     Serial.println("[SETUP] locationX " + String(sizeof(myEEPROMdata.locationX)));
     Serial.println("[SETUP] locationY " + String(sizeof(myEEPROMdata.locationY)));
@@ -395,7 +400,7 @@ void fishyDevice::doBlinking()
 }
 
 //-------------------------------------------------------
-//TODO - look to see if these functions should be deleted
+//TODO - CLEANUP look to see if these functions should be deleted
 
 //makes the name string 255 in length and adds H3 tags (space after tags so ignored by browser)
 String fishyDevice::paddedH3Name(String name)
@@ -451,10 +456,11 @@ String fishyDevice::paddedIntQuotes(int lengthInt, int val)
 //TODO - end consider
 //-----------------------------------------------------
 
-
-void fishyDevice::executeCommands(char inputMsg[MAXCMDSZ], IPAddress remote, int client_id)
+//double the command size to allow longer configuration strings
+void fishyDevice::executeCommands(char inputMsg[MAXCMDSZ*2], IPAddress remote, int client_id)
 {
   String cmd = String(inputMsg);
+  String test;
   cmd.toLowerCase();
   if (executeDeviceCommands(inputMsg, remote))
   {
@@ -470,11 +476,11 @@ void fishyDevice::executeCommands(char inputMsg[MAXCMDSZ], IPAddress remote, int
       showEEPROMPersonalityData();
     }
   }
-  else if (cmd.startsWith("location_change"))
+  else if (cmd.substring(0,strlen(UDP_NEWLOCATION)).equalsIgnoreCase(String(UDP_NEWLOCATION)))
   {
     if (DEBUG_MESSAGES)
     {
-      Serial.println("[executeCommands] Commanded LOCATION_CHANGE");
+      Serial.println(String("[executeCommands] Commanded " + String(UDP_NEWLOCATION)));
     }
     updateClients("Updating Device Location", true);
     updateLocation(inputMsg);
@@ -508,42 +514,51 @@ void fishyDevice::executeCommands(char inputMsg[MAXCMDSZ], IPAddress remote, int
     updateClients("Rebooting Device", true);
     resetOnNextLoop = true;
   }
-  else if (cmd.startsWith("~udp~anyfishydev_there"))
+  else if (cmd.substring(0,strlen(UDP_YO)).equalsIgnoreCase(String(UDP_YO)))
   {
     if (DEBUG_UDP_MESSAGES)
     {
-      Serial.println("[executeCommands] Commanded ~udp~ANYFISHYDEV_THERE");
+      Serial.println(String("[executeCommands] Commanded ") + String(UDP_YO));
     }
     UDPpollReply(remote);
   }
-  else if (cmd.startsWith("~udp~poll_response"))
+  else if (cmd.substring(0,strlen(UDP_HERE)).equalsIgnoreCase(String(UDP_HERE)))
   {
     if (DEBUG_UDP_MESSAGES)
     {
-      Serial.println("[executeCommands] Commanded ~udp~POLL_RESPONSE");
+      Serial.println(String("[executeCommands] Commanded") + String(UDP_HERE));
     }
     UDPparsePollResponse(inputMsg, remote); //want the original case for this
   }
-  else if (cmd.startsWith("~udp~fishydiymaster"))
+  else if (cmd.substring(0,strlen(UDP_MASTER)).equalsIgnoreCase(String(UDP_MASTER)))
   {
     if (DEBUG_UDP_MESSAGES)
     {
-      Serial.print("[executeCommands] Commanded ~udp~FISHYDIYMASTER from: ");
+      Serial.print(String("[executeCommands] Commanded " + String(UDP_MASTER) + String(" from: ")));
       Serial.println(remote);
     }
     masterIP = remote; //update the master IP
   }
-  else if (cmd.startsWith("~udp~fishydiylogger"))
+  else if (cmd.substring(0,strlen(UDP_LOGGER)).equalsIgnoreCase(String(UDP_LOGGER)))
   {
     if (DEBUG_UDP_MESSAGES)
     {
-      Serial.print("[executeCommands] Commanded ~udp~FISHYDIYLOGGER from: ");
+      Serial.print(String("[executeCommands] Commanded " + String(UDP_LOGGER)));
       Serial.println(remote);
     }
     loggerIP = remote; //update the master IP
     UDPackLogger();
   }
-  else if (cmd.startsWith("~udp~activity_message"))
+  else if (cmd.substring(0,strlen(UDP_CONFIG_REQUEST)).equalsIgnoreCase(String(UDP_CONFIG_REQUEST)))
+  {
+    if (DEBUG_UDP_MESSAGES)
+    {
+      Serial.print(String("[executeCommands] Commanded " + String(UDP_CONFIG_REQUEST)));
+      Serial.println(remote);
+    }
+    UDPconfigRequest();
+  }
+  else if (cmd.substring(0,strlen(UDP_ACTIVITY)).equalsIgnoreCase(String(UDP_ACTIVITY)))
   {
     UDPhandleActivityMessage(inputMsg, remote); //want the original case for this
   }
@@ -559,7 +574,8 @@ void fishyDevice::executeCommands(char inputMsg[MAXCMDSZ], IPAddress remote, int
 void fishyDevice::updateLocation(char inputMsg[MAXCMDSZ])
 {
   char response[MAXCMDSZ] = "";
-  strncpy(response, inputMsg + 16, MAXCMDSZ - 16); //strip off "location_change"
+  int len = strlen(UDP_NEWLOCATION) + 1;
+  strncpy(response, inputMsg + len, MAXCMDSZ - len); //strip off UDP_NEWLOCATION
 
   //parseString in this order: {x,y,z}}
   //example string = "LOCATION_CHANGE:X=40;Y=50;Z=1" ->"X=40;Y=50;Z=1"
@@ -614,7 +630,7 @@ void fishyDevice::updateLocation(char inputMsg[MAXCMDSZ])
 void fishyDevice::UDPprocessPacket()
 {
   //USED FOR UDP COMMS
-  char packetBuffer[MAXCMDSZ + 56 + MAXNAMELEN]; //buffer to hold incoming packet (MAXCMDSZ with potential to have MASTER_COMMAND_DATA and an IP added.)
+  char packetBuffer[MAXCMDSZ*2 + 56 + MAXNAMELEN]; //buffer to hold incoming packet (MAXCMDSZ with potential to have MASTER_COMMAND_DATA and an IP added.)
 
   // if there's data available, read a packet
   int packetSize = Udp.parsePacket();
@@ -631,7 +647,7 @@ void fishyDevice::UDPprocessPacket()
       Serial.println(Udp.remotePort());
     }
     // read the packet into packetBufffer
-    int len = Udp.read(packetBuffer, MAXCMDSZ + 56 + MAXNAMELEN);
+    int len = Udp.read(packetBuffer, MAXCMDSZ*2 + 56 + MAXNAMELEN);
     if (len > 0)
     {
       packetBuffer[len] = 0;
@@ -708,7 +724,16 @@ void fishyDevice::UDPackLogger()
   IPAddress broadcast = WiFi.localIP();
   broadcast[3] = 255;
   Udp.beginPacket(broadcast, UDP_LOCAL_PORT);
-  Udp.write(String("~UDP~HEARD_NEW_LOGGER at " + loggerIP.toString()).c_str());
+  Udp.write(String(String(UDP_ACK_LOGGER) + String(": ") + loggerIP.toString()).c_str());
+  Udp.endPacket();
+}
+
+//provide a config string if requested via UDP
+void fishyDevice::UDPconfigRequest(){
+  IPAddress broadcast = WiFi.localIP();
+  broadcast[3] = 255;
+  Udp.beginPacket(broadcast, UDP_LOCAL_PORT);
+  Udp.write(String(String(UDP_CONFIG_RESPONSE) + String(": ") + getConfigString()).c_str());
   Udp.endPacket();
 }
 
@@ -722,7 +747,7 @@ void fishyDevice::UDPbroadcast()
   dealWithThisNode(makeMyfishyDeviceData());
 
   Udp.beginPacket(broadcast, UDP_LOCAL_PORT);
-  Udp.write("~UDP~ANYFISHYDEV_THERE");
+  Udp.write(UDP_YO);
 
   Udp.endPacket();
 }
@@ -732,7 +757,7 @@ void fishyDevice::UDPannounceMaster()
   IPAddress broadcast = WiFi.localIP();
   broadcast[3] = 255;
   Udp.beginPacket(broadcast, UDP_LOCAL_PORT);
-  Udp.write("~UDP~FISHYDIYMASTER");
+  Udp.write(UDP_MASTER);
   Udp.endPacket();
 }
 
@@ -743,7 +768,7 @@ void fishyDevice::UDPpollReply(IPAddress remote)
 {
   fishyDeviceData holder; //temp
   holder = makeMyfishyDeviceData();
-  String response = "~UDP~POLL_RESPONSE ";
+  String response = String(UDP_HERE) + ":";
   Udp.beginPacket(remote, UDP_LOCAL_PORT);
 /* 
 send fishyDeviceData data.
@@ -770,7 +795,7 @@ Note - this is parsed by UDPparsePollResponse and paralleled by getJSON; if addi
 }
 
 //parses a UDP poll reply and takes action
-void fishyDevice::UDPparsePollResponse(char inputMsg[MAXCMDSZ], IPAddress remote)
+void fishyDevice::UDPparsePollResponse(char inputMsg[MAXCMDSZ*2], IPAddress remote)
 {
   if (myEEPROMdata.master)
   {
@@ -780,10 +805,11 @@ Note - this data set is sent by UDPparsePollResponse and getNetworkJSON; UDPpars
 it is also parsed by scripts in wifi-and-webserver.ino and webresources.h if adding data elements all these may need updating.  This function sends data as follows (keep this list updated):{ip,name,typestr,statusstr,inError,isMaster,shortStat,locationX,locationY,locationZ}
 */
 
-    //example input: "~UDP~POLL RESPONSE{10.203.1.133,Rotator,Limit-SW-Actuator,Current Position:25% Open,false,false,25 ,134,216,1}
+    //example input: "[UDP_HERE]{10.203.1.133,Rotator,Limit-SW-Actuator,Current Position:25% Open,false,false,25 ,134,216,1}
 
-    char response[MAXCMDSZ] = "";
-    strncpy(response, inputMsg + 19, MAXCMDSZ - 19); //strip off "~UDP~POLL RESPONSE"
+    char response[MAXCMDSZ*2] = "";
+    int len = strlen(UDP_HERE) + 1;
+    strncpy(response, inputMsg + len, MAXCMDSZ*2 - len); //strip off UDP_HERE
     if (DEBUG_MESSAGES)
     {
       Serial.println("[UDPparsePollResponse] Got this: " + String(response));
@@ -899,15 +925,15 @@ it is also parsed by scripts in wifi-and-webserver.ino and webresources.h if add
     dealWithThisNode(holder); //update the list of nodes
   }
 }
-void fishyDevice::UDPhandleActivityMessage(char inputMsg[MAXCMDSZ], IPAddress remote)
+void fishyDevice::UDPhandleActivityMessage(char inputMsg[MAXCMDSZ*2], IPAddress remote)
 {
   if (myEEPROMdata.master)
   {
+
     //pass on message to broadcast for logger
-    //example input: "~UDP~ACTIVITY_MESSAGE:device=10.203.1.33;message=Commanded to Open;"
-    char response[MAXCMDSZ] = "~UDP~MESSAGE_4_LOGGER:";
-    int msglen = sizeof(UDPACT) + 1;
-    strncpy(response + msglen, inputMsg + msglen, MAXCMDSZ - msglen); //strip off "~UDP~ACTIVITY_MESSAGE:"
+    //example input: "[UDP_ACTIVITY]:device=10.203.1.33;message=Commanded to Open;"
+    char response[MAXCMDSZ*2] = UDP_MSG4LOG;    
+    strncpy(response + strlen(UDP_MSG4LOG), inputMsg + strlen(UDP_ACTIVITY), MAXCMDSZ*2 - strlen(UDP_MSG4LOG)); //prepend UDP_MSG4LOG message and strip off UDP_MSG4LOG
     
     if (DEBUG_MESSAGES)
     {
@@ -1302,7 +1328,7 @@ void fishyDevice::manageConnection()
       Serial.println("Connecting...");
     }
     lastConnectTry = millis();
-    if(do_the_blinking){
+    if(myEEPROMdata.blink_Enable){
       fastBlinks(myWifiConnect.connectTryCount);
     }
     connectWifi();
@@ -1465,7 +1491,7 @@ void fishyDevice::webSocketEventHandler(AsyncWebSocket *server, AsyncWebSocketCl
           {
             executeCommands((char *)msg.c_str(), WiFi.localIP(),client->id());
             // send data to client
-            //TODO - VERIFY this is working - I changed to only send the response verifying the receipt back to client rather than all clients.
+            //TODO - CLEANUP, VERIFY this is working with all devices - I changed to only send the response verifying the receipt back to client rather than all clients. Then remove.
             //webSocket->textAll(msg.c_str());
             client->text(msg.c_str());
           }
@@ -1528,8 +1554,8 @@ void fishyDevice::updateClients(String message, bool forceUpdate)
       }else if(myEEPROMdata.master){ //send logged events from the maser device itself
         if (loggerIP.toString() != "0.0.0.0" && loggerIP.toString() != "(IP unset)")
           {
-           char strForParse[MAXCMDSZ] = "";
-           strncpy(strForParse, response.c_str(), MAXCMDSZ);
+           char strForParse[MAXCMDSZ*2] = "";
+           strncpy(strForParse, response.c_str(), MAXCMDSZ*2);
            UDPhandleActivityMessage(strForParse,WiFi.localIP()); 
           }
       }
@@ -1547,7 +1573,7 @@ void fishyDevice::updateSpecificClient(String message, int client_id)
 //helper function to format an activity message with or without the ~UDP label
 String fishyDevice::UDPmakeActivityMessage(String message){
         String str;
-        str = UDPACT; 
+        str = UDP_ACTIVITY; 
         str += ":device=";
         str += WiFi.localIP().toString();
         str += ";message=";
@@ -1577,13 +1603,16 @@ void fishyDevice::handleNetworkJSON(AsyncWebServerRequest *request)
     handleNotMaster(request);
   }
 }
-
 //Web Server - provide a JSON structure with all the deviceArray data
 void fishyDevice::handleNodeJSON(AsyncWebServerRequest *request)
 {
   request->send(200, "text/html", getNodeJSON().c_str());
 }
-
+//Web Server - provide a configuration string that when sent back to device via websock will update its configurataion
+void fishyDevice::handleConfigString(AsyncWebServerRequest *request)
+{
+  request->send(200, "text/html", getConfigString().c_str());
+}
 //When file isn't found or root is called for non-master this shows a link to the master.
 //Also provides link to this device's control panel.
 void fishyDevice::handleNotMaster(AsyncWebServerRequest *request)
@@ -1926,7 +1955,7 @@ void fishyDevice::runNormalServer()
     Serial.print("IP address: ");
     Serial.println(WiFi.localIP());
   }
-  if(do_the_blinking){
+  if(myEEPROMdata.blink_Enable){
     fastBlinks(5);
   }
   String hostName;
@@ -1950,6 +1979,7 @@ void fishyDevice::runNormalServer()
   httpServer->on("/SWupdatePostForm", HTTP_POST, std::bind(&fishyDevice::handleSWupdateDevPostDone, this, std::placeholders::_1), std::bind(&fishyDevice::handleSWupdateDevPost, this, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3, std::placeholders::_4, std::placeholders::_5, std::placeholders::_6));
   httpServer->on("/network.JSON", HTTP_GET, std::bind(&fishyDevice::handleNetworkJSON, this, std::placeholders::_1));
   httpServer->on("/node.JSON", HTTP_GET, std::bind(&fishyDevice::handleNodeJSON, this, std::placeholders::_1));
+  httpServer->on("/config", HTTP_GET, std::bind(&fishyDevice::handleConfigString, this, std::placeholders::_1));
   httpServer->on("/styles.css", HTTP_GET, std::bind(&fishyDevice::handleCSS, this, std::placeholders::_1));
   httpServer->on("/CommonWebFunctions.js", HTTP_GET, std::bind(&fishyDevice::handleJS, this, std::placeholders::_1));
   httpServer->on("/wifi", HTTP_ANY, std::bind(&fishyDevice::handleWifi, this, std::placeholders::_1));
@@ -2009,7 +2039,7 @@ void fishyDevice::runSoftAPServer()
   {
     Serial.println("HTTP server started\n--------------------------");
   }
-  if(do_the_blinking)
+  if(myEEPROMdata.blink_Enable)
   {
     slowBlinks(60); //blink slowly for a few minutes
   }

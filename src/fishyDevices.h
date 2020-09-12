@@ -71,6 +71,7 @@ For ESPAsync Toolset - Copyright (c) 2016 Hristo Gochkov (under GNU License vers
 //Board communication rate and UDP port number
 #define SERIAL_BAUDRATE 115200
 #define UDP_LOCAL_PORT 8266
+#define HOME_MONITOR_PORT 8080
 
 //DNS Server Port
 #define DNS_PORT 53
@@ -78,11 +79,23 @@ For ESPAsync Toolset - Copyright (c) 2016 Hristo Gochkov (under GNU License vers
 //NETWORK SETTINGS
 #define MAX_DEVICE 30 //sets how many fishyDevices can be tracked by the MASTER
 
-//UDP MESSAGE STRINGS" - customizable strings used in UDP comms
-#define UDPACT "~UDP~ACTIVITY_MESSAGE"
-#define UDP4LOG "~UDP~MESSAGE_4_LOGGER"
+//UDP MESSAGE STRINGS" - customizable strings used in UDP comms between devices and MASTER
+//if these are altered and you are using the homeMonitor package - update the 
+//commands in the configureHome.html and piMonitor.py files as well
+#define UDP_ACTIVITY "~UDP~ACTIVITY_MESSAGE" //a device reporting activity
+#define UDP_MSG4LOG "~UDP~MESSAGE_4_LOGGER" //MASTER telling LOGGER something
+#define UDP_YO "~UDP~ANYFISHYDEV_THERE" //MASTER asking all devices to report in
+#define UDP_MASTER "~UDP~FISHYDIYMASTER" //MASTER asking all devices to report in
+#define UDP_HERE "~UDP~POLL_RESPONSE" //devices reporting in to MASTER
+#define UDP_LOGGER "~UDP~FISHYDIYLOGGER" //New LOGGER online
+#define UDP_CONFIG_REQUEST "~UDP~CONFIGREQUEST" //Requesting device config string
+#define UDP_CONFIG_RESPONSE "~UDP~FISHYDIYCONFIG" //Provide device config string
+#define UDP_ACK_LOGGER "~UDP~HEARD_NEW_LOGGER" //acknowledge logger
+#define UDP_NEWLOCATION "~UDP~LOCATION_CHANGE" //new device location
+#define UDP_LOGGER_RCVD "~UDP~LOGGER_RCVD_DATA" //logger received and parsed its message
 
 
+//TODO Cleanup: remove the comments below after versifying functions with Limt Switch Actuator
 //DEVICE SETTINGS - these are defined in a user .h file (e.g., FD-Device-Definitions.h)
 //For the MASTER NODE (webserver node) this sets the number of devices it can manage on the net
 extern const char CUSTOM_DEVICE_NAME[];
@@ -104,7 +117,7 @@ extern const int BLINK_LED;
 #define DEBUG_UDP_MESSAGES false  //debugging for network comms (MASTER - SLAVE issues with nodes on the network)
 #define UDP_PARSE_MESSAGES false  //debugging for parsing messages - used after you've changed the message structures
 #define DEBUG_HEAP_MESSAGE false  //just tracking the heap size for memory leak issues or overloaded nodeMCUs
-#define DEBUG_WIFI_MESSAGES false //shows wifi connection debugging info
+#define DEBUG_WIFI_MESSAGES false  //shows wifi connection debugging info
 
 //A typedef struct of type fishyDevice to hold data on devices on the net; and
 //then create an array of size MAX_DEVICE to store all the stuff found on the net
@@ -137,11 +150,11 @@ typedef struct EEPROMdata //676 bytes
     int timeOut = 60;                             //4 bytes
     bool deviceTimedOut = false;                  //1 byte
     char deviceCustomData[MAXCUSTOMDATALEN] = ""; //256 bytes - 255 characters - format: '{name=value&name=value&name=value}' (no spaces, no "&", no "=" stored in string)
+    bool blink_Enable = true;                     //1 byte
 
     //storage for future use--------------------------------
     //reserved since changing EEPROM layout requires more work to 
     //update fielded devices
-    bool reserved_Enable;                         //1 byte
     char reserved_data_package[MAXCUSTOMDATALEN]; //256 bytes - 255 characters 
     //-----------------------------------------------------
 
@@ -180,6 +193,7 @@ class fishyDevice
     bool executeDeviceCommands(char inputMsg[MAXCMDSZ], IPAddress remote);//run by executecommands first to allow device specific commands to be processed (can override built-in commands processes as well)
     void executeState(unsigned char device_id, const char* device_name, bool state, unsigned char value, int context); //execute voice command state changes
     void UDPparseConfigResponse(char inputMsg[MAXCMDSZ], IPAddress remote); //parse configuration string data to update all the stored parameters
+    String getConfigString(); //generate a configuration string that can be sent back and processed by UDPparseConfigResponse to refresh all the stored parameters
     String getStatusString(); //return a string with the device's status for display
     String getShortStatString(); //return a SHORT string (3 char max) summarizing the device's status for min display
     void initializeDeviceCustomData(); //setup device specific data elements on boot up if not stored in EEPROM
@@ -204,7 +218,7 @@ class fishyDevice
     void checkResetOnLoop();
     void showPersonalityDataSize();
     void resetController();
-    void addAnotherDevice(const char *device_name);
+    unsigned char addAnotherDevice(const char *device_name);
     //take and process commands (from UDP/websocket)
     void executeCommands(char inputMsg[MAXCMDSZ], IPAddress remote, int client_id); 
     void updateLocation(char inputMsg[MAXCMDSZ]);
@@ -222,6 +236,7 @@ class fishyDevice
     void announceReadyOnUDP();
     void UDPbroadcast();
     void UDPackLogger();
+    void UDPconfigRequest();
     void UDPannounceMaster();
     void UDPpollReply(IPAddress remote);
     void UDPparsePollResponse(char inputMsg[MAXCMDSZ], IPAddress remote);
@@ -255,6 +270,7 @@ class fishyDevice
     //-webserver
     void handleNetworkJSON(AsyncWebServerRequest *request);
     void handleNodeJSON(AsyncWebServerRequest *request);
+    void handleConfigString(AsyncWebServerRequest *request);
     void handleNotMaster(AsyncWebServerRequest *request);
     String getNetworkJSON();
     String getNodeJSON();

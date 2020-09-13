@@ -9,22 +9,23 @@
  3) Uses fauxmoESP to create an Alexa or Google Home voice control interface for controlling the devices.
  4) Display a list and mapview (**mapview is for monitoring,logging, and controlling on a separate monitoring device like a raspberry pi) of all fishyDevices on your network with a brief status displayed.
  5) The following built-in device types are provided with hardware examples:
-    - Limit-SW-Actuator (limit switches allow moving between two states, or positioning anywhere fromm 0-100% of that range). These can be used for things ranging from blind controls, ventilation damper positioners, rotating something on display, etc. 
-    - RGBLED controller (colors and dimming control for a low power RGB LED strip)
+    - Limit-SW-Actuator (dual limit switches allow moving between two states, or positioning anywhere fromm 0-100% of that range). These can be used for things ranging from blind controls, ventilation damper positioners, rotating something on display, etc. 
+    - Simple-Switches (on/off switches for light switch panels {upto 4 switches in current design with settings for wither pushbuttons or touch-type switches, can use builtin LED or a spearate LED for blinking indications of button press or other functions})
  6) Blank templates are provided for making your own custom fishyDevice types.  The following types are under devlopment:
-    - Light switch controls (for replacing normal toggle light switches).
     - Infrared motion sensors
+    - Dimming lights
     - Temperature sensors
+    - RGBLED strip controls
     - Single-SW-Actuator (single limit switch allow resetting motion tracking from a single known point (limit SW) positioning anywhere fromm 0-100% with 100% set by software and conuting motor rotations). These can be used for the same things as a Limit-SW-actuator where adding a second switch is hard (or ugly) - like blinds. But it is slightly less reliable than a full limit switch actuator with two switches. 
 
-
-Copyright (C) 2019 by Stephen Fisher 
+Copyright (C) 2020 by Stephen Fisher 
 
 The MIT License (MIT)
 
-Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the "Software"), to deal
-in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions:
+Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation 
+files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy, 
+modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software
+is furnished to do so, subject to the following conditions:
 
 The above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software.
 
@@ -33,10 +34,8 @@ FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTH
 LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 THE SOFTWARE.
 
-For Fauxmo Library - Copyright (c) 2018 by Xose Pérez <xose dot perez at gmail dot com> (also under MIT License)
-
+For Fauxmo Library - Copyright (c) 2018 by Xose Pérez <xose dot perez at gmail dot com> (also under MIT License) - see below for full licence.
 For ESPAsync Toolset - Copyright (c) 2016 Hristo Gochkov (under GNU License version 2.1). All rights reserved.
-
 */
 
 #ifndef fishyDevice_h
@@ -49,9 +48,7 @@ For ESPAsync Toolset - Copyright (c) 2016 Hristo Gochkov (under GNU License vers
 #include <DNSServer.h>
 #include <ESPAsyncWebServer.h>
 #include <ESPAsyncTCP.h>
-#include <fauxmoESP.h>
 #include <EEPROM.h>
-
 
 //define the maximum length for the text used as commands (for serial comms or in URLs as GETs)
 //CHANGING THESE IMPACTS EEPROM STORAGE AND REQUIRES REINITIALIZATION OF EVERY DEVICE - CHANGE WITH CARE
@@ -95,7 +92,122 @@ For ESPAsync Toolset - Copyright (c) 2016 Hristo Gochkov (under GNU License vers
 #define UDP_LOGGER_RCVD "~UDP~LOGGER_RCVD_DATA" //logger received and parsed its message
 
 
+//=========================================================================================================
+//  FAUXMOESP SECTION
+//=========================================================================================================
+#define USERNAME "t4bK6SilLBy4DutQo0P8yORztUFrAf5-NDTi7wFq"
+#define FAUXMO_UDP_MULTICAST_IP     IPAddress(239,255,255,250)
+#define FAUXMO_UDP_MULTICAST_PORT   1900
+#define FAUXMO_TCP_MAX_CLIENTS      10
+#define FAUXMO_TCP_PORT             1901
+#define FAUXMO_RX_TIMEOUT           3
+
+//#define DEBUG_FAUXMO                Serial
+//#define DEBUG_FAUXMO_VERBOSE_TCP    true
+//#define DEBUG_FAUXMO_VERBOSE_UDP    true
+
+#ifdef DEBUG_FAUXMO
+    #if defined(ARDUINO_ARCH_ESP32)
+        #define DEBUG_MSG_FAUXMO(fmt, ...) { DEBUG_FAUXMO.printf_P((PGM_P) PSTR(fmt), ## __VA_ARGS__); }
+    #else
+        #define DEBUG_MSG_FAUXMO(fmt, ...) { DEBUG_FAUXMO.printf(fmt, ## __VA_ARGS__); }
+    #endif
+#else
+    #define DEBUG_MSG_FAUXMO(...)
+#endif
+
+#ifndef DEBUG_FAUXMO_VERBOSE_TCP
+#define DEBUG_FAUXMO_VERBOSE_TCP    false
+#endif
+
+#ifndef DEBUG_FAUXMO_VERBOSE_UDP
+#define DEBUG_FAUXMO_VERBOSE_UDP    false
+#endif
+
+//#include <Arduino.h>
+
+#if defined(ESP8266)
+    #include <ESP8266WiFi.h>
+    #include <ESPAsyncTCP.h>
+#elif defined(ESP32)
+    #include <WiFi.h>
+    #include <AsyncTCP.h>
+#else
+	#error Platform not supported
+#endif
+
+#include <WiFiUdp.h>
+#include <functional>
+#include <vector>
+//#include "templates.h"
+
+
+typedef std::function<void(unsigned char, const char *, bool, unsigned char)> TSetStateCallback;
+
+typedef struct {
+    char * name;
+    bool state;
+    unsigned char value;
+} fauxmoesp_device_t;
+
+class fauxmoESP {
+
+    public:
+
+        ~fauxmoESP();
+
+        unsigned char addDevice(const char * device_name);
+        bool renameDevice(unsigned char id, const char * device_name);
+        bool renameDevice(const char * old_device_name, const char * new_device_name);
+        bool removeDevice(unsigned char id);
+        bool removeDevice(const char * device_name);
+        char * getDeviceName(unsigned char id, char * buffer, size_t len);
+        int getDeviceId(const char * device_name);
+        void onSetState(TSetStateCallback fn) { _setCallback = fn; }
+        bool setState(unsigned char id, bool state, unsigned char value);
+        bool setState(const char * device_name, bool state, unsigned char value);
+        bool process(AsyncClient *client, bool isGet, String url, String body);
+        void enable(bool enable);
+        void createServer(bool internal) { _internal = internal; }
+        void setPort(unsigned long tcp_port) { _tcp_port = tcp_port; }
+        void handle();
+
+    private:
+
+        AsyncServer * _server;
+        bool _enabled = false;
+        bool _internal = true;
+        unsigned int _tcp_port = FAUXMO_TCP_PORT;
+        std::vector<fauxmoesp_device_t> _devices;
+		#ifdef ESP8266
+        WiFiEventHandler _handler;
+		#endif
+        WiFiUDP _udp;
+        AsyncClient * _tcpClients[FAUXMO_TCP_MAX_CLIENTS];
+        TSetStateCallback _setCallback = NULL;
+
+        String _deviceJson(unsigned char id);
+
+        void _handleUDP();
+        void _onUDPData(const IPAddress remoteIP, unsigned int remotePort, void *data, size_t len);
+        void _sendUDPResponse();
+
+        void _onTCPClient(AsyncClient *client);
+        bool _onTCPData(AsyncClient *client, void *data, size_t len);
+        bool _onTCPRequest(AsyncClient *client, bool isGet, String url, String body);
+        bool _onTCPDescription(AsyncClient *client, String url, String body);
+        bool _onTCPList(AsyncClient *client, String url, String body);
+        bool _onTCPControl(AsyncClient *client, String url, String body);
+        void _sendTCPResponse(AsyncClient *client, const char * code, char * body, const char * mime);
+
+};
+//================================================================================================================
+
+
 //TODO Cleanup: remove the comments below after versifying functions with Limt Switch Actuator
+//extern const bool OPEN_IS_CCW;
+//extern const bool SWAP_LIM_SW;
+
 //DEVICE SETTINGS - these are defined in a user .h file (e.g., FD-Device-Definitions.h)
 //For the MASTER NODE (webserver node) this sets the number of devices it can manage on the net
 extern const char CUSTOM_DEVICE_NAME[];
@@ -104,8 +216,6 @@ extern const int  DEVICE_TIMEOUT;
 extern const char CUSTOM_NOTE[];
 extern const char SW_VER[];
 extern const char CUSTOM_DEVICE_TYPE[];
-//extern const bool OPEN_IS_CCW;
-//extern const bool SWAP_LIM_SW;
 extern const char SOFT_AP_PWD[]; 
 extern const char INITIALIZE[];
 extern const bool USE_SERIAL_INPUT;
@@ -190,9 +300,9 @@ class fishyDevice
 
     void operateDevice(); //this is run very loop cycle to make the device work based on user input
     void deviceSetup(); //this is run at initialization (from setup()) to startup the device
-    bool executeDeviceCommands(char inputMsg[MAXCMDSZ], IPAddress remote);//run by executecommands first to allow device specific commands to be processed (can override built-in commands processes as well)
+    bool executeDeviceCommands(char inputMsg[MAXCMDSZ*2], IPAddress remote);//run by executecommands first to allow device specific commands to be processed (can override built-in commands processes as well)
     void executeState(unsigned char device_id, const char* device_name, bool state, unsigned char value, int context); //execute voice command state changes
-    void UDPparseConfigResponse(char inputMsg[MAXCMDSZ], IPAddress remote); //parse configuration string data to update all the stored parameters
+    void UDPparseConfigResponse(char inputMsg[MAXCMDSZ*2], IPAddress remote); //parse configuration string data to update all the stored parameters
     String getConfigString(); //generate a configuration string that can be sent back and processed by UDPparseConfigResponse to refresh all the stored parameters
     String getStatusString(); //return a string with the device's status for display
     String getShortStatString(); //return a SHORT string (3 char max) summarizing the device's status for min display
@@ -301,9 +411,6 @@ class fishyDevice
     //SW reports needed 676 bytes; left some margin
     EEPROMdata myEEPROMdata;
 
-    /*------------------------------------------------------------------------
-     Use ESPfauxmo board version 3.0.0 or greater (tested with 3.0.0) - Phillips hue model
-    -------------------------------------------------------------------------*/
     fauxmoESP fauxmo;          //fauxmo device for alexa interactions
     wifiConnect myWifiConnect; //global used for managing wifi connection
     WiFiEventHandler gotIpEventHandler;
@@ -367,5 +474,93 @@ static const char WEBSTR_SWUPDATE_PT1[] PROGMEM = "<!doctypehtml><style>a{color:
 
 static const char WEBSTR_SWUPDATE_PT2[] PROGMEM = "<div id=formDiv><hr><form enctype=multipart/form-data id=upload_form method=post><input id=file1 name=file1 onchange=uploadFile() type=file><br><progress id=progressBar max=100 style=width:50%;display:none value=0></progress><h3 id=status></h3><p id=loaded_n_total></form></div>";
 /*===========================================================================*/
+
+/*
+
+FAUXMO ESP - 
+
+NOTE: THIS REPOSITORY IS NO LONGER MAINTAINED SO BUILDING FAUXMO THIS INTO FISHYDEVICE CODE
+
+Copyright (C) 2016-2020 by Xose Pérez <xose dot perez at gmail dot com>
+
+The MIT License (MIT)
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in
+all copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+THE SOFTWARE.
+
+*/
+
+PROGMEM const char FAUXMO_TCP_HEADERS[] =
+    "HTTP/1.1 %s\r\n"
+    "Content-Type: %s\r\n"
+    "Content-Length: %d\r\n"
+    "Connection: close\r\n\r\n";
+
+PROGMEM const char FAUXMO_TCP_STATE_RESPONSE[] = "["
+    "{\"success\":{\"/lights/%d/state/on\":%s}},"
+    "{\"success\":{\"/lights/%d/state/bri\":%d}}"   // not needed?
+"]";
+
+// Working with gen1 and gen3, ON/OFF/%, gen3 requires TCP port 80
+PROGMEM const char FAUXMO_DEVICE_JSON_TEMPLATE[] = "{"
+    "\"type\":\"Extended color light\","
+    "\"name\":\"%s\","
+    "\"uniqueid\":\"%s-%d\","
+    "\"modelid\":\"LCT007\","
+    "\"state\":{"
+        "\"on\":%s,\"bri\":%d,\"xy\":[0,0],\"reachable\": true"
+    "},"
+    "\"capabilities\":{"
+        "\"certified\":false,"
+        "\"streaming\":{\"renderer\":true,\"proxy\":false}"
+    "},"
+    "\"swversion\":\"5.105.0.21169\""
+"}";
+
+PROGMEM const char FAUXMO_DESCRIPTION_TEMPLATE[] =
+"<?xml version=\"1.0\" ?>"
+"<root xmlns=\"urn:schemas-upnp-org:device-1-0\">"
+    "<specVersion><major>1</major><minor>0</minor></specVersion>"
+    "<URLBase>http://%d.%d.%d.%d:%d/</URLBase>"
+    "<device>"
+        "<deviceType>urn:schemas-upnp-org:device:Basic:1</deviceType>"
+        "<friendlyName>Philips hue (%d.%d.%d.%d:%d)</friendlyName>"
+        "<manufacturer>Royal Philips Electronics</manufacturer>"
+        "<manufacturerURL>http://www.philips.com</manufacturerURL>"
+        "<modelDescription>Philips hue Personal Wireless Lighting</modelDescription>"
+        "<modelName>Philips hue bridge 2012</modelName>"
+        "<modelNumber>929000226503</modelNumber>"
+        "<modelURL>http://www.meethue.com</modelURL>"
+        "<serialNumber>%s</serialNumber>"
+        "<UDN>uuid:2f402f80-da50-11e1-9b23-%s</UDN>"
+        "<presentationURL>index.html</presentationURL>"
+    "</device>"
+"</root>";
+
+PROGMEM const char FAUXMO_UDP_RESPONSE_TEMPLATE[] =
+    "HTTP/1.1 200 OK\r\n"
+    "EXT:\r\n"
+    "CACHE-CONTROL: max-age=100\r\n" // SSDP_INTERVAL
+    "LOCATION: http://%d.%d.%d.%d:%d/description.xml\r\n"
+    "SERVER: FreeRTOS/6.0.5, UPnP/1.0, IpBridge/1.17.0\r\n" // _modelName, _modelNumber
+    "hue-bridgeid: %s\r\n"
+    "ST: urn:schemas-upnp-org:device:basic:1\r\n"  // _deviceType
+    "USN: uuid:2f402f80-da50-11e1-9b23-%s::upnp:rootdevice\r\n" // _uuid::_deviceType
+    "\r\n";
 
 #endif

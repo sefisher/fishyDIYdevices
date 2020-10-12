@@ -5,14 +5,17 @@ If you design a new page, you  need to embedd this HTML into the CommonWebresour
 interacts with the other device controls (e.g., Limit-Switch-Actuator-ContolTemplate.html) for handling 
 individual device processing (specific to each type of device).
 To build it in the code do the following:
- 1) Copy the HTML code below this comment down to the END OF PART 1.
- 2) Put it through a minifier (like https://kangax.github.io/html-minifier/ with "Decode Entity Characters OFF") 
- and then through a String builder (like http://buildmystring.com/ with "strip out carriage returns" on) to create 
- a single string with no tabs and one line.
- 3) Paste that string into the WEBROOTSTRPT1 after "PROGMEM" in the fishyDevice.h file.
- 4) Copy the HTML code below START OF PART 2 to the end.
- 5) Repeat step 2.
- 6) Paste that string into the WEBROOTSTRPT2 after "PROGMEM" in the fishyDevice.h file.
+ 1) Copy the HTML code below this comment.
+ 2) Paste it into:
+    a) a minifier (like https://kangax.github.io/html-minifier/ with "Decode Entity Characters OFF") 
+    b) then copy-paste the result into a String builder (like http://buildmystring.com/ with "strip out carriage returns" on) to create a single string with no tabs and one line.
+ 3) Search for 'String StringResponse' in fishyDevices.cpp.
+ 4) Then within that StringResponse string replace:
+    a) (\" + p + \") with (\"" + p + "\") and 
+    b) (\" + n + \") with (\"" + p + "\"). 
+    c) \" + loggerString + \" with \"" + loggerString + "\"
+    Note: Adding the extra quotes pulls the n, p, and IPlogger variables into the HTML as it it generated.
+ 5) Recompile.
 
  ------------------------------------------------------------------------------------------------------->
 
@@ -33,13 +36,12 @@ To build it in the code do the following:
 <body>
     <div class='main' id='myBody'>
         <script>
-            /**********************END OF PART 1*****************************/
 
-            //don't copy this - for testing
-            var pass = "";
-            var ssid = "";
-
-            /*********************START OF PART 2****************************/
+            //THE FOLLOWING NEED TO BE PASSED THE ACTUAL pass AND ssid FROM WITHIN fishyDevices.cpp
+            //see instructions above
+            var pass=encodeURIComponent(" + p + ");
+            var ssid=encodeURIComponent(" + n + ");
+            
             function addDevice(d) {
                 var addDiv = "<div class='CPdevice' id='CP-" + d.ip + "'>";
                 addDiv += addInnerDevice(d);
@@ -66,7 +68,7 @@ To build it in the code do the following:
                 if (d.isMaster == 'true') { mstrTxt = 'MASTER:' + d.ip; } else { mstrTxt = d.ip; }
 
                 var addDiv = "<div class='CPhd' id='hd1-" + d.ip + "'>" + d.name + "</div>";
-                addDiv += "<iframe id='wifiUpdate-" + d.ip + "' class='swUpdate' src='http://" + d.ip + "/wifi?n='" + uriencode(ssid) + "'&p='" + pass + "'></iframe><br>";
+                addDiv += "<iframe id='wifiUpdate-" + d.ip + "' class='swUpdate' src='http://" + d.ip + "/wifi?n='" + ssid + "'&p='" + pass + "'></iframe><br>";
                 addDiv += "<div class='CPft' id='CPft-" + d.ip + "'>" + mstrTxt + "</div>";
                 return addDiv;
             }
@@ -92,7 +94,9 @@ To build it in the code do the following:
                 theFtr = document.createElement('DIV');
                 theFtr.className = 'fishyFtr';
                 theBody.appendChild(theFtr);
-                theFtr.innerHTML = "<a href='/'>[Controls]</a>  <a href='/SWupdater'>[SW Update]</a>  <a href='/WIFIupdater'>[WIFI Update]</a>";
+    //loggerString will be passed to this HTML code FROM WITHIN fishyDevices.cpp
+    //see instructions above on how to compile and insert this HTML file into fishyDevices.cpp
+                theFtr.innerHTML = footer(true,""," + loggerString + ");
 
                 loadJSON(srcStr,
                     //load success function

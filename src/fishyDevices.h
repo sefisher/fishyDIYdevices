@@ -38,6 +38,16 @@ For Fauxmo Library - Copyright (c) 2018 by Xose Pérez <xose dot perez at gmail 
 For ESPAsync Toolset - Copyright (c) 2016 Hristo Gochkov (under GNU License version 2.1). All rights reserved.
 */
 
+//FISHYDEVICE DEBUG FLAGS:
+//#define DEBUG_MESSAGES true      //debugging for general device problems 
+//#define DEBUG_UDP_MESSAGES true  //debugging for network comms 
+//#define UDP_PARSE_MESSAGES true  //debugging for parsing messages 
+//#define DEBUG_WIFI_MESSAGES true //debugging WIFI connection issues
+//FUAXMOESP DEBUG FLAGS:
+//#define DEBUG_FAUXMO                Serial
+//#define DEBUG_FAUXMO_VERBOSE_TCP    true
+//#define DEBUG_FAUXMO_VERBOSE_UDP    true
+
 #ifndef fishyDevice_h
 #define fishyDevice_h
 
@@ -61,9 +71,6 @@ For ESPAsync Toolset - Copyright (c) 2016 Hristo Gochkov (under GNU License vers
 
 #define ESP8266                 //tell libraries this is an ESP8266 (vice ESP32)
 #define SW_UPDATE_DELAY 10      //the number of seconds to wait for a reboot following a software update - increase if you see "page not found errors" after an update
-
-//ENABLE VOICE CONTROLS
-#define FAUXMO_ENABLED true
 
 //Board communication rate and UDP port number
 #define SERIAL_BAUDRATE 115200
@@ -92,19 +99,15 @@ For ESPAsync Toolset - Copyright (c) 2016 Hristo Gochkov (under GNU License vers
 #define UDP_LOGGER_RCVD "~UDP~LOGGER_RCVD_DATA" //logger received and parsed its message
 
 
-//=========================================================================================================
+//=======================================================================
 //  FAUXMOESP SECTION
-//=========================================================================================================
+//=======================================================================
 #define USERNAME "t4bK6SilLBy4DutQo0P8yORztUFrAf5-NDTi7wFq"
 #define FAUXMO_UDP_MULTICAST_IP     IPAddress(239,255,255,250)
 #define FAUXMO_UDP_MULTICAST_PORT   1900
 #define FAUXMO_TCP_MAX_CLIENTS      10
 #define FAUXMO_TCP_PORT             1901
 #define FAUXMO_RX_TIMEOUT           3
-
-//#define DEBUG_FAUXMO                Serial
-//#define DEBUG_FAUXMO_VERBOSE_TCP    true
-//#define DEBUG_FAUXMO_VERBOSE_UDP    true
 
 #ifdef DEBUG_FAUXMO
     #if defined(ARDUINO_ARCH_ESP32)
@@ -117,14 +120,12 @@ For ESPAsync Toolset - Copyright (c) 2016 Hristo Gochkov (under GNU License vers
 #endif
 
 #ifndef DEBUG_FAUXMO_VERBOSE_TCP
-#define DEBUG_FAUXMO_VERBOSE_TCP    false
+    #define DEBUG_FAUXMO_VERBOSE_TCP    false
 #endif
 
 #ifndef DEBUG_FAUXMO_VERBOSE_UDP
-#define DEBUG_FAUXMO_VERBOSE_UDP    false
+    #define DEBUG_FAUXMO_VERBOSE_UDP    false
 #endif
-
-//#include <Arduino.h>
 
 #if defined(ESP8266)
     #include <ESP8266WiFi.h>
@@ -139,7 +140,6 @@ For ESPAsync Toolset - Copyright (c) 2016 Hristo Gochkov (under GNU License vers
 #include <WiFiUdp.h>
 #include <functional>
 #include <vector>
-//#include "templates.h"
 
 
 typedef std::function<void(unsigned char, const char *, bool, unsigned char)> TSetStateCallback;
@@ -221,13 +221,24 @@ extern const char INITIALIZE[];
 extern const bool USE_SERIAL_INPUT;
 extern const bool DO_BLINKING;
 extern const int BLINK_LED;
+extern const bool FAUXMO_ENABLED;
 
 //Test switches for Serial output text (set to false to disable debug messages) 
-#define DEBUG_MESSAGES false      //debugging for general device problems (movement, switches, etc)
-#define DEBUG_UDP_MESSAGES false  //debugging for network comms (MASTER - SLAVE issues with nodes on the network)
-#define UDP_PARSE_MESSAGES false  //debugging for parsing messages - used after you've changed the message structures
-#define DEBUG_HEAP_MESSAGE false  //just tracking the heap size for memory leak issues or overloaded nodeMCUs
-#define DEBUG_WIFI_MESSAGES false  //shows wifi connection debugging info
+#ifndef DEBUG_MESSAGES
+    #define DEBUG_MESSAGES false      //debugging for general device problems (movement, switches, etc)
+#endif
+#ifndef DEBUG_UDP_MESSAGES
+    #define DEBUG_UDP_MESSAGES false  //debugging for network comms (MASTER - SLAVE issues with nodes on the network)
+#endif
+#ifndef UDP_PARSE_MESSAGES
+    #define UDP_PARSE_MESSAGES false  //debugging for parsing messages - used after you've changed the message structures
+#endif
+#ifndef DEBUG_HEAP_MESSAGE
+    #define DEBUG_HEAP_MESSAGE false  //just tracking the heap size for memory leak issues or overloaded nodeMCUs
+#endif
+#ifndef DEBUG_WIFI_MESSAGES
+    #define DEBUG_WIFI_MESSAGES false  //shows wifi connection debugging info
+#endif
 
 //A typedef struct of type fishyDevice to hold data on devices on the net; and
 //then create an array of size MAX_DEVICE to store all the stuff found on the net
@@ -260,12 +271,13 @@ typedef struct EEPROMdata //676 bytes
     int timeOut = 60;                             //4 bytes
     bool deviceTimedOut = false;                  //1 byte
     char deviceCustomData[MAXCUSTOMDATALEN] = ""; //256 bytes - 255 characters - format: '{name=value&name=value&name=value}' (no spaces, no "&", no "=" stored in string)
-    bool blink_Enable = true;                     //1 byte
+    bool blink_Enable = false;                     //1 byte
+    bool fauxmo_Enable = false;                    //1 byte
 
     //storage for future use--------------------------------
     //reserved since changing EEPROM layout requires more work to 
     //update fielded devices
-    char reserved_data_package[MAXCUSTOMDATALEN]; //256 bytes - 255 characters 
+    char reserved_data_package[MAXCUSTOMDATALEN-1]; //255 bytes - 254 characters 
     //-----------------------------------------------------
 
     int locationX = -1;                           //x position on level picture  //4 bytes
@@ -306,6 +318,7 @@ class fishyDevice
     String getConfigString(); //generate a configuration string that can be sent back and processed by UDPparseConfigResponse to refresh all the stored parameters
     String getStatusString(); //return a string with the device's status for display
     String getShortStatString(); //return a SHORT string (3 char max) summarizing the device's status for min display
+    String getHabridgeControls(); //return a string with control information to be used in ha-bridge device.db
     void initializeDeviceCustomData(); //setup device specific data elements on boot up if not stored in EEPROM
     void extractDeviceCustomData(); //extract device data from a string stored in EEPROM
     void encodeDeviceCustomData();  //encode device data into a string stored in EEPROM
@@ -333,6 +346,7 @@ class fishyDevice
     void executeCommands(char inputMsg[MAXCMDSZ], IPAddress remote, int client_id); 
     void updateLocation(char inputMsg[MAXCMDSZ]);
     //general helper functions
+    void setBlinkerLEDPin(int LEDPin);
     void fastBlinks(int numBlinks);
     void slowBlinks(int numBlinks);
     void doBlinking(void);
@@ -381,6 +395,7 @@ class fishyDevice
     void handleNetworkJSON(AsyncWebServerRequest *request);
     void handleNodeJSON(AsyncWebServerRequest *request);
     void handleConfigString(AsyncWebServerRequest *request);
+    void handleHabridgeString(AsyncWebServerRequest *request); 
     void handleNotMaster(AsyncWebServerRequest *request);
     String getNetworkJSON();
     String getNodeJSON();
@@ -420,6 +435,7 @@ class fishyDevice
     IPAddress netMsk;
     IPAddress masterIP; //the IP address of the MASTER device (if set)
     IPAddress loggerIP = IPAddress(0, 0, 0, 0); //the IP address of the logging device (if set)
+    String loggerPagePort = "";
 
     //make the webserver and web updater
     AsyncWebServer *httpServer; //for master node web server
@@ -440,7 +456,6 @@ class fishyDevice
     bool resetOnNextLoop; //used to tell the device to reset after it gets to the next main operating loop
     String _updaterError; //used for tracting SW uploading errors
     bool use_serial;
-    bool do_the_blinking;
     int blinker_led;
 };
 
@@ -458,13 +473,13 @@ static const char WEBSTYLESSTR[] PROGMEM = ":root{font-family: Arial, Helvetica,
 /*===========================================================================*/
 //ROOT SITE  - Used to serve up iFrames for each device either for software updates or for controls
 //SEE SOURCE FILE FOR CHANGES/TESTING IN fishyDIYdevices/extras/html/CommonRootTemplate.html
-static const char WEBROOTSTR[] PROGMEM ="<!doctypehtml><title>fishDIY Device Network</title><meta content=\"width=device-width,initial-scale=1\"name=viewport><script src=/CommonWebFunctions.js></script><link href=/styles.css id=styles rel=stylesheet><script src=CommonWebFunctions.js></script><div class=main id=myBody><script>function addDevice(e){var r=\"<div class='CPdevice' id='CP-\"+e.ip+\"'>\";return r+=addInnerDevice(e),r+=\"</div>\"}function addInnerDevice(e){var r,a;r=\"true\"==e.inError?\"CPhdErr\":\"CPhdErrClear\",a=\"true\"==e.isMaster?\"MASTER:\"+e.ip:e.ip;var t=\"<div class='CPhd' id='hd1-\"+e.ip+\"'>\"+e.name+\"</div>\";return isCtrl?(t+=\"<div id='CPerr-\"+e.ip+\"' class='\"+r+\"'>ERROR</div>\",t+=\"<div >\"+e.statusstr+\"</div>\",t+=\"<button class='CPbutton' onclick='openModal(\\\"\"+e.ip+\"\\\")'; id='myBtn-\"+e.ip+\"'>Open Controls</button>\",t+=\"<div class='CPdetails' >Type:\"+e.typestr+\"</div>\"):t+=\"<iframe id='swUpdate-\"+e.ip+\"' class='swUpdate' src='http://\"+e.ip+\"/SWupdateGetForm' ></iframe><br>\",t+=\"<div class='CPft' id='CPft-\"+e.ip+\"'>\"+a+\"</div>\"}function refreshToggle(){var e=_(\"swRefreshLab-1\");1==_(\"swRefreshChck-1\").checked?(e.innerHTML=\"Auto-refresh On\",pollTimer=setInterval(function(){pollJSON()},1e4)):(e.innerHTML=\"Auto-refresh Off\",clearInterval(pollTimer))}function pollJSON(){var e=\"./network.JSON?nocache=\"+(new Date).getTime();loadJSON(e,function(e){var r=e.logger;_(\"theFtr\").innerHTML=\"(IP unset)\"!=r&&\"0.0.0.0\"!=r?\"<a href='http://\"+r+\"/monitorHome.php'>[Monitor Home]</a>  <a href='/'>[Control Panel]</a>  <a href='/SWupdater'>[SW Update]</a>  <a href='/WIFIupdater'>[WIFI Update]</a>\":\"<a href='/'>[Controls]</a>  <a href='/SWupdater'>[SW Update]</a>  <a href='/WIFIupdater'>[WIFI Update]</a>\";var t,n,i=e.fishyDevices;Array.prototype.forEach.call(i,function(e,r){if(t=_(\"CP-\"+e.ip),\"0\"==e.dead){if(null==t){var a=document.createElement(\"DIV\");a.id=\"CP-\"+e.ip,a.className=\"CPdevice\",t=_(\"flex-container\").appendChild(a)}t.innerHTML=addInnerDevice(e)}else null!=t&&_(\"flex-container\").removeChild(t)});var a=document.querySelectorAll(\".CPdevice\");Array.prototype.forEach.call(a,function(a,e){n=!0,Array.prototype.forEach.call(i,function(e,r){\"CP-\"+e.ip==a.id&&0==e.dead&&(n=!1)}),n&&_(\"flex-container\").removeChild(a)}),console.log(\"loadJSON and page update success\")},function(e){console.log(\"Error with loadJSON\")})}var pollTimer,isCtrl=!0;function buildPage(){alertBadBrowser();var t,n,e=\"./network.JSON?nocache=\"+(new Date).getTime(),i=[],o=_(\"myBody\"),l=document.createElement(\"DIV\");l.className=\"fishyHdr\",o.appendChild(l),\"SWu\"==location.pathname.slice(1,4)?(isCtrl=!1,l.innerHTML=\"fishyDevice Software Update\"):l.innerHTML=\"fishyDevice Controls\",(l=document.createElement(\"DIV\")).className=\"CPhd3\",o.appendChild(l),isCtrl&&(l.innerHTML=\"<span class='swRow'><label class='sw2' id='swRefresh-1'><input type='checkbox' checked id='swRefreshChck-1' onchange=refreshToggle()><span class='sldSw'></span></label><span class='swLabHdr' id='swRefreshLab-1'>Auto-refresh On</span></span>\"),(n=document.createElement(\"DIV\")).className=\"fishyFtr\",n.id=\"theFtr\",o.appendChild(n),n.innerHTML=\"<a href='/'>[Controls]</a>  <a href='/SWupdater'>[SW Update]</a>  <a href='/WIFIupdater'>[WIFI Update]</a>\",loadJSON(e,function(e){if(null!=e)loggerIP=e.logger,\"(IP unset)\"!=loggerIP&&\"0.0.0.0\"!=loggerIP&&(n.innerHTML=\"<a href='http://\"+loggerIP+\"/monitorHome.php'>[Monitor Home]</a>  <a href='/'>[Control Panel]</a>  <a href='/SWupdater'>[SW Update]</a>  <a href='/WIFIupdater'>[WIFI Update]</a>\"),t=e.fishyDevices,Array.prototype.forEach.call(t,function(e,r){i.push(addDevice(e))});else{alert(\"Failed to load network.JSON. Suspect one of the devices is not configured properly. Look at http://[this device's ip]/network.JSON (link should appear when you click OK) to see if you can find which device is affecting the JSON data and correct it. Often this occurs when a device is compiled with the wrong 'CUSTOM_DEVICE_TYPE' setting.\");var r=\"<div class='CPdevice' id='CP-\"+window.location.hostname+\"'>\",a=window.location.href;r+=\"<a style='color:red' href = '\"+a.substring(0,a.lastIndexOf(\"/\"))+\"/network.JSON' >network.JSON</a>\",r+=\"</div>\",i.push(r)}(l=document.createElement(\"DIV\")).className=\"flex-container\",l.id=\"flex-container\",l.innerHTML=i.join(\"\"),o.insertBefore(l,n)})}window.onload=buildPage(),isCtrl&&_(\"swRefreshChck-1\").checked&&(pollTimer=setInterval(function(){pollJSON()},1e4))</script></div><div class=overlay id=myModal><a class=closebtn href=javascript:void(0) onclick=closeModal()><div class=closebtn id=closeBtn>&#10060;</div></a><div class=modal-body id=myIframeDiv><iframe class=iframeBody height=100% id=myIframe src=\"\"width=100%></iframe></div></div><script>var modal=_(\"myModal\"),closeBtn=_(\"closeBtn\");function closeModal(){modal.style.height=\"0%\",closeBtn.style.display=\"none\",_(\"myIframe\").src=\"\"}var span=document.getElementsByClassName(\"close\")[0];function openModal(e){_(\"myIframeDiv\").innerHTML=\"<iframe  id='myIframe' class='iframeBody' width=100% height=100% src='http://\"+e+\"/control'></iframe>\",modal.style.height=\"100%\",closeBtn.style.display=\"block\"}</script>";
+static const char WEBROOTSTR[] PROGMEM ="<!doctypehtml><title>fishDIY Device Network</title><meta content=\"width=device-width,initial-scale=1\"name=viewport><script src=/CommonWebFunctions.js></script><link href=/styles.css id=styles rel=stylesheet><script src=CommonWebFunctions.js></script><div class=main id=myBody><script>function addDevice(e){var i=\"<div class='CPdevice' id='CP-\"+e.ip+\"'>\";return i+=addInnerDevice(e),i+=\"</div>\"}function addInnerDevice(e){var i,r;i=\"true\"==e.inError?\"CPhdErr\":\"CPhdErrClear\",r=\"true\"==e.isMaster?\"MASTER:\"+e.ip:e.ip;var n=\"<div class='CPhd' id='hd1-\"+e.ip+\"'>\"+e.name+\"</div>\";return isCtrl?(n+=\"<div id='CPerr-\"+e.ip+\"' class='\"+i+\"'>ERROR</div>\",n+=\"<div >\"+e.statusstr+\"</div>\",n+=\"<button class='CPbutton' onclick='openModal(\\\"\"+e.ip+\"\\\")'; id='myBtn-\"+e.ip+\"'>Open Controls</button>\",n+=\"<div class='CPdetails' >Type:\"+e.typestr+\"</div>\"):n+=\"<iframe id='swUpdate-\"+e.ip+\"' class='swUpdate' src='http://\"+e.ip+\"/SWupdateGetForm' ></iframe><br>\",n+=\"<div class='CPft' id='CPft-\"+e.ip+\"'>\"+r+\"</div>\"}function refreshToggle(){var e=_(\"swRefreshLab-1\");1==_(\"swRefreshChck-1\").checked?(e.innerHTML=\"Auto-refresh On\",pollTimer=setInterval(function(){pollJSON()},1e4)):(e.innerHTML=\"Auto-refresh Off\",clearInterval(pollTimer))}function pollJSON(){var e=\"./network.JSON?nocache=\"+(new Date).getTime();loadJSON(e,function(e){var i=e.logger;_(\"theFtr\").innerHTML=footer(!0,\"\",i);var n,t,a=e.fishyDevices;Array.prototype.forEach.call(a,function(e,i){if(n=_(\"CP-\"+e.ip),\"0\"==e.dead){if(null==n){var r=document.createElement(\"DIV\");r.id=\"CP-\"+e.ip,r.className=\"CPdevice\",n=_(\"flex-container\").appendChild(r)}n.innerHTML=addInnerDevice(e)}else null!=n&&_(\"flex-container\").removeChild(n)});var r=document.querySelectorAll(\".CPdevice\");Array.prototype.forEach.call(r,function(r,e){t=!0,Array.prototype.forEach.call(a,function(e,i){\"CP-\"+e.ip==r.id&&0==e.dead&&(t=!1)}),t&&_(\"flex-container\").removeChild(r)}),console.log(\"loadJSON and page update success\")},function(e){console.log(\"Error with loadJSON\")})}var pollTimer,isCtrl=!0;function buildPage(){alertBadBrowser();var n,t,e=\"./network.JSON?nocache=\"+(new Date).getTime(),a=[],o=_(\"myBody\"),l=document.createElement(\"DIV\");l.className=\"fishyHdr\",o.appendChild(l),\"SWu\"==location.pathname.slice(1,4)?(isCtrl=!1,l.innerHTML=\"fishyDevice Software Update\"):l.innerHTML=\"fishyDevice Controls\",(l=document.createElement(\"DIV\")).className=\"CPhd3\",o.appendChild(l),isCtrl&&(l.innerHTML=\"<span class='swRow'><label class='sw2' id='swRefresh-1'><input type='checkbox' checked id='swRefreshChck-1' onchange=refreshToggle()><span class='sldSw'></span></label><span class='swLabHdr' id='swRefreshLab-1'>Auto-refresh On</span></span>\"),(t=document.createElement(\"DIV\")).className=\"fishyFtr\",t.id=\"theFtr\",o.appendChild(t),t.innerHTML=footer(!0,\"\",\"(IP unset)\"),loadJSON(e,function(e){if(null!=e)loggerIP=e.logger,t.innerHTML=footer(!0,\"\",loggerIP),n=e.fishyDevices,Array.prototype.forEach.call(n,function(e,i){a.push(addDevice(e))});else{alert(\"Failed to load network.JSON. Suspect one of the devices is not configured properly. Look at http://[this device's ip]/network.JSON (link should appear when you click OK) to see if you can find which device is affecting the JSON data and correct it. Often this occurs when a device is compiled with the wrong 'CUSTOM_DEVICE_TYPE' setting.\");var i=\"<div class='CPdevice' id='CP-\"+window.location.hostname+\"'>\",r=window.location.href;i+=\"<a style='color:red' href = '\"+r.substring(0,r.lastIndexOf(\"/\"))+\"/network.JSON' >network.JSON</a>\",i+=\"</div>\",a.push(i)}(l=document.createElement(\"DIV\")).className=\"flex-container\",l.id=\"flex-container\",l.innerHTML=a.join(\"\"),o.insertBefore(l,t)})}window.onload=buildPage(),isCtrl&&_(\"swRefreshChck-1\").checked&&(pollTimer=setInterval(function(){pollJSON()},1e4))</script></div><div class=overlay id=myModal><a class=closebtn href=javascript:void(0) onclick=closeModal()><div class=closebtn id=closeBtn>&#10060;</div></a><div class=modal-body id=myIframeDiv><iframe class=iframeBody height=100% id=myIframe src=\"\"width=100%></iframe></div></div><script>var modal=_(\"myModal\"),closeBtn=_(\"closeBtn\");function closeModal(){modal.style.height=\"0%\",closeBtn.style.display=\"none\",_(\"myIframe\").src=\"\"}var span=document.getElementsByClassName(\"close\")[0];function openModal(e){_(\"myIframeDiv\").innerHTML=\"<iframe  id='myIframe' class='iframeBody' width=100% height=100% src='http://\"+e+\"/control'></iframe>\",modal.style.height=\"100%\",closeBtn.style.display=\"block\"}</script>";
 /*===========================================================================*/
 
 /*===========================================================================*/
 //COMMON JAVASCRIPT FUNCTION FILE - Used to help all the fishyDIY webpages run
 //SEE SOURCE FILE FOR CHANGES/TESTING IN fishyDIYdevices/extras/html/CommonWebFunctions.js
-static const char WEBSTR_COMMON_JS[] PROGMEM = "var websock;function _(el){return document.getElementById(el);} function alertBadBrowser(){var isIE=/*@cc_on!@*/false||!!document.documentMode;var isEdge=!isIE&&!!window.StyleMedia;if(isIE||isEdge){alert(\"Your browser may cause display problems. You should obtain a modern webkit browser. While some versions of Microsoft Edge work, it can be buggy. Chrome, Firefox, Safari, and Opera all work consistently. Internet Explorer is not supported.\");}} function swMstrUpd(){var label=_('swMstrLab');var sw=_('swMstrChck');if(sw.checked==true){label.innerHTML='Master Node';}else{label.innerHTML='Slave Node';}} function returnColor(){document.body.style.backgroundColor=\"var(--bg-col)\";} function processJSON(JSONstr){var data=JSON.parse(JSONstr);doStuffWithJSON(data.fishyDevices);} function blockSpecialChar(e){var k=e.keyCode;return((k>64&&k<91)||(k>96&&k<123)||k==8||k==16||k==95||k==32||(k>43&&k<47)||(k>=48&&k<=57));} function numberCharOnly(e){var k=e.keyCode;return(k==8||k==16||(k>=48&&k<=57));} function loadJSON(path,success,error){var xhr=new XMLHttpRequest();xhr.onreadystatechange=function() {if(xhr.readyState===XMLHttpRequest.DONE){if(xhr.status===200){if(success){try{var json=xhr.responseText;var pjson=JSON.parse(json);}catch(e){if(e instanceof SyntaxError){console.log(e,true);pjson=null;}else{console.log(e,false);pjson=null;}} success(pjson);}}else{if(error) error(xhr);}}};xhr.open(\"GET\",path,true);xhr.send();} function showDetails(){_('infoDiv').innerHTML=infoText;_('infoPanel').style.display='block';} function getMsg(data){var start=data.indexOf(\"MSG:\")+4;var end=data.indexOf(\"~*~*\");return data.substring(start,end);} function getNodeJSONtext(data){var start=data.indexOf(\"~*~*DAT:\")+8;return data.substring(start,data.length);} function start(){websock=new WebSocket('ws://'+window.location.hostname+'/ws');websock.onopen=function(evt){console.log('websock open');};websock.onclose=function(evt){console.log('websock close');alert(\"This control panel is no longer connected to the device. Please close this window and reopen the control panel.\");return 0;};websock.onerror=function(evt){console.log(evt);};websock.onmessage=function(evt){var payload=evt.data;if(payload.indexOf(\"~*~*\")<0){if(payload.indexOf('{\"fishyDevices\"')==0){processJSON(payload);}else{console.log(payload);}}else{dealWithMessagePayload(payload);}};}";
+static const char WEBSTR_COMMON_JS[] PROGMEM = "var websock;function _(e){return document.getElementById(e)}function alertBadBrowser(){var e=!!document.documentMode,o=!e&&!!window.StyleMedia;(e||o)&&alert(\"Your browser may cause display problems. You should obtain a modern webkit browser.  While some versions of Microsoft Edge work, it can be buggy. Chrome, Firefox, Safari, and Opera all work consistently. Internet Explorer is not supported.\")}function swMstrUpd(){var e=_(\"swMstrLab\");!0===_(\"swMstrChck\").checked?e.innerHTML=\"Master Node\":e.innerHTML=\"Slave Node\"}function returnColor(){document.body.style.backgroundColor=\"var(--bg-col)\"}function processJSON(e){var o=JSON.parse(e);doStuffWithJSON(o.fishyDevices)}function blockSpecialChar(e){var o=e.keyCode;return o>64&&o<91||o>96&&o<123||8==o||16==o||95==o||32==o||o>43&&o<47||o>=48&&o<=57}function numberCharOnly(e){var o=e.keyCode;return 8==o||16==o||o>=48&&o<=57}function loadJSON(e,o,n){var t=new XMLHttpRequest;t.onreadystatechange=function(){if(t.readyState===XMLHttpRequest.DONE)if(200===t.status){if(o){var e;try{var r=t.responseText;e=JSON.parse(r)}catch(o){o instanceof SyntaxError?(console.log(o,!0),e=null):(console.log(o,!1),e=null)}o(e)}}else n&&n(t)},t.open(\"GET\",e,!0),t.send()}function showDetails(){_(\"infoDiv\").innerHTML=infoText,_(\"infoPanel\").style.display=\"block\"}function getMsg(e){var o=e.indexOf(\"MSG:\")+4,n=e.indexOf(\"~*~*\");return e.substring(o,n)}function getNodeJSONtext(e){var o=e.indexOf(\"~*~*DAT:\")+8;return e.substring(o,e.length)}function footer(e,o,n){var t,r,a;return e?(r=\"/\",a=\"<a href='http://\"+n+\"/monitorHome.php'>[Monitor Home]</a>\"):(r=\"http://\"+o+\"/\",a=\"<a href='/monitorHome.php'>[Home Monitor]</a><a href='/configureHome.html'>[Setup Home]</a><a href='configureNetwork.html'>[Setup Device Network]</a>\"),t=\"<a href='\"+r+\"'>[Controls]</a>  <a href='\"+r+\"SWupdater'>[Software Update]</a><a href='\"+r+\"WIFIupdater'>[Set WiFi]</a>\",\"(IP unset)\"!=n&&\"0.0.0.0\"!=n&&(t+=a),t}function start(){(websock=new WebSocket(\"ws://\"+window.location.hostname+\"/ws\")).onopen=function(e){console.log(\"websock open\")},websock.onclose=function(e){return console.log(\"websock close\"),alert(\"This control panel is no longer connected to the device.  Please close this window and reopen the control panel.\"),0},websock.onerror=function(e){console.log(e)},websock.onmessage=function(e){var o=e.data;o.indexOf(\"~*~*\")<0?0===o.indexOf('{\"fishyDevices\"')?processJSON(o):console.log(o):dealWithMessagePayload(o)}}";
 /*===========================================================================*/
 
 /*===========================================================================*/

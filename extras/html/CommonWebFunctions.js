@@ -1,15 +1,10 @@
 // This is the template file for common JS scripts used by most fishyDIY device webpages.
 // To build this template file intp the code after updating it do the following:
 //  1) select all and copy this file (Ctrl-a ctrl-a on windows)
-//  2) put it through a minifier (like https://kangax.github.io/html-minifier/ with "Decode Entity Characters OFF") and 
+//  2) put it through a JAVASCRIPT minifier (like https://javascript-minifier.com/) and 
 //  then through a String builder (like http://buildmystring.com/ with "strip out carriage returns" on) to create a 
 //  single string with no tabs and one line.
 //  3) paste that string into the WEBSTR_COMMON_JS After "PROGMEM" in the fishyDevices.h file.
-//-----
-// (NOTE: to run this .js file through https://kangax.github.io/html-minifier/ you'll need to enclose this file contents 
-// in <script></script> tags - it isn't set up to recognize javascript without that. Then REMOVE the 
-// <script></script> before pasting into http://buildmystring.com/).
-//-----
 
 //websocket variable
 var websock;
@@ -101,6 +96,22 @@ function getMsg(data) {
 function getNodeJSONtext(data) {
     var start = data.indexOf("~*~*DAT:") + 8;
     return data.substring(start, data.length);
+}
+//utility function to return the footer of device and other home pages
+function footer(onDevice,masterDeviceIP,loggerIP){
+    var text,basehref,monitorHomestr;
+    if(onDevice){ 
+        basehref = '/';
+        monitorHomestr = "<a href='http://" + loggerIP + "/monitorHome.php'>[Monitor Home]</a>";
+    }else {
+        basehref = 'http://'+masterDevice+'/';
+        monitorHomestr = "<a href='/monitorHome.php'>[Home Monitor]</a><a href='/configureHome.html'>[Setup Home]</a><a href='configureNetwork.html'>[Setup Device Network]</a>";
+    }
+    text = "<a href='"+basehref+"'>[Controls]</a>  <a href='"+basehref+"SWupdater'>[Software Update]</a><a href='"+basehref+"WIFIupdater'>[Set WiFi]</a>";        
+    if(loggerIP != "(IP unset)" && loggerIP != "0.0.0.0"){
+        text += monitorHomestr; 
+    }
+    return text;
 }
 //utility function for all fishyDIY devices (extract after ~*~*DAT):
 function start() {

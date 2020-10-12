@@ -73,11 +73,7 @@ To build it in the code do the following:
                     //load success function
                     function (data) {
                         var loggerIP = data.logger;
-                        if(loggerIP != "(IP unset)" && loggerIP != "0.0.0.0"){
-                            _('theFtr').innerHTML = "<a href='http://" + loggerIP + "/monitorHome.php'>[Monitor Home]</a>  <a href='/'>[Control Panel]</a>  <a href='/SWupdater'>[SW Update]</a>  <a href='/WIFIupdater'>[WIFI Update]</a>";
-                        }else{
-                            _('theFtr').innerHTML = "<a href='/'>[Controls]</a>  <a href='/SWupdater'>[SW Update]</a>  <a href='/WIFIupdater'>[WIFI Update]</a>";
-                        }
+                        _('theFtr').innerHTML = footer(true,"",loggerIP); //commonwebfunction
                         var DA = data.fishyDevices;
                         var addDiv = '';
                         var mstrTxt = '&nbsp;';
@@ -155,16 +151,14 @@ To build it in the code do the following:
                 theFtr.className = 'fishyFtr';
                 theFtr.id = 'theFtr';
                 theBody.appendChild(theFtr);
-                theFtr.innerHTML = "<a href='/'>[Controls]</a>  <a href='/SWupdater'>[SW Update]</a>  <a href='/WIFIupdater'>[WIFI Update]</a>";
+                theFtr.innerHTML = footer(true,"","(IP unset)");
 
                 loadJSON(srcStr,
                     //load success function
                     function (data) {
                         if(data!=null){
                             loggerIP = data.logger;
-                            if(loggerIP != "(IP unset)" && loggerIP != "0.0.0.0"){
-                                theFtr.innerHTML = "<a href='http://" + loggerIP + "/monitorHome.php'>[Monitor Home]</a>  <a href='/'>[Control Panel]</a>  <a href='/SWupdater'>[SW Update]</a>  <a href='/WIFIupdater'>[WIFI Update]</a>";
-                            }
+                            theFtr.innerHTML = footer(true,"",loggerIP);
                             DA = data.fishyDevices;
                             Array.prototype.forEach.call(DA,
                                 function (d, num) {

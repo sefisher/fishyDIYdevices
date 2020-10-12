@@ -92,7 +92,28 @@ void fishyDevice::initializePersonalityIfNew()
     strncpy(myEEPROMdata.note, CUSTOM_NOTE, MAXNOTELEN);
     myEEPROMdata.timeOut = DEVICE_TIMEOUT;
     myEEPROMdata.deviceTimedOut = false; //initialized to false on boot
-
+    if(DO_BLINKING == NULL){
+      myEEPROMdata.blink_Enable = DO_BLINKING;
+    }
+    else{
+      myEEPROMdata.blink_Enable = false;
+      if (DEBUG_MESSAGES){
+        Serial.print("[initializePersonalityIfNew] DO_BLINKING not set.  Defaulting to blinking_Enabled = false.");
+        Serial.print("VERIFY - blinking_Enabled: ");
+        Serial.println(String(myEEPROMdata.blink_Enable));
+      }
+    }
+    if(FAUXMO_ENABLED == NULL){
+      myEEPROMdata.fauxmo_Enable = FAUXMO_ENABLED;
+    }
+    else{
+      myEEPROMdata.fauxmo_Enable = false;
+      if (DEBUG_MESSAGES){
+        Serial.print("[initializePersonalityIfNew] FAUXMO_ENABLED not set.  Defaulting to fauxmo_Enable = false.");
+        Serial.print("VERIFY - fauxmo_Enable: ");
+        Serial.println(String(myEEPROMdata.fauxmo_Enable));
+      }
+    }
     //Get the default device specific data - load it into myEEPROMdata, and decode it into the device specific EEPROMdeviceData
     //this call also stores the encoded char[MAXCUSTOMDATALEN] into myEEPROMdata.deviceCustomData
     initializeDeviceCustomData();
@@ -130,7 +151,7 @@ void fishyDevice::showEEPROMPersonalityData()
   if (DEBUG_MESSAGES)
   {
     Serial.println("[showEEPROMPersonalityData]start");
-    Serial.println("[showEEPROMPersonalityData] Init string: " + String(myEEPROMdata.initstr) + ", Name string: " + String(myEEPROMdata.namestr) + ", Master: " + String(myEEPROMdata.master ? "True" : "False") + ",Type string: " + String(myEEPROMdata.typestr) + ",Note string: " + String(myEEPROMdata.note) + ", SW Version string: " + String(myEEPROMdata.swVer) + ", Device Timeout " + String(myEEPROMdata.timeOut) + ", Device Timedout " + String(myEEPROMdata.deviceTimedOut));
+    Serial.println("[showEEPROMPersonalityData] Init string: " + String(myEEPROMdata.initstr) + ", Name string: " + String(myEEPROMdata.namestr) + ", Master: " + String(myEEPROMdata.master ? "True" : "False") + ",Type string: " + String(myEEPROMdata.typestr) + ",Note string: " + String(myEEPROMdata.note) + ", SW Version string: " + String(myEEPROMdata.swVer) + ", Device Timeout " + String(myEEPROMdata.timeOut) + ", Device Timedout " + String(myEEPROMdata.deviceTimedOut) + ", Blink Enable " + String(myEEPROMdata.blink_Enable ? "True" : "False") + ", Fauxmo Enable " + String(myEEPROMdata.fauxmo_Enable ? "True" : "False"));
     Serial.println("[showEEPROMPersonalityData] Compiled init string: " + String(INITIALIZE) + ". Stored init string: " + String(myEEPROMdata.initstr));
 
     showEEPROMdevicePersonalityData();
@@ -192,11 +213,6 @@ void fishyDevice::WifiFauxmoAndDeviceSetup()
     Serial.println("[WifiFauxmoAndDeviceSetup]finish");
   }
 
-  if(myEEPROMdata.blink_Enable)
-  {
-    pinMode(blinker_led, OUTPUT);
-    digitalWrite(blinker_led, HIGH);
-  }
 }
 
 //function to add additonal devices, device ID will be incrmented for each call (the default/first device_id is 0)
@@ -265,18 +281,6 @@ void fishyDevice::serialStart()
     use_serial = USE_SERIAL_INPUT;
   }
 
-  if(BLINK_LED == NULL){
-    blinker_led = LED_BUILTIN;
-  }else{
-    blinker_led = BLINK_LED;
-  }
-
-  if(DO_BLINKING == NULL){
-    myEEPROMdata.blink_Enable = true;
-  }else{
-    myEEPROMdata.blink_Enable = DO_BLINKING;
-  }
-
   if (DEBUG_MESSAGES)
   {
     if(use_serial) {
@@ -287,6 +291,27 @@ void fishyDevice::serialStart()
     Serial.println();
     Serial.println();
   }
+
+  if(DO_BLINKING == NULL){
+    myEEPROMdata.blink_Enable = false;
+  }else{
+    myEEPROMdata.blink_Enable = DO_BLINKING;
+  }
+
+  if(FAUXMO_ENABLED == NULL){
+    myEEPROMdata.fauxmo_Enable = false;
+  }else{
+    myEEPROMdata.fauxmo_Enable = FAUXMO_ENABLED;
+  }
+  
+  if(BLINK_LED == NULL){
+    setBlinkerLEDPin(LED_BUILTIN);
+  }else{
+    setBlinkerLEDPin(BLINK_LED);
+  }
+  
+
+  
 }
 //reset if commanded to by someone last loop
 void fishyDevice::checkResetOnLoop()
@@ -323,6 +348,7 @@ void fishyDevice::showPersonalityDataSize()
     Serial.println("[SETUP] deviceTimedOut " + String(sizeof(myEEPROMdata.deviceTimedOut)));
     Serial.println("[SETUP] deviceCustomData " + String(sizeof(myEEPROMdata.deviceCustomData)));
     Serial.println("[SETUP] blink_Enable " + String(sizeof(myEEPROMdata.blink_Enable)));
+    Serial.println("[SETUP] fauxmo_Enable " + String(sizeof(myEEPROMdata.fauxmo_Enable)));
     Serial.println("[SETUP] reserved_data_package " + String(sizeof(myEEPROMdata.reserved_data_package)));
     Serial.println("[SETUP] locationX " + String(sizeof(myEEPROMdata.locationX)));
     Serial.println("[SETUP] locationY " + String(sizeof(myEEPROMdata.locationY)));
@@ -339,6 +365,18 @@ void fishyDevice::resetController()
     Serial.println("[resetController] Restarting.");
   }
   ESP.restart();
+}
+
+void fishyDevice::setBlinkerLEDPin(int LEDPin)
+{
+  blinker_led = LEDPin;
+  if(myEEPROMdata.blink_Enable)
+  {
+    
+    pinMode(blinker_led, OUTPUT);
+    digitalWrite(blinker_led, HIGH);
+  }
+
 }
 
 void fishyDevice::fastBlinks(int numBlinks)
@@ -497,6 +535,26 @@ void fishyDevice::executeCommands(char inputMsg[MAXCMDSZ*2], IPAddress remote, i
     updateSpecificClient(getNetworkJSON().c_str(), client_id);
     updateSpecificClient("COMPLETE", client_id);
   }
+  else if (cmd.startsWith("get_config_string"))
+  {
+    if (DEBUG_MESSAGES)
+    {
+      Serial.println("[executeCommands] Commanded GET_CONFIG_STRING");
+      Serial.println(getConfigString().c_str());
+    }
+    updateSpecificClient(getConfigString().c_str(), client_id);
+    updateSpecificClient("COMPLETE", client_id);
+  }
+  else if (cmd.startsWith("habridge"))
+  {
+    if (DEBUG_MESSAGES)
+    {
+      Serial.println("[executeCommands] Commanded HABRIDGE");
+      Serial.println(getHabridgeControls().c_str());
+    }
+    updateSpecificClient(getHabridgeControls().c_str(), client_id);
+    updateSpecificClient("COMPLETE", client_id);
+  }
   else if (cmd.startsWith("reset_wifi"))
   {
     if (DEBUG_MESSAGES)
@@ -548,6 +606,7 @@ void fishyDevice::executeCommands(char inputMsg[MAXCMDSZ*2], IPAddress remote, i
       Serial.println(remote);
     }
     loggerIP = remote; //update the master IP
+    loggerPagePort = cmd.substring(strlen(UDP_LOGGER)+1,cmd.length()); //get port for monitorHome.php webserver
     UDPackLogger();
   }
   else if (cmd.substring(0,strlen(UDP_CONFIG_REQUEST)).equalsIgnoreCase(String(UDP_CONFIG_REQUEST)))
@@ -1382,7 +1441,7 @@ void fishyDevice::webSocketEventHandler(AsyncWebSocket *server, AsyncWebSocketCl
     {
       Serial.printf("[%u] Disconnected!\r\n", client->id());
     }
-    client->text("DISCONNECTED", strlen("DISCONNECTED"));
+
   }
   break;
   case WS_EVT_CONNECT:
@@ -1612,6 +1671,11 @@ void fishyDevice::handleConfigString(AsyncWebServerRequest *request)
 {
   request->send(200, "text/html", getConfigString().c_str());
 }
+//Web Server - provide a habridge configuration string that can be used to edit device.db with commands for this device
+void fishyDevice::handleHabridgeString(AsyncWebServerRequest *request)
+{
+  request->send(200, "text/html", getHabridgeControls().c_str());
+}
 //When file isn't found or root is called for non-master this shows a link to the master.
 //Also provides link to this device's control panel.
 void fishyDevice::handleNotMaster(AsyncWebServerRequest *request)
@@ -1646,7 +1710,11 @@ String fishyDevice::getNetworkJSON()
       temp += "{\"ip\":\"" + deviceArray[i].ip.toString() + "\",\"name\":\"" + String(deviceArray[i].name) + "\",\"typestr\":\"" + String(deviceArray[i].typestr) + "\",\"statusstr\":\"" + String(deviceArray[i].statusstr) + "\",\"inError\":\"" + String(deviceArray[i].inError ? "true" : "false") + "\",\"isMaster\":\"" + String(deviceArray[i].isMaster ? "true" : "false") + "\",\"shortStat\":\"" + String(deviceArray[i].shortStat) + "\",\"X\":\"" + String(deviceArray[i].locationX) + "\",\"Y\":\"" + String(deviceArray[i].locationY) + "\",\"Z\":\"" + String(deviceArray[i].locationZ) + "\",\"dead\":\"" + String(deviceArray[i].dead) + "\"}";
     }
   }
-  temp += "],\"logger\":\""+loggerIP.toString()+"\"}";
+  temp += "],\"logger\":\""+loggerIP.toString();
+  if(loggerPagePort != ""){
+    temp += ":" + loggerPagePort;  
+  }
+  temp += "\"}";
 
   return temp;
 }
@@ -1698,8 +1766,14 @@ void fishyDevice::handleWifiUpdater(AsyncWebServerRequest *request)
   {
     p = request->arg("p");
   }
+  String loggerString = loggerIP.toString();
+  if(loggerPagePort != ""){
+    loggerString += ":" + loggerPagePort;  
+  }
+  String responseString = "<!doctypehtml><title>fishDIY Device Network</title><meta content=\"width=device-width,initial-scale=1\"name=viewport><script src=/CommonWebFunctions.js></script><link href=/styles.css rel=stylesheet id=styles><link href=styles.css rel=stylesheet><script src=CommonWebFunctions.js></script><div class=main id=myBody><script>var pass=encodeURIComponent(\"" + p + "\"),ssid=encodeURIComponent(\"" + n + "\");function addDevice(e){var i=\"<div class='CPdevice' id='CP-\"+e.ip+\"'>\";return i+=addInnerDevice(e),i+=\"</div>\"}function addWIFIMASTERDevice(){return\"<div class='CPhd' id='hd1-master'>Master Update</div>\",\"<form class='swUpdate' method='POST' action='WIFIupdater' ><h2>Prefill WIFI Credentials for All Devices:</h2><input type='text' placeholder='network' name='n' /><br /><input type='password' placeholder='password' name='p' '/><br /><input type='submit' value='Submit'/></form>\",\"<div class='CPft' id='CPft-master'></div>\",\"</div>\",\"<div class='CPdevice' id='CP-MASTER'><div class='CPhd' id='hd1-master'>Master Update</div><form class='swUpdate' method='POST' action='WIFIupdater' ><h2>Prefill WIFI Credentials for All Devices:</h2><input type='text' placeholder='network' name='n' /><br /><input type='password' placeholder='password' name='p' '/><br /><input type='submit' value='Submit'/></form><div class='CPft' id='CPft-master'></div></div>\"}function addInnerDevice(e){var i;i=\"true\"==e.isMaster?\"MASTER:\"+e.ip:e.ip;var d=\"<div class='CPhd' id='hd1-\"+e.ip+\"'>\"+e.name+\"</div>\";return d+=\"<iframe id='wifiUpdate-\"+e.ip+\"' class='swUpdate' src='http://\"+e.ip+\"/wifi?n='\"+ssid+\"'&p='\"+pass+\"'></iframe><br>\",d+=\"<div class='CPft' id='CPft-\"+e.ip+\"'>\"+i+\"</div>\"}function buildPage(){alertBadBrowser();var i,d,e=\"./network.JSON?nocache=\"+(new Date).getTime(),a=[],t=_(\"myBody\"),n=document.createElement(\"DIV\");n.className=\"fishyHdr\",t.appendChild(n),n.innerHTML=\"fishyDevice WIFI Credentials Update\",(n=document.createElement(\"DIV\")).className=\"CPhd3\",t.appendChild(n),(d=document.createElement(\"DIV\")).className=\"fishyFtr\",t.appendChild(d),d.innerHTML=footer(!0,\"\",\"" + loggerString + "\"),loadJSON(e,function(e){i=e.fishyDevices,a.push(addWIFIMASTERDevice()),Array.prototype.forEach.call(i,function(e,i){a.push(addDevice(e))}),(n=document.createElement(\"DIV\")).className=\"flex-container\",n.id=\"flex-container\",n.innerHTML=a.join(\"\"),t.insertBefore(n,d)})}window.onload=buildPage()</script></div>";
 
-  String responseString = "<!doctypehtml><title>fishDIY Device Network</title><meta content=\"width=device-width,initial-scale=1\"name=viewport><script src=/CommonWebFunctions.js></script><link href=/styles.css rel=stylesheet id=styles><link href=styles.css rel=stylesheet><script src=CommonWebFunctions.js></script><div class=main id=myBody><script>var pass=encodeURIComponent(\"" + p + "\"),ssid=encodeURIComponent(\"" + n + "\");function addDevice(e){var a=\"<div class='CPdevice' id='CP-\"+e.ip+\"'>\";return a+=addInnerDevice(e),a+=\"</div>\"}function addWIFIMASTERDevice(){return\"<div class='CPhd' id='hd1-master'>Master Update</div>\",\"<form class='swUpdate' method='POST' action='WIFIupdater' ><h3>Prefill WIFI Credentials for All Devices:</h3><input type='text' placeholder='network' name='n' /><br /><input type='password' placeholder='password' name='p' '/><br /><input type='submit' value='Submit'/></form>\",\"<div class='CPft' id='CPft-master'></div>\",\"</div>\",\"<div class='CPdevice' style='background-color: #cce6ff;' id='CP-MASTER'><div class='CPhd' id='hd1-master'>Master Update</div><form class='swUpdate' method='POST' action='WIFIupdater' ><h2>Prefill WIFI Credentials for All Devices:</h2><input type='text' placeholder='network' name='n' /><br /><input type='password' placeholder='password' name='p' '/><br /><input type='submit' value='Submit'/></form><div class='CPft' id='CPft-master'></div></div>\"}function addInnerDevice(e){var a;a=\"true\"==e.isMaster?\"MASTER:\"+e.ip:e.ip;var i=\"<div class='CPhd' id='hd1-\"+e.ip+\"'>\"+e.name+\"</div>\";return i+=\"<iframe id='wifiUpdate-\"+e.ip+\"' class='swUpdate' src='http://\"+e.ip+\"/wifi?n=\"+ssid+\"&p=\"+pass+\"'></iframe><br>\",i+=\"<div class='CPft' id='CPft-\"+e.ip+\"'>\"+a+\"</div>\"}function buildPage(){alertBadBrowser();var a,i,e=\"./network.JSON?nocache=\"+(new Date).getTime(),d=[],t=_(\"myBody\"),r=document.createElement(\"DIV\");r.className=\"fishyHdr\",t.appendChild(r),r.innerHTML=\"fishyDevice WIFI Credentials Update\",(r=document.createElement(\"DIV\")).className=\"CPhd3\",t.appendChild(r),(i=document.createElement(\"DIV\")).className=\"fishyFtr\",t.appendChild(i),i.innerHTML=\"<a href='/'>[Controls]</a>  <a href='/SWupdater'>[SW Update]</a>  <a href='/WIFIupdater'>[WIFI Update]</a>\",loadJSON(e,function(e){a=e.fishyDevices,d.push(addWIFIMASTERDevice()),Array.prototype.forEach.call(a,function(e,a){d.push(addDevice(e))}),(r=document.createElement(\"DIV\")).className=\"flex-container\",r.id=\"flex-container\",r.innerHTML=d.join(\"\"),t.insertBefore(r,i)})}window.onload=buildPage()</script></div>";
+
+  //String responseString = "<!doctypehtml><title>fishDIY Device Network</title><meta content=\"width=device-width,initial-scale=1\"name=viewport><script src=/CommonWebFunctions.js></script><link href=/styles.css rel=stylesheet id=styles><link href=styles.css rel=stylesheet><script src=CommonWebFunctions.js></script><div class=main id=myBody><script>var pass=encodeURIComponent(\"" + p + "\"),ssid=encodeURIComponent(\"" + n + "\");function addDevice(e){var a=\"<div class='CPdevice' id='CP-\"+e.ip+\"'>\";return a+=addInnerDevice(e),a+=\"</div>\"}function addWIFIMASTERDevice(){return\"<div class='CPhd' id='hd1-master'>Master Update</div>\",\"<form class='swUpdate' method='POST' action='WIFIupdater' ><h3>Prefill WIFI Credentials for All Devices:</h3><input type='text' placeholder='network' name='n' /><br /><input type='password' placeholder='password' name='p' '/><br /><input type='submit' value='Submit'/></form>\",\"<div class='CPft' id='CPft-master'></div>\",\"</div>\",\"<div class='CPdevice' style='background-color: #cce6ff;' id='CP-MASTER'><div class='CPhd' id='hd1-master'>Master Update</div><form class='swUpdate' method='POST' action='WIFIupdater' ><h2>Prefill WIFI Credentials for All Devices:</h2><input type='text' placeholder='network' name='n' /><br /><input type='password' placeholder='password' name='p' '/><br /><input type='submit' value='Submit'/></form><div class='CPft' id='CPft-master'></div></div>\"}function addInnerDevice(e){var a;a=\"true\"==e.isMaster?\"MASTER:\"+e.ip:e.ip;var i=\"<div class='CPhd' id='hd1-\"+e.ip+\"'>\"+e.name+\"</div>\";return i+=\"<iframe id='wifiUpdate-\"+e.ip+\"' class='swUpdate' src='http://\"+e.ip+\"/wifi?n=\"+ssid+\"&p=\"+pass+\"'></iframe><br>\",i+=\"<div class='CPft' id='CPft-\"+e.ip+\"'>\"+a+\"</div>\"}function buildPage(){alertBadBrowser();var a,i,e=\"./network.JSON?nocache=\"+(new Date).getTime(),d=[],t=_(\"myBody\"),r=document.createElement(\"DIV\");r.className=\"fishyHdr\",t.appendChild(r),r.innerHTML=\"fishyDevice WIFI Credentials Update\",(r=document.createElement(\"DIV\")).className=\"CPhd3\",t.appendChild(r),(i=document.createElement(\"DIV\")).className=\"fishyFtr\",t.appendChild(i),i.innerHTML=\"<a href='/'>[Controls]</a>  <a href='/SWupdater'>[SW Update]</a>  <a href='/WIFIupdater'>[WIFI Update]</a>\",loadJSON(e,function(e){a=e.fishyDevices,d.push(addWIFIMASTERDevice()),Array.prototype.forEach.call(a,function(e,a){d.push(addDevice(e))}),(r=document.createElement(\"DIV\")).className=\"flex-container\",r.id=\"flex-container\",r.innerHTML=d.join(\"\"),t.insertBefore(r,i)})}window.onload=buildPage()</script></div>";
 
   AsyncWebServerResponse *response = request->beginResponse(200, "text/html", responseString);
 
@@ -1979,6 +2053,7 @@ void fishyDevice::runNormalServer()
   httpServer->on("/network.JSON", HTTP_GET, std::bind(&fishyDevice::handleNetworkJSON, this, std::placeholders::_1));
   httpServer->on("/node.JSON", HTTP_GET, std::bind(&fishyDevice::handleNodeJSON, this, std::placeholders::_1));
   httpServer->on("/config", HTTP_GET, std::bind(&fishyDevice::handleConfigString, this, std::placeholders::_1));
+  httpServer->on("/habridge", HTTP_GET, std::bind(&fishyDevice::handleHabridgeString, this, std::placeholders::_1));
   httpServer->on("/styles.css", HTTP_GET, std::bind(&fishyDevice::handleCSS, this, std::placeholders::_1));
   httpServer->on("/CommonWebFunctions.js", HTTP_GET, std::bind(&fishyDevice::handleJS, this, std::placeholders::_1));
   httpServer->on("/wifi", HTTP_ANY, std::bind(&fishyDevice::handleWifi, this, std::placeholders::_1));
@@ -2040,7 +2115,7 @@ void fishyDevice::runSoftAPServer()
   }
   if(myEEPROMdata.blink_Enable)
   {
-    slowBlinks(60); //blink slowly for a few minutes
+      slowBlinks(60); //blink slowly for a few minutes
   }
 }
 
